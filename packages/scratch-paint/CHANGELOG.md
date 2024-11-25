@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.0.0](https://github.com/scratchfoundation/scratch-paint/compare/v2.2.518...v3.0.0) (2024-11-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependency scratch-render-fonts to v1.0.131 ([#2948](https://github.com/scratchfoundation/scratch-paint/issues/2948)) ([6c3cfba](https://github.com/scratchfoundation/scratch-paint/commit/6c3cfba4a1b594cc57a99e7da0725aa37048d2bf))
+
+
+* chore!: set license to AGPL-3.0-only ([67f9c59](https://github.com/scratchfoundation/scratch-paint/commit/67f9c595ec5df506a61d9616cabb1214778ca211))
+
+
+### BREAKING CHANGES
+
+* This project is now licensed under the AGPL version 3.0
+
+See https://www.scratchfoundation.org/open-source-license
+
 ## [2.2.518](https://github.com/scratchfoundation/scratch-paint/compare/v2.2.517...v2.2.518) (2024-11-25)
 
 
