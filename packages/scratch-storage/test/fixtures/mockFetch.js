@@ -1,8 +1,15 @@
+/**
+ * Mock implementation of the fetch function for testing.
+ * Since `fetch` is a global, Jest will not automatically mock it from `__mocks__`.
+ *
+ * // In your test setup file or at the top of your test files:
+ * global.fetch = require('../mocks/fetch').default;
+ */
+
 const TextEncoder = require('util').TextEncoder;
-const crossFetch = jest.requireActual('cross-fetch');
 const knownAssets = require('../fixtures/known-assets.js');
 
-const Headers = crossFetch.Headers;
+const Headers = global.Headers;
 const successText = 'successful response';
 
 /**
@@ -39,7 +46,6 @@ const mockFetch = (resource, options) => {
         options.mockFetchTestData.headers = new Headers(options.headers);
         options.mockFetchTestData.headersCount = Array.from(options.mockFetchTestData.headers).length;
     }
-
     const assetInfo = knownAssets[resource];
     if (assetInfo) {
         results.ok = true;
@@ -68,14 +74,7 @@ const mockFetch = (resource, options) => {
     return Promise.resolve(results);
 };
 
-// Mimic the cross-fetch module, but replace its `fetch` with `mockFetch` and add a few extras
-
-module.exports = exports = mockFetch;
-exports.fetch = mockFetch;
-exports.Headers = crossFetch.Headers;
-exports.Request = crossFetch.Request;
-exports.Response = crossFetch.Response;
-exports.successText = successText;
-
-// Needed for TypeScript consumers without esModuleInterop.
-exports.default = mockFetch;
+module.exports = {
+    fetch: mockFetch,
+    successText
+};
