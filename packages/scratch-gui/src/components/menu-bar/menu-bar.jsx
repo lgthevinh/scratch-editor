@@ -449,7 +449,7 @@ class MenuBar extends React.Component {
                             <img
                                 role="button"
                                 aria-label="Go Home"
-                                tabIndex="0"
+                                tabIndex={0}
                                 id="logo_img"
                                 alt="Scratch"
                                 className={classNames(styles.scratchLogo, {

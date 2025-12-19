@@ -193,12 +193,13 @@ class LanguageMenu extends React.PureComponent {
 
 LanguageMenu.propTypes = {
     currentLocale: PropTypes.string,
-    focusedRef: PropTypes.object,
+    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     isRtl: PropTypes.bool,
     menuOpen: PropTypes.bool,
     onChangeLanguage: PropTypes.func,
     onRequestCloseSettings: PropTypes.func,
-    onRequestOpen: PropTypes.func
+    onRequestOpen: PropTypes.func,
+    onRequestClose: PropTypes.func
 };
 
 const mapStateToProps = state => ({
@@ -213,7 +214,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
         dispatch(selectLocale(locale));
         ownProps.onRequestCloseSettings();
     },
-    onRequestOpen: () => dispatch(openLanguageMenu())
+    onRequestOpen: () => dispatch(openLanguageMenu()),
+    onRequestClose: () => dispatch(closeLanguageMenu())
 });
 
 export default connect(

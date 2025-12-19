@@ -44,7 +44,7 @@ ThemeMenuItem.propTypes = {
     isSelected: PropTypes.bool,
     onClick: PropTypes.func,
     theme: PropTypes.string,
-    focusedRef: PropTypes.object,
+    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     onParentKeyPress: PropTypes.func
 };
 
@@ -127,7 +127,7 @@ class ThemeMenu extends React.PureComponent {
         this.setState({focusedIndex: -1}, () => {
             this.setFocusedRef(this.props.focusedRef);
         });
-        closeThemeMenu();
+        this.props.onRequestClose();
     }
 
     setFocusedRef (component) {
@@ -195,12 +195,13 @@ class ThemeMenu extends React.PureComponent {
 }
 
 ThemeMenu.propTypes = {
-    focusedRef: PropTypes.object,
+    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     isRtl: PropTypes.bool,
     onChangeTheme: PropTypes.func,
     // eslint-disable-next-line react/no-unused-prop-types
     onRequestCloseSettings: PropTypes.func,
     onRequestOpen: PropTypes.func,
+    onRequestClose: PropTypes.func,
     theme: PropTypes.string
 };
 
@@ -215,7 +216,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
         ownProps.onRequestCloseSettings();
         persistTheme(theme);
     },
-    onRequestOpen: () => dispatch(openThemeMenu())
+    onRequestOpen: () => dispatch(openThemeMenu()),
+    onRequestClose: () => dispatch(closeThemeMenu())
 });
 
 export default connect(

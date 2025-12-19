@@ -93,7 +93,7 @@ MenuItem.propTypes = {
     className: PropTypes.string,
     expanded: PropTypes.bool,
     onClick: PropTypes.func,
-    focusedRef: PropTypes.object,
+    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     onParentKeyPress: PropTypes.func
 };
 

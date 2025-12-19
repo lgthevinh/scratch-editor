@@ -60,10 +60,6 @@ export class MenuRefProvider extends React.Component {
         this.setState({openRefs: []});
     }
 
-    // printChain () {
-    //     console.log(this.state.openRefs);
-    // }
-
     render () {
         const value = {
             openRefs: this.state.openRefs,
@@ -73,7 +69,6 @@ export class MenuRefProvider extends React.Component {
             removeInner: this.removeInner,
             removeAll: this.removeAll,
             removeByRef: this.removeByRef
-            // printChain: this.printChain
         };
 
         return (

@@ -33,7 +33,7 @@ class SettingsMenu extends React.Component {
         this.state = {focusedIndex: -1};
         this.languageRef = React.createRef();
         this.themeRef = React.createRef();
-        // harcoded logic because of only two options
+        // hardcoded logic because of only two options
         this.itemRefs = [this.languageRef, this.themeRef];
     }
 
