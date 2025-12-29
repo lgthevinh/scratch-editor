@@ -11,7 +11,6 @@ import {DEFAULT_THEME, HIGH_CONTRAST_THEME, themeMap} from '../../lib/themes';
 import {persistTheme} from '../../lib/themes/themePersistance';
 import {openThemeMenu, closeThemeMenu} from '../../reducers/menus.js';
 import {setTheme} from '../../reducers/theme.js';
-import {MenuRefContext} from '../context-menu/menu-path-context.jsx';
 
 import styles from './settings-menu.css';
 
@@ -24,7 +23,7 @@ const ThemeMenuItem = props => {
     return (
         <MenuItem
             onClick={props.onClick}
-            focusedRef={props.focusedRef}
+            menuRef={props.menuRef}
             onParentKeyPress={props.onParentKeyPress}
         >
             <div className={styles.option}>
@@ -45,7 +44,7 @@ ThemeMenuItem.propTypes = {
     isSelected: PropTypes.bool,
     onClick: PropTypes.func,
     theme: PropTypes.string,
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     onParentKeyPress: PropTypes.func
 };
 
@@ -53,28 +52,20 @@ class ThemeMenu extends BaseMenu {
     constructor (props) {
         super(props);
         bindAll(this, [
-            'setRef',
-            'onSelectItem'
+            'setRef'
         ]);
 
         this.enabledThemes = [DEFAULT_THEME, HIGH_CONTRAST_THEME];
         this.itemRefs = this.enabledThemes.map(() => React.createRef());
     }
-
-    static contextType = MenuRefContext;
     
     setRef (component) {
         this.selectedRef = component;
     }
 
-    onSelectItem () {
-        this.props.onChangeTheme(this.enabledThemes[this.state.focusedIndex]);
-        this.context.clear();
-    }
-
     render () {
         const {
-            focusedRef,
+            menuRef,
             isRtl,
             onChangeTheme,
             theme
@@ -84,12 +75,12 @@ class ThemeMenu extends BaseMenu {
 
         return (
             <MenuItem
-                expanded={this.context.isOpenMenu(focusedRef)}
+                expanded={this.isExpanded()}
             >
                 <div
                     className={styles.option}
                     onClick={this.handleOnOpen}
-                    ref={focusedRef}
+                    ref={menuRef}
                     role="button"
                     aria-label="Theme Menu"
                     tabIndex={-1}
@@ -119,8 +110,8 @@ class ThemeMenu extends BaseMenu {
                             // eslint-disable-next-line react/jsx-no-bind
                             onClick={() => onChangeTheme(enabledTheme)}
                             theme={enabledTheme}
-                            focusedRef={this.itemRefs[index]}
-                            onParentKeyPress={this.handleKeyPress}
+                            menuRef={this.itemRefs[index]}
+                            onParentKeyPress={this.handleKeyPressOpenMenu}
                         />)
                     )}
                 </Submenu>
@@ -130,7 +121,7 @@ class ThemeMenu extends BaseMenu {
 }
 
 ThemeMenu.propTypes = {
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     isRtl: PropTypes.bool,
     onChangeTheme: PropTypes.func,
     onOpen: PropTypes.func,

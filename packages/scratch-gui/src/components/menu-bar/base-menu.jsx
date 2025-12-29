@@ -6,58 +6,63 @@ import PropTypes from 'prop-types';
 /* Subclasses must implement (some optionally):
 _______________________________________________
 render
-onSelectItem
 define this.itemRefs
 add onKeyDown={this.handleKeyPress}
-and onParentKeyPress={this.handleKeyPress} for MenuItem elements
+and onParentKeyPress={this.handleKeyPressSubmenu} for MenuItem elements
+
+and replace isOpenMenu-like props with this.isExpanded()
 
 They should also receive:
 ______________________
 onOpen,
 onClose,
-focusedRef,
+menuRef,
 depth
 */
 export class BaseMenu extends React.PureComponent {
     constructor (props) {
         super(props);
         bindAll(this, [
-            'onSelectItem',
             'handleKeyPress',
             'handleKeyPressOpenMenu',
             'handleMove',
             'handleOnOpen',
             'handleOnClose',
-            'setFocusedRef'
+            'refocusRef',
+            'isExpanded',
+            'isInnermostExpanded'
         ]);
         
         this.state = {focusedIndex: -1, depth: -1};
-        this.focusedRef = props.focusedRef || React.createRef();
+        this.menuRef = props.menuRef;
     }
 
     static contextType = MenuRefContext;
 
-    setFocusedRef (ref) {
-        this.focusedRef = ref;
-        if (ref && ref.current) ref.current.focus();
+    refocusRef (ref) {
+        if (ref && ref.current) {
+            ref.current.focus();
+        }
     }
 
     handleKeyPress (e) {
         if (this.props.depth === 1) {
             if (e.key === 'Tab') {
                 this.handleOnClose();
+                this.context.clear();
             }
         }
 
-        if (this.context.isTopMenu(this.props.focusedRef)) {
+        if (this.context.isTopMenu(this.menuRef)) {
             this.handleKeyPressOpenMenu(e);
-        } else if (!this.context.isOpenMenu(this.props.focusedRef) && (e.key === ' ' || e.key === 'ArrowRight')) {
+        } else if (!this.isExpanded() && (e.key === ' ' || e.key === 'ArrowRight')) {
             e.preventDefault();
             this.handleOnOpen();
         }
     }
 
     handleKeyPressOpenMenu (e) {
+        console.log("pressing");
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             this.handleMove(1);
@@ -66,9 +71,8 @@ export class BaseMenu extends React.PureComponent {
             e.preventDefault();
             this.handleMove(-1);
         }
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            this.onSelectItem();
+        if (e.key === 'Enter' && this.props.clearOnItemSelect) {
+            this.context.clear();
         }
         if (e.key === 'ArrowLeft' || e.key === 'Escape') {
             e.preventDefault();
@@ -77,45 +81,52 @@ export class BaseMenu extends React.PureComponent {
     }
 
     handleOnOpen () {
-        if (this.context.isOpenMenu(this.props.focusedRef)) return;
+        if (this.context.isOpenMenu(this.menuRef)) return;
 
         this.props.onOpen();
         this.setState({focusedIndex: 0}, () => {
-            if (this.itemRefs[0] && this.itemRefs[0].current) this.itemRefs[0].current.focus();
+            this.refocusRef(this.itemRefs[0]);
         });
 
-        this.context.push(this.props.focusedRef, this.props.depth);
+        this.context.push(this.menuRef, this.props.depth);
     }
 
     handleMove (direction) {
         const newIndex = (this.state.focusedIndex + direction + this.itemRefs.length) % this.itemRefs.length;
         this.setState({focusedIndex: newIndex}, () => {
-            this.setFocusedRef(this.itemRefs[newIndex]);
+            this.refocusRef(this.itemRefs[newIndex]);
         });
-    }
-
-    onSelectItem () {
-        // do nothing by default, change for items that don't expand
+        console.log(newIndex);
+        this.context.print();
     }
 
     handleOnClose () {
-        this.context.cut(this.props.focusedRef);
+        this.context.cut(this.menuRef);
         this.setState({focusedIndex: -1}, () => {
-            this.setFocusedRef(this.props.focusedRef);
+            this.refocusRef(this.menuRef);
         });
 
         this.props.onClose();
     }
 
+    isExpanded () {
+        return this.context.isOpenMenu(this.menuRef);
+    }
+
+    isInnermostExpanded () {
+        return this.context.isTopMenu(this.menuRef);
+    }
 }
 
 BaseMenu.propTypes = {
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     depth: PropTypes.number,
     onOpen: PropTypes.func,
-    onClose: PropTypes.func
+    onClose: PropTypes.func,
+    clearOnItemSelect: PropTypes.bool
 };
 
 BaseMenu.defaultProps = {
-    onClose: () => {}
+    onClose: () => {},
+    clearOnItemSelect: false
 };

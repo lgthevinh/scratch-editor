@@ -20,8 +20,6 @@ export class FileMenu extends BaseMenu {
         super(props);
 
         bindAll(this, ['handleOnClose', 'handleKeyPress', 'handleOnOpen']);
-        
-        this.state = {focusedIndex: -1};
 
         this.newProjectRef = React.createRef();
         this.saveRef = React.createRef();
@@ -72,13 +70,13 @@ export class FileMenu extends BaseMenu {
         return (
             <div
                 className={classNames(styles.menuBarItem, styles.hoverable, {
-                    [styles.active]: this.context.isTopMenu(this.props.focusedRef)
+                    [styles.active]: this.isExpanded()
                 })}
                 onClick={this.handleOnOpen}
                 aria-label="File Menu"
                 role="button"
                 tabIndex={0}
-                ref={this.props.focusedRef}
+                ref={this.props.menuRef}
                 onKeyDown={this.handleKeyPress}
             >
                 <img src={fileIcon} />
@@ -92,7 +90,7 @@ export class FileMenu extends BaseMenu {
                 <img src={dropdownCaret} />
                 <MenuBarMenu
                     className={classNames(styles.menuBarMenu)}
-                    open={this.context.isTopMenu(this.props.focusedRef)}
+                    open={this.isExpanded()}
                     place={this.props.isRtl ? 'left' : 'right'}
                     onRequestClose={this.handleOnClose}
                 >
@@ -100,8 +98,8 @@ export class FileMenu extends BaseMenu {
                         <MenuItem
                             isRtl={this.props.isRtl}
                             onClick={this.props.onClickNew}
-                            focusedRef={this.newProjectRef}
-                            onParentKeyPress={this.handleKeyPress}
+                            menuRef={this.newProjectRef}
+                            onParentKeyPress={this.handleKeyPressOpenMenu}
                         >
                             {newProjectMessage}
                         </MenuItem>
@@ -111,8 +109,8 @@ export class FileMenu extends BaseMenu {
                             {this.props.canSave && (
                                 <MenuItem
                                     onClick={this.props.onClickSave}
-                                    focusedRef={this.saveRef}
-                                    onParentKeyPress={this.handleKeyPress}
+                                    menuRef={this.saveRef}
+                                    onParentKeyPress={this.handleKeyPressOpenMenu}
                                 >
                                     {saveNowMessage}
                                 </MenuItem>
@@ -120,8 +118,8 @@ export class FileMenu extends BaseMenu {
                             {this.props.canCreateCopy && (
                                 <MenuItem
                                     onClick={this.props.onClickSaveAsCopy}
-                                    focusedRef={this.createRef}
-                                    onParentKeyPress={this.handleKeyPress}
+                                    menuRef={this.createRef}
+                                    onParentKeyPress={this.handleKeyPressOpenMenu}
                                 >
                                     {createCopyMessage}
                                 </MenuItem>
@@ -129,8 +127,8 @@ export class FileMenu extends BaseMenu {
                             {this.props.canRemix && (
                                 <MenuItem
                                     onClick={this.props.onClickRemix}
-                                    focusedRef={this.remixRef}
-                                    onParentKeyPress={this.handleKeyPress}
+                                    menuRef={this.remixRef}
+                                    onParentKeyPress={this.handleKeyPressOpenMenu}
                                 >
                                     {remixMessage}
                                 </MenuItem>
@@ -140,8 +138,8 @@ export class FileMenu extends BaseMenu {
                     <MenuSection>
                         <MenuItem
                             onClick={this.props.onStartSelectingFileUpload}
-                            focusedRef={this.loadFromComputerRef}
-                            onParentKeyPress={this.handleKeyPress}
+                            menuRef={this.loadFromComputerRef}
+                            onParentKeyPress={this.handleKeyPressOpenMenu}
                         >
                             {this.props.intl.formatMessage(sharedMessages.loadFromComputerTitle)}
                         </MenuItem>
@@ -149,8 +147,8 @@ export class FileMenu extends BaseMenu {
                             <MenuItem
                                 className={className}
                                 onClick={this.props.getSaveToComputerHandler(downloadProjectCallback)}
-                                focusedRef={this.saveToComputerRef}
-                                onParentKeyPress={this.handleKeyPress}
+                                menuRef={this.saveToComputerRef}
+                                onParentKeyPress={this.handleKeyPressOpenMenu}
                             >
                                 <FormattedMessage
                                     defaultMessage="Save to your computer"
@@ -167,7 +165,7 @@ export class FileMenu extends BaseMenu {
 }
 
 FileMenu.propTypes = {
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     intl: intlShape,
     isRtl: PropTypes.bool,
     canSave: PropTypes.bool,
@@ -179,3 +177,5 @@ FileMenu.propTypes = {
     onClickRemix: PropTypes.func,
     onClickNew: PropTypes.func
 };
+
+export default FileMenu;

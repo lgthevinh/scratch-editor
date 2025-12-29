@@ -11,7 +11,6 @@ import {MenuItem, Submenu} from '../menu/menu.jsx';
 import languageIcon from '../language-selector/language-icon.svg';
 import {closeLanguageMenu, languageMenuOpen, openLanguageMenu} from '../../reducers/menus.js';
 import {selectLocale} from '../../reducers/locales.js';
-import {MenuRefContext} from '../context-menu/menu-path-context.jsx';
 
 import styles from './settings-menu.css';
 
@@ -22,7 +21,6 @@ class LanguageMenu extends BaseMenu {
     constructor (props) {
         super(props);
         bindAll(this, [
-            'onSelectItem',
             'setRef',
             'handleMouseOver'
         ]);
@@ -37,40 +35,33 @@ class LanguageMenu extends BaseMenu {
         }
     }
 
-    static contextType = MenuRefContext;
-
     setRef (component) {
         this.selectedRef = component;
-    }
-
-    onSelectItem () {
-        this.props.onChangeLanguage(Object.keys(locales)[this.state.focusedIndex]);
-        this.context.clear();
     }
 
     handleMouseOver () {
         // If we are using hover rather than clicks for submenus, scroll the selected option into view
         if (!this.props.menuOpen && this.selectedRef) {
             this.selectedRef.scrollIntoView({block: 'center'});
-            this.setFocusedRef(this.selectedRef);
+            this.refocusRef(this.selectedRef);
         }
     }
 
     render () {
         const {
             currentLocale,
-            focusedRef,
+            menuRef,
             isRtl,
             onChangeLanguage
         } = this.props;
 
         return (
-            <MenuItem expanded={this.context.isOpenMenu(focusedRef)}>
+            <MenuItem expanded={this.isExpanded()}>
                 <div
                     className={styles.option}
                     onClick={this.handleOnOpen}
                     onMouseOver={this.handleMouseOver}
-                    ref={focusedRef}
+                    ref={menuRef}
                     aria-label="Language Menu"
                     role="button"
                     tabIndex={-1}
@@ -106,8 +97,10 @@ class LanguageMenu extends BaseMenu {
                                     className={styles.languageMenuItem}
                                     // eslint-disable-next-line react/jsx-no-bind
                                     onClick={() => onChangeLanguage(locale)}
-                                    focusedRef={this.itemRefs[index]}
-                                    onParentKeyPress={this.handleKeyPress}
+                                    menuRef={this.itemRefs[index]}
+                                    onParentKeyPress={this.handleKeyPressOpenMenu}
+                                    isSelected={isSelected}
+                                    // ariaRole="option"
                                 >
                                     <img
                                         className={classNames(styles.check, {
@@ -128,7 +121,7 @@ class LanguageMenu extends BaseMenu {
 
 LanguageMenu.propTypes = {
     currentLocale: PropTypes.string,
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     isRtl: PropTypes.bool,
     menuOpen: PropTypes.bool,
     onChangeLanguage: PropTypes.func,

@@ -8,7 +8,6 @@ import LanguageMenu from './language-menu.jsx';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import ThemeMenu from './theme-menu.jsx';
 import {MenuSection} from '../menu/menu.jsx';
-import {MenuRefContext} from '../context-menu/menu-path-context.jsx';
 
 import menuBarStyles from './menu-bar.css';
 import styles from './settings-menu.css';
@@ -22,8 +21,6 @@ class SettingsMenu extends BaseMenu {
         super(props);
 
         bindAll(this, []);
-        
-        this.state = {focusedIndex: -1};
 
         this.languageRef = React.createRef();
         this.themeRef = React.createRef();
@@ -31,26 +28,24 @@ class SettingsMenu extends BaseMenu {
         this.itemRefs = [this.languageRef, this.themeRef];
     }
 
-    static contextType = MenuRefContext;
     render () {
         const {
             canChangeLanguage,
             canChangeTheme,
-            isRtl,
-            settingsMenuOpen
+            isRtl
         } = this.props;
 
         return (<div
             className={classNames(menuBarStyles.menuBarItem, menuBarStyles.hoverable, menuBarStyles.themeMenu, {
-                [menuBarStyles.active]: settingsMenuOpen
+                [menuBarStyles.active]: this.isExpanded()
             })}
             role="button"
-            aria-expanded={this.context.isTopMenu(this.props.focusedRef)}
+            aria-expanded={this.isExpanded()}
             tabIndex={0}
             aria-label="Settings"
             onClick={this.handleOnOpen}
             onKeyDown={this.handleKeyPress}
-            ref={this.focusedRef}
+            ref={this.menuRef}
         >
             <img src={settingsIcon} />
             <span className={styles.dropdownLabel}>
@@ -63,17 +58,17 @@ class SettingsMenu extends BaseMenu {
             <img src={dropdownCaret} />
             <MenuBarMenu
                 className={menuBarStyles.menuBarMenu}
-                open={this.context.isOpenMenu(this.props.focusedRef)}
+                open={this.isExpanded()}
                 place={isRtl ? 'left' : 'right'}
-                onClose={this.handleOnClose}
+                onRequestClose={this.handleOnClose}
             >
                 <MenuSection>
                     {canChangeLanguage && <LanguageMenu
-                        focusedRef={this.languageRef}
+                        menuRef={this.languageRef}
                         depth={2}
                     />}
                     {canChangeTheme && <ThemeMenu
-                        focusedRef={this.themeRef}
+                        menuRef={this.themeRef}
                         depth={2}
                     />}
                 </MenuSection>
@@ -85,8 +80,7 @@ class SettingsMenu extends BaseMenu {
 SettingsMenu.propTypes = {
     canChangeLanguage: PropTypes.bool,
     canChangeTheme: PropTypes.bool,
-    isRtl: PropTypes.bool,
-    settingsMenuOpen: PropTypes.bool
+    isRtl: PropTypes.bool
 };
 
 export default SettingsMenu;

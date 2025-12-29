@@ -20,6 +20,7 @@ const MenuComponent = ({
             }
         )}
         ref={componentRef}
+        // role="listbox"
     >
         {children}
     </ul>
@@ -62,8 +63,9 @@ const MenuItem = ({
     children,
     className,
     expanded = false,
+    isSelected = false,
     onClick,
-    focusedRef,
+    menuRef,
     ariaLabel,
     ariaRole,
     onParentKeyPress
@@ -77,8 +79,9 @@ const MenuItem = ({
         )}
         onClick={onClick}
         tabIndex={-1}
-        ref={focusedRef}
+        ref={menuRef}
         aria-label={ariaLabel}
+        // aria-selected={ariaRole === 'option' ? isSelected : null}
         role={ariaRole}
         onKeyDown={onParentKeyPress}
     >
@@ -87,12 +90,13 @@ const MenuItem = ({
 );
 
 MenuItem.propTypes = {
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     ariaLabel: PropTypes.string,
     ariaRole: PropTypes.string,
     children: PropTypes.node,
     className: PropTypes.string,
     expanded: PropTypes.bool,
+    isSelected: PropTypes.bool,
     onClick: PropTypes.func,
     onParentKeyPress: PropTypes.func
 };

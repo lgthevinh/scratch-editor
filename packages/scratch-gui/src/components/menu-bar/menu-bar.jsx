@@ -19,15 +19,16 @@ import Divider from '../divider/divider.jsx';
 import SaveStatus from './save-status.jsx';
 import ProjectWatcher from '../../containers/project-watcher.jsx';
 import MenuBarMenu from './menu-bar-menu.jsx';
-import {MenuItem, MenuSection} from '../menu/menu.jsx';
+import {MenuItem} from '../menu/menu.jsx';
 import ProjectTitleInput from './project-title-input.jsx';
 import AuthorInfo from './author-info.jsx';
 import AccountNav from '../../components/menu-bar/account-nav.jsx';
 import LoginDropdown from './login-dropdown.jsx';
 import MenuBarHOC from '../../containers/menu-bar-hoc.jsx';
 import SettingsMenu from './settings-menu.jsx';
-import {FileMenu} from './file-menu.jsx';
-import {EditMenu} from './edit-menu.jsx';
+import FileMenu from './file-menu.jsx';
+import EditMenu from './edit-menu.jsx';
+import ModeMenu from './mode-menu.jsx';
 
 import {openTipsLibrary, openDebugModal} from '../../reducers/modals';
 import {setPlayer} from '../../reducers/mode';
@@ -198,6 +199,7 @@ class MenuBar extends React.Component {
         this.settingsRef = React.createRef();
         this.fileRef = React.createRef();
         this.editRef = React.createRef();
+        this.modeRef = React.createRef();
     }
     componentDidMount () {
         document.addEventListener('keydown', this.handleKeyPress);
@@ -441,17 +443,16 @@ class MenuBar extends React.Component {
                             />
                         </div>
                         {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
-                            focusedRef={this.settingsRef}
+                            menuRef={this.settingsRef}
                             depth={1}
                             canChangeLanguage={this.props.canChangeLanguage}
                             canChangeTheme={this.props.canChangeTheme}
                             isRtl={this.props.isRtl}
                             onClose={this.props.onRequestCloseSettings}
                             onOpen={this.props.onClickSettings}
-                            settingsMenuOpen={this.props.settingsMenuOpen}
                         />)}
                         {(this.props.canManageFiles) && (<FileMenu
-                            focusedRef={this.fileRef}
+                            menuRef={this.fileRef}
                             depth={1}
                             onOpen={this.props.onClickFile}
                             onClose={this.props.onRequestCloseFile}
@@ -468,7 +469,7 @@ class MenuBar extends React.Component {
                             isRtl={this.props.isRtl}
                         />)}
                         <EditMenu
-                            focusedRef={this.editRef}
+                            menuRef={this.editRef}
                             depth={1}
                             onOpen={this.props.onClickEdit}
                             onClose={this.props.onRequestCloseEdit}
@@ -476,56 +477,16 @@ class MenuBar extends React.Component {
                             onRestoreOption={this.handleRestoreOption}
                             restoreOptionMessage={this.restoreOptionMessage}
                         />
-                        {this.props.isTotallyNormal && (
-                            <div
-                                className={classNames(styles.menuBarItem, styles.hoverable, {
-                                    [styles.active]: this.props.modeMenuOpen
-                                })}
-                                onClick={this.props.onClickMode}
-                                role="button"
-                                aria-label="Mode"
-                                tabIndex={0}
-                            >
-                                <div className={classNames(styles.editMenu)}>
-                                    <FormattedMessage
-                                        defaultMessage="Mode"
-                                        description="Mode menu item in the menu bar"
-                                        id="gui.menuBar.modeMenu"
-                                    />
-                                </div>
-                                <MenuBarMenu
-                                    className={classNames(styles.menuBarMenu)}
-                                    open={this.props.modeMenuOpen}
-                                    place={this.props.isRtl ? 'left' : 'right'}
-                                    onRequestClose={this.props.onRequestCloseMode}
-                                >
-                                    <MenuSection>
-                                        <MenuItem onClick={this.handleSetMode('NOW')}>
-                                            <span className={classNames({[styles.inactive]: !this.props.modeNow})}>
-                                                {'✓'}
-                                            </span>
-                                            {' '}
-                                            <FormattedMessage
-                                                defaultMessage="Normal mode"
-                                                description="April fools: resets editor to not have any pranks"
-                                                id="gui.menuBar.normalMode"
-                                            />
-                                        </MenuItem>
-                                        <MenuItem onClick={this.handleSetMode('2020')}>
-                                            <span className={classNames({[styles.inactive]: !this.props.mode2020})}>
-                                                {'✓'}
-                                            </span>
-                                            {' '}
-                                            <FormattedMessage
-                                                defaultMessage="Caturday mode"
-                                                description="April fools: Cat blocks mode"
-                                                id="gui.menuBar.caturdayMode"
-                                            />
-                                        </MenuItem>
-                                    </MenuSection>
-                                </MenuBarMenu>
-                            </div>
-                        )}
+                        {this.props.isTotallyNormal && (<ModeMenu
+                            menuRef={this.modeRef}
+                            depth={1}
+                            onOpen={this.props.onClickMode}
+                            onClose={this.props.onRequestCloseMode}
+                            onSetMode={this.handleSetMode}
+                            modeNow={this.props.modeNow}
+                            mode2020={this.props.mode2020}
+                            isRtl={this.props.isRtl}
+                        />)}
                     </div>
                     {this.props.canEditTitle ? (
                         <div className={classNames(styles.menuBarItem, styles.growable)}>

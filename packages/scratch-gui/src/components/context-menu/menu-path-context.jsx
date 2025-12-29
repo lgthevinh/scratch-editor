@@ -18,7 +18,8 @@ export class MenuRefProvider extends React.Component {
             'cut',
             'clear',
             'isTopMenu',
-            'isOpenMenu'
+            'isOpenMenu',
+            'print'
         ]);
     }
 
@@ -64,6 +65,10 @@ export class MenuRefProvider extends React.Component {
         return this.state.refStack.includes(ref);
     }
 
+    print () {
+        console.log(this.state.refStack);
+    }
+
     render () {
         const value = {
             refStack: this.state.refStack,
@@ -72,7 +77,8 @@ export class MenuRefProvider extends React.Component {
             cut: this.cut,
             clear: this.clear,
             isTopMenu: this.isTopMenu,
-            isOpenMenu: this.isOpenMenu
+            isOpenMenu: this.isOpenMenu,
+            print: this.print
         };
 
         return (

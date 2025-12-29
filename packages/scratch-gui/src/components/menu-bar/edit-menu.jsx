@@ -17,9 +17,7 @@ export class EditMenu extends BaseMenu {
     constructor (props) {
         super(props);
 
-        bindAll(this, ['handleOnClose', 'handleKeyPress', 'handleOnOpen']);
-        
-        this.state = {focusedIndex: -1};
+        bindAll(this);
 
         this.restoreRef = React.createRef();
         this.turboRef = React.createRef();
@@ -34,7 +32,7 @@ export class EditMenu extends BaseMenu {
         return (
             <div
                 className={classNames(styles.menuBarItem, styles.hoverable, {
-                    [styles.active]: this.context.isOpenMenu(this.props.focusedRef)
+                    [styles.active]: this.isExpanded()
                 })}
                 onClick={this.handleOnOpen}
                 role="button"
@@ -53,7 +51,7 @@ export class EditMenu extends BaseMenu {
                 <img src={dropdownCaret} />
                 <MenuBarMenu
                     className={classNames(styles.menuBarMenu)}
-                    open={this.context.isOpenMenu(this.props.focusedRef)}
+                    open={this.isExpanded()}
                     place={this.props.isRtl ? 'left' : 'right'}
                     onRequestClose={this.handleOnClose}
                 >
@@ -61,8 +59,8 @@ export class EditMenu extends BaseMenu {
                         <MenuItem
                             className={classNames({[styles.disabled]: !restorable})}
                             onClick={this.props.onRestoreOption(handleRestore)}
-                            focusedRef={this.restoreRef}
-                            onParentKeyPress={this.handleKeyPress}
+                            menuRef={this.restoreRef}
+                            onParentKeyPress={this.handleKeyPressOpenMenu}
                         >
                             {this.props.restoreOptionMessage(deletedItem)}
                         </MenuItem>
@@ -71,8 +69,8 @@ export class EditMenu extends BaseMenu {
                         <TurboMode>{(toggleTurboMode, {turboMode}) => (
                             <MenuItem
                                 onClick={toggleTurboMode}
-                                focusedRef={this.turboRef}
-                                onParentKeyPress={this.handleKeyPress}
+                                menuRef={this.turboRef}
+                                onParentKeyPress={this.handleKeyPressOpenMenu}
                             >
                                 {turboMode ? (
                                     <FormattedMessage
@@ -97,8 +95,10 @@ export class EditMenu extends BaseMenu {
 }
 
 EditMenu.propTypes = {
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     isRtl: PropTypes.bool,
     restoreOptionMessage: PropTypes.func,
     onRestoreOption: PropTypes.func
 };
+
+export default EditMenu;
