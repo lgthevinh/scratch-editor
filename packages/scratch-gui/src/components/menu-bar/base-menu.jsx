@@ -61,7 +61,7 @@ export class BaseMenu extends React.PureComponent {
 
         if (this.context.isTopMenu(this.menuRef)) {
             this.handleKeyPressOpenMenu(e);
-        } else if (!this.isExpanded() && (e.key === ' ' || e.key === 'ArrowRight')) {
+        } else if (!this.isExpanded() && (e.key === ' ' || (e.key === 'ArrowRight' && this.props.depth !== 1))) {
             e.preventDefault();
             this.handleOnOpen();
         }
