@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React, {useMemo} from 'react';
+import React from 'react';
 import {FormattedMessage} from 'react-intl';
 import {connect} from 'react-redux';
 
@@ -27,15 +27,18 @@ import {colorModeMenuOpen, openColorModeMenu, openThemeMenu} from '../../reducer
 
 const enabledColorModes = [DEFAULT_MODE, HIGH_CONTRAST_MODE];
 
-
 class SettingsMenu extends BaseMenu {
     constructor (props) {
         super(props);
 
         this.languageRef = React.createRef();
-        this.preferenceRef = React.createRef();
-        // hardcoded logic because of only two options
-        this.itemRefs = [this.languageRef, this.preferenceRef];
+        this.themeRef = React.createRef();
+        this.colorRef = React.createRef();
+        this.itemRefs = [
+            ...(this.props.canChangeLanguage ? [this.languageRef] : []),
+            ...(this.props.canChangeTheme && this.props.availableThemesLength > 1 ? [this.themeRef] : []),
+            ...(this.props.canChangeColorMode ? [this.colorRef] : [])
+        ];
     }
 
     render () {
@@ -45,8 +48,6 @@ class SettingsMenu extends BaseMenu {
             canChangeTheme,
             hasActiveMembership,
             isRtl,
-            isColorModeMenuOpen,
-            isThemeMenuOpen,
             activeColorMode,
             onChangeColorMode,
             onRequestOpenColorMode,
@@ -54,7 +55,6 @@ class SettingsMenu extends BaseMenu {
             activeTheme,
             onChangeTheme
         } = this.props;
-
 
         const enabledColorModesMap = Object.keys(colorModeMap).reduce((acc, colorMode) => {
             if (enabledColorModes.includes(colorMode)) {
@@ -107,9 +107,8 @@ class SettingsMenu extends BaseMenu {
                         // TODO: Consider always showing the theme menu, even if there is a single available theme
                         availableThemesLength > 1 &&
                         <PreferenceMenu
-                            menuRef={this.preferenceRef}
+                            menuRef={this.themeRef}
                             depth={2}
-                            open={isThemeMenuOpen}
                             itemsMap={availableThemesMap}
                             onChange={onChangeTheme}
                             defaultMenuIconSrc={themeIcon}
@@ -120,11 +119,11 @@ class SettingsMenu extends BaseMenu {
                             }}
                             selectedItemKey={activeTheme}
                             isRtl={isRtl}
-                            onRequestCloseSettings={this.handleOnClose}
-                            onRequestOpen={onRequestOpenTheme}
+                            onOpen={onRequestOpenTheme}
                         />}
                     {canChangeColorMode && <PreferenceMenu
-                        open={isColorModeMenuOpen}
+                        menuRef={this.colorRef}
+                        depth={2}
                         itemsMap={enabledColorModesMap}
                         onChange={onChangeColorMode}
                         submenuLabel={{
@@ -134,8 +133,7 @@ class SettingsMenu extends BaseMenu {
                         }}
                         selectedItemKey={activeColorMode}
                         isRtl={isRtl}
-                        onRequestCloseSettings={this.handleOnClose}
-                        onRequestOpen={onRequestOpenColorMode}
+                        onOpen={onRequestOpenColorMode}
                     />}
                 </MenuSection>
             </MenuBarMenu>
@@ -172,12 +170,12 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     },
     onChangeColorMode: colorMode => {
         dispatch(setColorMode(colorMode));
-        ownProps.onRequestClose();
+        ownProps.onClose();
         persistColorMode(colorMode);
     },
     onChangeTheme: theme => {
         dispatch(setTheme(theme));
-        ownProps.onRequestClose();
+        ownProps.onClose();
         persistTheme(theme);
     }
 });

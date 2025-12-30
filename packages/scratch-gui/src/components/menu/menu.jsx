@@ -81,8 +81,8 @@ const MenuItem = ({
         tabIndex={-1}
         ref={menuRef}
         aria-label={ariaLabel}
-        aria-selected={isSelected ?? null}
-        aria-disabled={isDisabled ?? null}
+        aria-selected={isSelected}
+        aria-disabled={isDisabled}
         role={ariaRole}
         onKeyDown={onParentKeyPress}
     >

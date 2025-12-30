@@ -8,7 +8,7 @@ _______________________________________________
 render
 define this.itemRefs
 add onKeyDown={this.handleKeyPress}
-and onParentKeyPress={this.handleKeyPressSubmenu} for MenuItem elements
+and onParentKeyPress={this.handleKeyPressOpenMenu} for MenuItem elements
 
 and replace isOpenMenu-like props with this.isExpanded() checks
 
