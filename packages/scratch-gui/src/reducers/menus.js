@@ -3,14 +3,7 @@ const CLOSE_MENU = 'scratch-gui/menus/CLOSE_MENU';
 
 const MENU_ABOUT = 'aboutMenu';
 const MENU_ACCOUNT = 'accountMenu';
-const MENU_EDIT = 'editMenu';
-const MENU_FILE = 'fileMenu';
-const MENU_LANGUAGE = 'languageMenu';
 const MENU_LOGIN = 'loginMenu';
-const MENU_MODE = 'modeMenu';
-const MENU_SETTINGS = 'settingsMenu';
-const MENU_COLOR_MODE = 'colorModeMenu';
-const MENU_THEME = 'themeMenu';
 
 class Menu {
     constructor (id) {
@@ -49,16 +42,6 @@ class Menu {
 
 // Structure of nested menus, used for collapsing submenus logic.
 const rootMenu = new Menu('root')
-    .addChild(
-        new Menu(MENU_SETTINGS)
-            .addChild(new Menu(MENU_LANGUAGE))
-            .addChild(new Menu(MENU_COLOR_MODE))
-            .addChild(new Menu(MENU_THEME))
-    )
-    .addChild(new Menu(MENU_FILE))
-    .addChild(new Menu(MENU_EDIT))
-    .addChild(new Menu(MENU_MODE))
-    .addChild(new Menu(MENU_SETTINGS))
     .addChild(new Menu(MENU_LOGIN))
     .addChild(new Menu(MENU_ACCOUNT))
     .addChild(new Menu(MENU_ABOUT));
@@ -66,14 +49,7 @@ const rootMenu = new Menu('root')
 const initialState = {
     [MENU_ABOUT]: false,
     [MENU_ACCOUNT]: false,
-    [MENU_EDIT]: false,
-    [MENU_FILE]: false,
-    [MENU_LANGUAGE]: false,
-    [MENU_LOGIN]: false,
-    [MENU_MODE]: false,
-    [MENU_SETTINGS]: false,
-    [MENU_COLOR_MODE]: false,
-    [MENU_THEME]: false
+    [MENU_LOGIN]: false
 };
 
 const reducer = function (state, action) {
