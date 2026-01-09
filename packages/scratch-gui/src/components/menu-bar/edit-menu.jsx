@@ -16,7 +16,7 @@ import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
 
 const editMenu = defineMessage({
-    id: 'editMenu.aria.editMenu',
+    id: 'gui.aria.editMenu',
     defaultMessage: 'Edit menu',
     description: 'ARIA label for edit menu'
 });

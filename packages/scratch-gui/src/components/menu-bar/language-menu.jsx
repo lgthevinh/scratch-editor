@@ -18,7 +18,7 @@ import dropdownCaret from './dropdown-caret.svg';
 import propTypes from '../../lib/prop-types.js';
 
 const languageMenu = defineMessage({
-    id: 'languageMenu.aria.languageMenu',
+    id: 'gui.aria.languageMenu',
     defaultMessage: 'Language menu',
     description: 'ARIA label for language menu'
 });

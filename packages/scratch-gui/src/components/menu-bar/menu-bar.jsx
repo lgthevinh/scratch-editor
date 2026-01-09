@@ -44,10 +44,7 @@ import {
     autoUpdateProject,
     getIsUpdating,
     getIsShowingProject,
-    manualUpdateProject,
-    requestNewProject,
-    remixProject,
-    saveProjectAsCopy
+    requestNewProject
 } from '../../reducers/project-state';
 import {
     openAboutMenu,
@@ -89,17 +86,17 @@ const ariaMessages = defineMessages({
     tutorials: {
         id: 'gui.menuBar.tutorialsLibrary',
         defaultMessage: 'Tutorials',
-        description: 'accessibility text for the tutorials button'
+        description: 'ARIA text for the tutorials button'
     },
     debug: {
         id: 'gui.menuBar.debug',
         defaultMessage: 'Debug',
-        description: 'accessibility text for the debug button'
+        description: 'ARIA text for the debug button'
     },
-    goHome: {
-        id: 'gui.menuBar.goHome',
-        defaultMessage: 'Go home',
-        description: 'accessibility text for the go home button'
+    home: {
+        id: 'gui.menuBar.home',
+        defaultMessage: 'Home',
+        description: 'ARIA text for the home button'
     }
 });
 
@@ -406,7 +403,7 @@ class MenuBar extends React.Component {
                         <div className={classNames(styles.menuBarItem)}>
                             <img
                                 role="button"
-                                aria-label={this.props.intl.formatMessage(ariaMessages.goHome)}
+                                aria-label={this.props.intl.formatMessage(ariaMessages.home)}
                                 tabIndex={0}
                                 id="logo_img"
                                 alt="Scratch"

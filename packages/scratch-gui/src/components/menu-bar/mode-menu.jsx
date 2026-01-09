@@ -12,7 +12,7 @@ import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
 const modeMenu = defineMessage({
-    id: 'modeMenu.aria.modeMenu',
+    id: 'gui.aria.modeMenu',
     defaultMessage: 'Mode menu',
     description: 'ARIA label for mode menu'
 });

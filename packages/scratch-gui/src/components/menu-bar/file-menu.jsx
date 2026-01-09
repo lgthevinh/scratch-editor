@@ -23,7 +23,7 @@ import {
 } from '../../reducers/project-state';
 
 const fileMenu = defineMessage({
-    id: 'fileMenu.aria.fileMenu',
+    id: 'gui.aria.fileMenu',
     defaultMessage: 'File menu',
     description: 'ARIA label for file menu'
 });

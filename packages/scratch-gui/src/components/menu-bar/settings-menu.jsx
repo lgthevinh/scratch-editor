@@ -28,17 +28,17 @@ import propTypes from '../../lib/prop-types.js';
 
 const ariaMessages = defineMessages({
     settingsMenu: {
-        id: 'settingsMenu.aria.settingsMenu',
+        id: 'gui.aria.settingsMenu',
         defaultMessage: 'Settings menu',
         description: 'ARIA label for settings menu'
     },
     themeMenu: {
-        id: 'settingsMenu.aria.themeMenu',
+        id: 'gui.aria.themeMenu',
         defaultMessage: 'Theme menu',
         description: 'ARIA label for theme menu'
     },
     colorMenu: {
-        id: 'settingsMenu.aria.colorMenu',
+        id: 'gui.aria.colorMenu',
         defaultMessage: 'Color menu',
         description: 'ARIA label for color menu'
     }
