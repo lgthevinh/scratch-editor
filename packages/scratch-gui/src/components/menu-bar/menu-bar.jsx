@@ -177,9 +177,6 @@ class MenuBar extends React.Component {
         super(props);
         bindAll(this, [
             'handleClickNew',
-            'handleClickRemix',
-            'handleClickSave',
-            'handleClickSaveAsCopy',
             'handleClickSeeCommunity',
             'handleClickShare',
             'handleSetMode',
@@ -209,23 +206,9 @@ class MenuBar extends React.Component {
         const readyToReplaceProject = this.props.confirmReadyToReplaceProject(
             this.props.intl.formatMessage(sharedMessages.replaceProjectWarning)
         );
-        this.props.onRequestCloseFile();
         if (readyToReplaceProject) {
             this.props.onClickNew(this.props.canSave && this.props.canCreateNew);
         }
-        this.props.onRequestCloseFile();
-    }
-    handleClickRemix () {
-        this.props.onClickRemix();
-        this.props.onRequestCloseFile();
-    }
-    handleClickSave () {
-        this.props.onClickSave();
-        this.props.onRequestCloseFile();
-    }
-    handleClickSaveAsCopy () {
-        this.props.onClickSaveAsCopy();
-        this.props.onRequestCloseFile();
     }
     handleClickSeeCommunity (waitForUpdate) {
         if (this.props.shouldSaveBeforeTransition()) {
@@ -281,7 +264,6 @@ class MenuBar extends React.Component {
     handleRestoreOption (restoreFun) {
         return () => {
             restoreFun();
-            this.props.onRequestCloseEdit();
         };
     }
     handleKeyPress (event) {
@@ -298,7 +280,6 @@ class MenuBar extends React.Component {
     }
     getSaveToComputerHandler (downloadProjectCallback) {
         return () => {
-            this.props.onRequestCloseFile();
             downloadProjectCallback();
             if (this.props.onProjectTelemetryEvent) {
                 const metadata = collectMetadata(this.props.vm, this.props.projectTitle, this.props.locale);
@@ -453,9 +434,6 @@ class MenuBar extends React.Component {
                             menuRef={this.fileRef}
                             depth={1}
                             onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
-                            onClickSave={this.handleClickSave}
-                            onClickSaveAsCopy={this.handleClickSaveAsCopy}
-                            onClickRemix={this.handleClickRemix}
                             onClickNew={this.handleClickNew}
                             getSaveToComputerHandler={this.getSaveToComputerHandler}
                             canSave={this.props.canSave}
@@ -818,10 +796,7 @@ MenuBar.propTypes = {
     onProjectTelemetryEvent: PropTypes.func,
     onRequestCloseAbout: PropTypes.func,
     onRequestCloseAccount: PropTypes.func,
-    onRequestCloseEdit: PropTypes.func,
-    onRequestCloseFile: PropTypes.func,
     onRequestCloseLogin: PropTypes.func,
-    onRequestCloseMode: PropTypes.func,
     onRequestOpenAbout: PropTypes.func,
     onSeeCommunity: PropTypes.func,
     onSetTimeTravelMode: PropTypes.func,
@@ -902,14 +877,11 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     onOpenDebugModal: () => dispatch(openDebugModal()),
     onClickAccount: () => dispatch(openAccountMenu()),
     onRequestCloseAccount: () => dispatch(closeAccountMenu()),
+    onClickNew: needSave => dispatch(requestNewProject(needSave)),
     onClickLogin: ownProps.onClickLogin ?? (() => dispatch(openLoginMenu())),
     onRequestCloseLogin: () => dispatch(closeLoginMenu()),
     onRequestOpenAbout: () => dispatch(openAboutMenu()),
     onRequestCloseAbout: () => dispatch(closeAboutMenu()),
-    onClickNew: needSave => dispatch(requestNewProject(needSave)),
-    onClickRemix: () => dispatch(remixProject()),
-    onClickSave: () => dispatch(manualUpdateProject()),
-    onClickSaveAsCopy: () => dispatch(saveProjectAsCopy()),
     onSeeCommunity: ownProps.onSeeCommunity ?? (() => dispatch(setPlayer(true))),
     onSetTimeTravelMode: mode => dispatch(setTimeTravel(mode))
 });

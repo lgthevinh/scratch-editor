@@ -17,11 +17,7 @@ import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
 
 import {
-    autoUpdateProject,
-    getIsUpdating,
-    getIsShowingProject,
     manualUpdateProject,
-    requestNewProject,
     remixProject,
     saveProjectAsCopy
 } from '../../reducers/project-state';
@@ -98,6 +94,7 @@ const FileMenu = props => {
             id="gui.menuBar.new"
         />
     );
+
     return (
         <div
             className={classNames(styles.menuBarItem, styles.hoverable, {
@@ -203,9 +200,9 @@ FileMenu.propTypes = {
     canCreateCopy: PropTypes.bool.isRequired,
     canRemix: PropTypes.bool.isRequired,
     onStartSelectingFileUpload: PropTypes.func.isRequired,
-    onClickSave: PropTypes.func.isRequired,
-    onClickSaveAsCopy: PropTypes.func.isRequired,
-    onClickRemix: PropTypes.func.isRequired,
+    onClickSave: PropTypes.func,
+    onClickSaveAsCopy: PropTypes.func,
+    onClickRemix: PropTypes.func,
     onClickNew: PropTypes.func.isRequired,
     getSaveToComputerHandler: PropTypes.func.isRequired,
     remixMessage: PropTypes.node.isRequired
@@ -215,6 +212,13 @@ const mapStateToProps = state => ({
     isRtl: state.locales.isRtl
 });
 
+const mapDispatchToProps = dispatch => ({
+    onClickRemix: () => dispatch(remixProject()),
+    onClickSave: () => dispatch(manualUpdateProject()),
+    onClickSaveAsCopy: () => dispatch(saveProjectAsCopy())
+});
+
 export default connect(
-    mapStateToProps
+    mapStateToProps,
+    mapDispatchToProps
 )(FileMenu);
