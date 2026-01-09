@@ -34,7 +34,8 @@ const FileMenu = props => {
         onClickSaveAsCopy,
         onClickRemix,
         onStartSelectingFileUpload,
-        getSaveToComputerHandler
+        getSaveToComputerHandler,
+        remixMessage
     } = props;
 
     const newProjectRef = useRef(null);
@@ -77,13 +78,6 @@ const FileMenu = props => {
             defaultMessage="Save as a copy"
             description="Menu bar item for saving as a copy"
             id="gui.menuBar.saveAsCopy"
-        />
-    );
-    const remixMessage = (
-        <FormattedMessage
-            defaultMessage="Remix"
-            description="Menu bar item for remixing"
-            id="gui.menuBar.remix"
         />
     );
     const newProjectMessage = (
@@ -202,7 +196,8 @@ FileMenu.propTypes = {
     onClickSaveAsCopy: PropTypes.func,
     onClickRemix: PropTypes.func,
     onClickNew: PropTypes.func,
-    getSaveToComputerHandler: PropTypes.func
+    getSaveToComputerHandler: PropTypes.func,
+    remixMessage: PropTypes.node
 };
 
 export default FileMenu;

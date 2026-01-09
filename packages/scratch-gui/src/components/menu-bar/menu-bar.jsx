@@ -463,6 +463,7 @@ class MenuBar extends React.Component {
                             canRemix={this.props.canRemix}
                             intl={this.props.intl}
                             isRtl={this.props.isRtl}
+                            remixMessage={remixMessage}
                         />)}
                         <EditMenu
                             menuRef={this.editRef}
