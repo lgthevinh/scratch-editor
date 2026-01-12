@@ -423,7 +423,6 @@ class MenuBar extends React.Component {
                             canChangeColorMode={this.props.canChangeColorMode}
                             canChangeTheme={this.props.canChangeTheme}
                             hasActiveMembership={this.props.hasActiveMembership}
-                            intl={this.props.intl}
                             isRtl={this.props.isRtl}
                             onOpen={this.props.onClickSettings}
                         />)}
@@ -443,7 +442,6 @@ class MenuBar extends React.Component {
                         <EditMenu
                             menuRef={this.editRef}
                             depth={1}
-                            intl={this.props.intl}
                             isRtl={this.props.isRtl}
                             onRestoreOption={this.handleRestoreOption}
                             restoreOptionMessage={this.restoreOptionMessage}
@@ -454,7 +452,6 @@ class MenuBar extends React.Component {
                             onSetMode={this.handleSetMode}
                             modeNow={this.props.modeNow}
                             mode2020={this.props.mode2020}
-                            intl={this.props.intl}
                             isRtl={this.props.isRtl}
                         />)}
                     </div>
@@ -533,9 +530,8 @@ class MenuBar extends React.Component {
                     </div>
                     <Divider className={classNames(styles.divider)} />
                     <div className={styles.fileGroup}>
-                        <div
+                        <button
                             tabIndex={0}
-                            role="button"
                             aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
                             className={
                                 classNames(styles.menuBarItem, styles.noOffset, styles.hoverable, 'tutorials-button')
@@ -549,10 +545,9 @@ class MenuBar extends React.Component {
                             <span className={styles.tutorialsLabel}>
                                 <FormattedMessage {...ariaMessages.tutorials} />
                             </span>
-                        </div>
-                        <div
+                        </button>
+                        <button
                             tabIndex={0}
-                            role="button"
                             aria-label={this.props.intl.formatMessage(ariaMessages.debug)}
                             className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
                             onClick={this.props.onOpenDebugModal}
@@ -564,7 +559,7 @@ class MenuBar extends React.Component {
                             <span className={styles.debugLabel}>
                                 <FormattedMessage {...ariaMessages.debug} />
                             </span>
-                        </div>
+                        </button>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useRef, useMemo} from 'react';
-import {FormattedMessage, defineMessages} from 'react-intl';
+import {useIntl, FormattedMessage, defineMessages} from 'react-intl';
 import {connect} from 'react-redux';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
@@ -23,7 +23,6 @@ import dropdownCaret from './dropdown-caret.svg';
 import settingsIcon from './icon--settings.svg';
 
 import themeIcon from '../../lib/assets/icon--theme.svg';
-import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
 
 const ariaMessages = defineMessages({
@@ -53,13 +52,13 @@ const SettingsMenu = props => {
         canChangeColorMode,
         canChangeTheme,
         hasActiveMembership,
-        intl,
         isRtl,
         activeColorMode,
         onChangeColorMode,
         activeTheme,
         onChangeTheme
     } = props;
+    const intl = useIntl();
 
     const enabledColorModesMap = useMemo(() => Object.keys(colorModeMap).reduce((acc, colorMode) => {
         if (enabledColorModes.includes(colorMode)) {
@@ -96,11 +95,10 @@ const SettingsMenu = props => {
         depth: 1
     });
 
-    return (<div
+    return (<button
         className={classNames(menuBarStyles.menuBarItem, menuBarStyles.hoverable, menuBarStyles.themeMenu, {
             [menuBarStyles.active]: isExpanded()
         })}
-        role="button"
         aria-expanded={isExpanded()}
         tabIndex={0}
         aria-label={intl.formatMessage(ariaMessages.settingsMenu)}
@@ -125,7 +123,6 @@ const SettingsMenu = props => {
         >
             <MenuSection>
                 {canChangeLanguage && <LanguageMenu
-                    intl={intl}
                     menuRef={languageRef}
                     depth={2}
                 />}
@@ -163,12 +160,11 @@ const SettingsMenu = props => {
                 />}
             </MenuSection>
         </MenuBarMenu>
-    </div>);
+    </button>);
 };
 
 SettingsMenu.propTypes = {
     menuRef: propTypes.ref.isRequired,
-    intl: intlShape.isRequired,
     canChangeLanguage: PropTypes.bool.isRequired,
     canChangeColorMode: PropTypes.bool.isRequired,
     canChangeTheme: PropTypes.bool.isRequired,

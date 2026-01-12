@@ -5,14 +5,13 @@ import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
 
 import editIcon from './icon--edit.svg';
-import {FormattedMessage, defineMessage} from 'react-intl';
+import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 import dropdownCaret from './dropdown-caret.svg';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
 import TurboMode from '../../containers/turbo-mode.jsx';
-import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
 
 const editMenu = defineMessage({
@@ -24,11 +23,11 @@ const editMenu = defineMessage({
 const EditMenu = props => {
     const {
         menuRef,
-        intl,
         isRtl,
         onRestoreOption,
         restoreOptionMessage
     } = props;
+    const intl = useIntl();
 
     const restoreRef = useRef(null);
     const turboRef = useRef(null);
@@ -48,12 +47,11 @@ const EditMenu = props => {
     });
 
     return (
-        <div
+        <button
             className={classNames(styles.menuBarItem, styles.hoverable, {
                 [styles.active]: isExpanded()
             })}
             onClick={handleOnOpen}
-            role="button"
             aria-label={intl.formatMessage(editMenu)}
             aria-expanded={isExpanded()}
             tabIndex={0}
@@ -110,12 +108,11 @@ const EditMenu = props => {
                     )}</TurboMode>
                 </MenuSection>
             </MenuBarMenu>
-        </div>
+        </button>
     );
 };
 
 EditMenu.propTypes = {
-    intl: intlShape.isRequired,
     menuRef: propTypes.ref.isRequired,
     isRtl: PropTypes.bool,
     restoreOptionMessage: PropTypes.func.isRequired,

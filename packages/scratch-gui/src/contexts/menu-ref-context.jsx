@@ -3,10 +3,35 @@ import PropTypes from 'prop-types';
 
 export const MenuRefContext = React.createContext(null);
 
+/**
+ * This provider manages references to menu components in order to ensure
+ * sensible behavior for handling menu opening and closing logic
+ * @param {object} props
+ *   Provider props.
+ * @param {React.ReactNode} props.children
+ *   Child components that use the logic of the provider.
+ * @returns {React.ReactNode}
+ *   A MenuRefContext provider exposing:
+ *   - refStack: Array of currently opened menus one after the other
+ *   - openInnerMenu(ref, depth)
+ *     Adds menu at said depth, closing any inner menus that followed previously.
+ *   - closeMenuByRef(ref)
+ *     Closes the specified menu and all menus nested in it.
+ *   - closeInnerMenu()
+ *     Closes only the current innermost menu.
+ *   - closeAllMenus()
+ *     Closes all open menus.
+ *   - isOpenMenu(ref)
+ *     Returns if the given menu is currently open.
+ *   - isInnermostMenu(ref)
+ *     Returns if the given menu is currently the innermost one.
+ *   - outermostMenu
+ *     Returns ref of the outermost open menu.
+ */
 export const MenuRefProvider = ({children}) => {
     const [refStack, setRefStack] = useState([]);
 
-    const cut = useCallback(ref => {
+    const closeMenuByRef = useCallback(ref => {
         setRefStack(prev => {
             const index = prev.indexOf(ref);
             if (index === -1) return prev;
@@ -14,7 +39,7 @@ export const MenuRefProvider = ({children}) => {
         });
     }, []);
 
-    const push = useCallback((ref, depth) => {
+    const openInnerMenu = useCallback((ref, depth) => {
         setRefStack(prev => {
             let next = prev;
 
@@ -29,41 +54,40 @@ export const MenuRefProvider = ({children}) => {
             return [...next, ref];
         });
     }, []);
-
      
-    const pop = useCallback(() => {
+    const closeInnerMenu = useCallback(() => {
         setRefStack(prev => prev.slice(0, prev.length - 1));
     }, []);
 
-    const clear = useCallback(() => {
+    const closeAllMenus = useCallback(() => {
         setRefStack([]);
     }, []);
 
-    const bottomMenu = useMemo(() => (refStack.length > 0 ? refStack[0] : null), [refStack]);
+    const outermostMenu = useMemo(() => (refStack.length > 0 ? refStack[0] : null), [refStack]);
 
-    const isTopMenu = useCallback(ref => (refStack.length > 0 &&
+    const isInnermostMenu = useCallback(ref => (refStack.length > 0 &&
         refStack[refStack.length - 1] === ref), [refStack]);
 
     const isOpenMenu = useCallback(ref => (refStack.includes(ref)), [refStack]);
 
     const value = useMemo(() => ({
         refStack,
-        push,
-        pop,
-        cut,
-        clear,
-        isTopMenu,
+        openInnerMenu,
+        closeInnerMenu,
+        closeMenuByRef,
+        closeAllMenus,
+        isInnermostMenu,
         isOpenMenu,
-        bottomMenu
+        outermostMenu
     }), [
         refStack,
-        push,
-        pop,
-        cut,
-        clear,
-        isTopMenu,
+        openInnerMenu,
+        closeInnerMenu,
+        closeMenuByRef,
+        closeAllMenus,
+        isInnermostMenu,
         isOpenMenu,
-        bottomMenu
+        outermostMenu
     ]);
 
     return (

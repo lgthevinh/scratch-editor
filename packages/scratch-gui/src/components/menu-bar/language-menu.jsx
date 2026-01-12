@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useRef} from 'react';
-import {FormattedMessage, defineMessage} from 'react-intl';
+import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import locales from 'scratch-l10n';
 
@@ -12,7 +12,6 @@ import {selectLocale} from '../../reducers/locales.js';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import styles from './settings-menu.css';
-import intlShape from '../../lib/intlShape.js';
 
 import dropdownCaret from './dropdown-caret.svg';
 import propTypes from '../../lib/prop-types.js';
@@ -25,17 +24,14 @@ const languageMenu = defineMessage({
 
 const LanguageMenu = props => {
     const {
-        intl,
         currentLocale,
         menuRef,
         isRtl,
         onChangeLanguage
     } = props;
+    const intl = useIntl();
 
-    const itemRefs = React.useMemo(
-        () => Object.keys(locales).map(() => React.createRef()),
-        []
-    );
+    const itemRefs = React.useMemo(() => Object.keys(locales).map(() => React.createRef()), []);
     let selectedRef = useRef(null);
 
     const {
@@ -70,14 +66,13 @@ const LanguageMenu = props => {
 
     return (
         <MenuItem expanded={isExpanded()}>
-            <div
+            <button
                 className={styles.option}
                 onClick={handleOnOpen}
                 onMouseOver={handleMouseOver}
                 ref={menuRef}
                 aria-label={intl.formatMessage(languageMenu)}
                 aria-expanded={isExpanded()}
-                role="button"
                 tabIndex={-1}
                 onKeyDown={handleKeyPress}
             >
@@ -96,7 +91,7 @@ const LanguageMenu = props => {
                     className={styles.expandCaret}
                     src={dropdownCaret}
                 />
-            </div>
+            </button>
             <Submenu
                 className={styles.languageSubmenu}
                 place={isRtl ? 'left' : 'right'}
@@ -133,7 +128,6 @@ const LanguageMenu = props => {
 
 LanguageMenu.propTypes = {
     menuRef: propTypes.ref.isRequired,
-    intl: intlShape.isRequired,
     currentLocale: PropTypes.string,
     isRtl: PropTypes.bool,
     onChangeLanguage: PropTypes.func

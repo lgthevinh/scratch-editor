@@ -4,13 +4,18 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
 
-import {FormattedMessage, defineMessage} from 'react-intl';
+import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
-import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
+
+const EditorModes = {
+    NOW: 'NOW',
+    MODE_2020: '2020'
+};
+
 const modeMenu = defineMessage({
     id: 'gui.aria.modeMenu',
     defaultMessage: 'Mode menu',
@@ -19,13 +24,13 @@ const modeMenu = defineMessage({
 
 const ModeMenu = props => {
     const {
-        intl,
         isRtl,
         mode2020,
         modeNow,
         onSetMode,
         menuRef
     } = props;
+    const intl = useIntl();
 
     const normalRef = React.createRef();
     const caturdayRef = React.createRef();
@@ -48,13 +53,12 @@ const ModeMenu = props => {
     });
 
     return (
-        <div
+        <button
             className={classNames(styles.menuBarItem, styles.hoverable, {
                 [styles.active]: isExpanded()
             })}
             onClick={handleOnOpen}
             ref={menuRef}
-            role="button"
             aria-label={intl.formatMessage(modeMenu)}
             aria-expanded={isExpanded()}
             tabIndex={0}
@@ -75,7 +79,7 @@ const ModeMenu = props => {
             >
                 <MenuSection>
                     <MenuItem
-                        onClick={onSetMode('NOW')}
+                        onClick={onSetMode(EditorModes.NOW)}
                         itemRef={normalRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
@@ -90,7 +94,7 @@ const ModeMenu = props => {
                         />
                     </MenuItem>
                     <MenuItem
-                        onClick={onSetMode('2020')}
+                        onClick={onSetMode(EditorModes.MODE_2020)}
                         itemRef={caturdayRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
@@ -106,12 +110,11 @@ const ModeMenu = props => {
                     </MenuItem>
                 </MenuSection>
             </MenuBarMenu>
-        </div>
+        </button>
     );
 };
 
 ModeMenu.propTypes = {
-    intl: intlShape.isRequired,
     menuRef: propTypes.ref.isRequired,
     onSetMode: PropTypes.func.isRequired,
     modeNow: PropTypes.bool.isRequired,

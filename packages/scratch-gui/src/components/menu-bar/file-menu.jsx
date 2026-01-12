@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
 
 import fileIcon from './icon--file.svg';
-import {FormattedMessage, defineMessage} from 'react-intl';
+import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import SB3Downloader from '../../containers/sb3-downloader.jsx';
@@ -13,7 +13,6 @@ import dropdownCaret from './dropdown-caret.svg';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import sharedMessages from '../../lib/shared-messages';
-import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
 
 import {
@@ -30,7 +29,6 @@ const fileMenu = defineMessage({
 
 const FileMenu = props => {
     const {
-        intl,
         isRtl,
         menuRef,
         canSave,
@@ -44,6 +42,7 @@ const FileMenu = props => {
         getSaveToComputerHandler,
         remixMessage
     } = props;
+    const intl = useIntl();
 
     const newProjectRef = useRef(null);
     const saveRef = useRef(null);
@@ -96,14 +95,13 @@ const FileMenu = props => {
     );
 
     return (
-        <div
+        <button
             className={classNames(styles.menuBarItem, styles.hoverable, {
                 [styles.active]: isExpanded()
             })}
             onClick={handleOnOpen}
             aria-label={intl.formatMessage(fileMenu)}
             aria-expanded={isExpanded()}
-            role="button"
             tabIndex={0}
             ref={menuRef}
             onKeyDown={handleKeyPress}
@@ -188,13 +186,12 @@ const FileMenu = props => {
                     )}</SB3Downloader>
                 </MenuSection>
             </MenuBarMenu>
-        </div>
+        </button>
     );
 };
 
 FileMenu.propTypes = {
     menuRef: propTypes.ref.isRequired,
-    intl: intlShape.isRequired,
     isRtl: PropTypes.bool,
     canSave: PropTypes.bool.isRequired,
     canCreateCopy: PropTypes.bool.isRequired,

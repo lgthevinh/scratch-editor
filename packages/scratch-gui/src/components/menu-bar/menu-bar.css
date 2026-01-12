@@ -62,6 +62,12 @@
     align-items: center;
     white-space: nowrap;
     height: $menu-bar-height;
+
+    background: none;
+    border: none;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
 }
 
 .menu-bar-item.hoverable {

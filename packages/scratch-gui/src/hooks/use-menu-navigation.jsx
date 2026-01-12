@@ -1,6 +1,16 @@
 import {useCallback, useContext, useState, useEffect} from 'react';
 import {MenuRefContext} from '../contexts/menu-ref-context';
 
+const KEY = {
+    ARROW_UP: 'ArrowUp',
+    ARROW_DOWN: 'ArrowDown',
+    ARROW_LEFT: 'ArrowLeft',
+    ARROW_RIGHT: 'ArrowRight',
+    ESCAPE: 'Escape',
+    TAB: 'Tab',
+    SPACE: ' '
+};
+
 /**
  * Provides keyboard navigation and focus management logic for menu components.
  *
@@ -56,17 +66,20 @@ export default function useMenuNavigation ({
     const handleOnOpen = useCallback(() => {
         if (menuContext.isOpenMenu(menuRef)) return;
 
-        menuContext.push(menuRef, depth);
+        menuContext.openInnerMenu(menuRef, depth);
         setFocusedIndex(defaultIndexOnOpen);
     }, [menuContext, menuRef, depth]);
 
     const handleOnClose = useCallback(() => {
         setFocusedIndex(-1);
-        menuContext.cut(menuRef);
+        menuContext.closeMenuByRef(menuRef);
         refocusRef(menuRef);
     }, [menuContext, menuRef, refocusRef]);
 
     const handleMove = useCallback(direction => {
+        // Calculate the next focused menu item index based on the direction.
+        // Wraps around the list so that moving past the first or last item
+        // loops to the other end, preventing out-of-bounds errors.
         const nextIndex =
             (focusedIndex + direction + itemRefs.length) %
             itemRefs.length;
@@ -75,29 +88,29 @@ export default function useMenuNavigation ({
     }, [focusedIndex, itemRefs, refocusRef]);
 
     const handleKeyPressOpenMenu = useCallback(e => {
-        if (e.key === 'ArrowDown') {
+        if (e.key === KEY.ARROW_DOWN) {
             e.preventDefault();
             handleMove(1);
         }
-        if (e.key === 'ArrowUp') {
+        if (e.key === KEY.ARROW_UP) {
             e.preventDefault();
             handleMove(-1);
         }
-        if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+        if (e.key === KEY.ARROW_LEFT || e.key === KEY.ESCAPE) {
             e.preventDefault();
             handleOnClose();
         }
     }, [handleMove, handleOnClose, menuContext]);
 
     const handleKeyPress = useCallback(e => {
-        if (isExpanded() && depth === 1 && e.key === 'Tab') {
+        if (isExpanded() && depth === 1 && e.key === KEY.TAB) {
             handleOnClose();
-            menuContext.clear();
+            menuContext.closeAllMenus();
         }
 
-        if (menuContext.isTopMenu(menuRef)) {
+        if (menuContext.isInnermostMenu(menuRef)) {
             handleKeyPressOpenMenu(e);
-        } else if (!isExpanded() && (e.key === ' ' || (e.key === 'ArrowRight' && depth !== 1))) {
+        } else if (!isExpanded() && (e.key === KEY.SPACE || (e.key === KEY.ARROW_RIGHT && depth !== 1))) {
             e.preventDefault();
             handleOnOpen();
         }

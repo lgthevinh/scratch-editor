@@ -84,13 +84,12 @@ const PreferenceMenu = props => {
 
     return (
         <MenuItem expanded={isExpanded()}>
-            <div
+            <button
                 className={styles.option}
                 onClick={handleOnOpen}
                 ref={menuRef}
                 aria-expanded={isExpanded()}
                 aria-label={ariaLabel}
-                role="button"
                 tabIndex={-1}
                 onKeyDown={handleKeyPress}
             >
@@ -105,7 +104,7 @@ const PreferenceMenu = props => {
                     className={styles.expandCaret}
                     src={dropdownCaret}
                 />
-            </div>
+            </button>
             <Submenu place={isRtl ? 'left' : 'right'}>
                 {itemKeys.map((itemKey, index) => (
                     <PreferenceItem
