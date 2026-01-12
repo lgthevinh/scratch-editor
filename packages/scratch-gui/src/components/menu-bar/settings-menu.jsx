@@ -80,6 +80,8 @@ const SettingsMenu = props => {
     const colorRef = useRef(null);
     const itemRefs = [
         ...(canChangeLanguage ? [languageRef] : []),
+        // TODO: If we do change the condition below for displaying the element, we have
+        // to change it here also. Perhaps a variable for those conditions might be of use
         ...(canChangeTheme && availableThemesLength > 1 ? [themeRef] : []),
         ...(canChangeColorMode ? [colorRef] : [])
     ];
@@ -184,12 +186,10 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = (dispatch, ownProps) => ({
     onChangeColorMode: colorMode => {
         dispatch(setColorMode(colorMode));
-        ownProps.onClose();
         persistColorMode(colorMode);
     },
     onChangeTheme: theme => {
         dispatch(setTheme(theme));
-        ownProps.onClose();
         persistTheme(theme);
     }
 });
