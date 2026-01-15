@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import {connect} from 'react-redux';
 import {compose} from 'redux';
-import {defineMessages, FormattedMessage, injectIntl, useIntl} from 'react-intl';
+import {defineMessages, FormattedMessage, injectIntl} from 'react-intl';
 import intlShape from '../../lib/intlShape.js';
 import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
@@ -18,17 +18,15 @@ import {ComingSoonTooltip} from '../coming-soon/coming-soon.jsx';
 import Divider from '../divider/divider.jsx';
 import SaveStatus from './save-status.jsx';
 import ProjectWatcher from '../../containers/project-watcher.jsx';
-import MenuBarMenu from './menu-bar-menu.jsx';
-import {MenuItem} from '../menu/menu.jsx';
 import ProjectTitleInput from './project-title-input.jsx';
 import AuthorInfo from './author-info.jsx';
-import AccountNav from '../../components/menu-bar/account-nav.jsx';
 import LoginDropdown from './login-dropdown.jsx';
 import MenuBarHOC from '../../containers/menu-bar-hoc.jsx';
 import SettingsMenu from './settings-menu.jsx';
 import FileMenu from './file-menu.jsx';
 import EditMenu from './edit-menu.jsx';
 import ModeMenu from './mode-menu.jsx';
+import AboutMenu from './about-menu.jsx';
 
 import {openTipsLibrary, openDebugModal} from '../../reducers/modals';
 import {setPlayer} from '../../reducers/mode';
@@ -47,12 +45,6 @@ import {
     requestNewProject
 } from '../../reducers/project-state';
 import {
-    openAboutMenu,
-    closeAboutMenu,
-    aboutMenuOpen,
-    openAccountMenu,
-    closeAccountMenu,
-    accountMenuOpen,
     openLoginMenu,
     closeLoginMenu,
     loginMenuOpen
@@ -68,7 +60,6 @@ import mystuffIcon from './icon--mystuff.png';
 import profileIcon from './icon--profile.png';
 import remixIcon from './icon--remix.svg';
 import dropdownCaret from './dropdown-caret.svg';
-import aboutIcon from './icon--about.svg';
 import debugIcon from '../debug-modal/icons/icon--debug.svg';
 
 import scratchLogo from './scratch-logo.svg';
@@ -81,6 +72,7 @@ import oldtimeyLogo from './oldtimey-logo.svg';
 import sharedMessages from '../../lib/shared-messages';
 
 import {AccountMenuOptionsPropTypes} from '../../lib/account-menu-options';
+import AccountMenu from './account-menu.jsx';
 
 const ariaMessages = defineMessages({
     tutorials: {
@@ -97,17 +89,12 @@ const ariaMessages = defineMessages({
         id: 'gui.menuBar.home',
         defaultMessage: 'Home',
         description: 'ARIA text for the home button'
-    },
-    about: {
-        id: 'gui.menuBar.about',
-        defaultMessage: 'About',
-        description: 'ARIA text for the about button'
     }
 });
 
 const getScratchLogo = platform => (platform === PLATFORM.ANDROID ? scratchLogoAndroid : scratchLogo);
 
-const MenuBarItemTooltip = ({
+export const MenuBarItemTooltip = ({
     children,
     className,
     enable,
@@ -132,7 +119,6 @@ const MenuBarItemTooltip = ({
         </ComingSoonTooltip>
     );
 };
-
 
 MenuBarItemTooltip.propTypes = {
     children: PropTypes.node,
@@ -161,22 +147,6 @@ MenuItemTooltip.propTypes = {
     isRtl: PropTypes.bool
 };
 
-const AboutButton = props => {
-    const intl = useIntl();
-
-    return (<Button
-        className={classNames(styles.menuBarItem, styles.hoverable)}
-        iconClassName={styles.aboutIcon}
-        iconSrc={aboutIcon}
-        onClick={props.onClick}
-        aria-label={intl.formatMessage(ariaMessages.about)}
-    />);
-};
-
-AboutButton.propTypes = {
-    onClick: PropTypes.func.isRequired
-};
-
 class MenuBar extends React.Component {
     constructor (props) {
         super(props);
@@ -195,6 +165,8 @@ class MenuBar extends React.Component {
         this.fileRef = React.createRef();
         this.editRef = React.createRef();
         this.modeRef = React.createRef();
+        this.accountRef = React.createRef();
+        this.aboutRef = React.createRef();
     }
     componentDidMount () {
         document.addEventListener('keydown', this.handleKeyPress);
@@ -321,56 +293,6 @@ class MenuBar extends React.Component {
         }
         }
     }
-    buildAboutMenu (onClickAbout) {
-        if (!onClickAbout) {
-            // hide the button
-            return null;
-        }
-        if (typeof onClickAbout === 'function') {
-            // make a button which calls a function
-            return <AboutButton onClick={onClickAbout} />;
-        }
-        // assume it's an array of objects
-        // each item must have a 'title' FormattedMessage and a 'handleClick' function
-        // generate a menu with items for each object in the array
-        return (
-            <div
-                className={classNames(styles.menuBarItem, styles.hoverable, {
-                    [styles.active]: this.props.aboutMenuOpen
-                })}
-                onClick={this.props.onRequestOpenAbout}
-            >
-                <img
-                    className={styles.aboutIcon}
-                    src={aboutIcon}
-                />
-                <MenuBarMenu
-                    className={classNames(styles.menuBarMenu)}
-                    open={this.props.aboutMenuOpen}
-                    place={this.props.isRtl ? 'right' : 'left'}
-                    onRequestClose={this.props.onRequestCloseAbout}
-                >
-                    {
-                        onClickAbout.map(itemProps => (
-                            <MenuItem
-                                key={itemProps.title}
-                                isRtl={this.props.isRtl}
-                                onClick={this.wrapAboutMenuCallback(itemProps.onClick)}
-                            >
-                                {itemProps.title}
-                            </MenuItem>
-                        ))
-                    }
-                </MenuBarMenu>
-            </div>
-        );
-    }
-    wrapAboutMenuCallback (callback) {
-        return () => {
-            callback();
-            this.props.onRequestCloseAbout();
-        };
-    }
     render () {
         const remixMessage = (
             <FormattedMessage
@@ -392,8 +314,6 @@ class MenuBar extends React.Component {
                 {remixMessage}
             </Button>
         );
-        // Show the About button only if we have a handler for it (like in the desktop app)
-        const aboutButton = this.buildAboutMenu(this.props.onClickAbout);
 
         const menuOpts = this.props.accountMenuOptions;
 
@@ -433,13 +353,15 @@ class MenuBar extends React.Component {
                             canChangeTheme={this.props.canChangeTheme}
                             hasActiveMembership={this.props.hasActiveMembership}
                             isRtl={this.props.isRtl}
-                            onOpen={this.props.onClickSettings}
                         />)}
                         {(this.props.canManageFiles) && (<FileMenu
                             menuRef={this.fileRef}
                             depth={1}
                             onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
                             onClickNew={this.handleClickNew}
+                            onClickRemix={this.props.onClickRemix}
+                            onClickSave={this.props.onClickSave}
+                            onClickSaveAsCopy={this.props.onClickSaveAsCopy}
                             getSaveToComputerHandler={this.getSaveToComputerHandler}
                             canSave={this.props.canSave}
                             canCreateCopy={this.props.canCreateCopy}
@@ -602,31 +524,13 @@ class MenuBar extends React.Component {
                                     </a>
                                 ) : null}
 
-                                <AccountNav
-                                    className={classNames(
-                                        styles.menuBarItem,
-                                        styles.hoverable,
-                                        {[styles.active]: this.props.accountMenuOpen}
-                                    )}
-
-                                    isOpen={this.props.accountMenuOpen}
-                                    isRtl={this.props.isRtl}
-
-                                    menuBarMenuClassName={classNames(styles.menuBarMenu)}
-
-                                    onClick={this.props.onClickAccount}
-                                    onClose={this.props.onRequestCloseAccount}
-                                    onLogOut={menuOpts.canLogout ? this.props.onLogOut : null}
-
+                                <AccountMenu
+                                    menuRef={this.accountRef}
+                                    menuOpts={menuOpts}
                                     username={this.props.username}
+                                    isRtl={this.props.isRtl}
+                                    onLogOut={this.props.onLogOut}
                                     avatarBadge={this.props.avatarBadge}
-
-                                    avatarUrl={menuOpts.avatarUrl}
-                                    myStuffUrl={menuOpts.myStuffUrl}
-                                    profileUrl={menuOpts.profileUrl}
-                                    myClassesUrl={menuOpts.myClassesUrl}
-                                    myClassUrl={menuOpts.myClassUrl}
-                                    accountSettingsUrl={menuOpts.accountSettingsUrl}
                                 />
                             </React.Fragment>
                         ) : (
@@ -634,7 +538,7 @@ class MenuBar extends React.Component {
                             // ********* so they can choose to log in
                             <React.Fragment>
                                 {menuOpts.canRegister ? (
-                                    <div
+                                    <button
                                         className={classNames(
                                             styles.menuBarItem,
                                             styles.hoverable
@@ -647,11 +551,11 @@ class MenuBar extends React.Component {
                                             description="Link for creating a Scratch account"
                                             id="gui.menuBar.joinScratch"
                                         />
-                                    </div>
+                                    </button>
                                 ) : null}
 
                                 {menuOpts.canLogin ? (
-                                    <div
+                                    <button
                                         className={classNames(
                                             styles.menuBarItem,
                                             styles.hoverable
@@ -672,7 +576,7 @@ class MenuBar extends React.Component {
                                             renderLogin={this.props.renderLogin}
                                             onClose={this.props.onRequestCloseLogin}
                                         />
-                                    </div>
+                                    </button>
                                 ) : null}
                             </React.Fragment>
                         )
@@ -725,14 +629,19 @@ class MenuBar extends React.Component {
                     )}
                 </div>
 
-                {aboutButton}
+                {this.props.onClickAbout && (
+                    <AboutMenu
+                        menuRef={this.aboutRef}
+                        onClick={this.props.onClickAbout}
+                        isRtl={this.props.isRtl}
+                    />
+                )}
             </Box>
         );
     }
 }
 
 MenuBar.propTypes = {
-    aboutMenuOpen: PropTypes.bool,
     accountMenuOpen: PropTypes.bool,
     ariaLabel: PropTypes.string,
     ariaRole: PropTypes.string,
@@ -779,9 +688,6 @@ MenuBar.propTypes = {
             })
         )
     ]),
-    onClickAccount: PropTypes.func,
-    onClickEdit: PropTypes.func,
-    onClickFile: PropTypes.func,
     onClickLogin: PropTypes.func,
     onClickLogo: PropTypes.func,
     onClickMode: PropTypes.func,
@@ -789,16 +695,12 @@ MenuBar.propTypes = {
     onClickRemix: PropTypes.func,
     onClickSave: PropTypes.func,
     onClickSaveAsCopy: PropTypes.func,
-    onClickSettings: PropTypes.func,
     onLogOut: PropTypes.func,
     onOpenRegistration: PropTypes.func,
     onOpenTipLibrary: PropTypes.func,
     onOpenDebugModal: PropTypes.func,
     onProjectTelemetryEvent: PropTypes.func,
-    onRequestCloseAbout: PropTypes.func,
-    onRequestCloseAccount: PropTypes.func,
     onRequestCloseLogin: PropTypes.func,
-    onRequestOpenAbout: PropTypes.func,
     onSeeCommunity: PropTypes.func,
     onSetTimeTravelMode: PropTypes.func,
     onShare: PropTypes.func,
@@ -830,8 +732,6 @@ const mapStateToProps = (state, ownProps) => {
     const sessionExists = state.session && typeof state.session.session !== 'undefined';
 
     return {
-        aboutMenuOpen: aboutMenuOpen(state),
-        accountMenuOpen: accountMenuOpen(state),
         currentLocale: state.locales.locale,
         isRtl: state.locales.isRtl,
         isUpdating: getIsUpdating(loadingState),
@@ -876,13 +776,9 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     autoUpdateProject: () => dispatch(autoUpdateProject()),
     onOpenTipLibrary: () => dispatch(openTipsLibrary()),
     onOpenDebugModal: () => dispatch(openDebugModal()),
-    onClickAccount: () => dispatch(openAccountMenu()),
-    onRequestCloseAccount: () => dispatch(closeAccountMenu()),
     onClickNew: needSave => dispatch(requestNewProject(needSave)),
     onClickLogin: ownProps.onClickLogin ?? (() => dispatch(openLoginMenu())),
     onRequestCloseLogin: () => dispatch(closeLoginMenu()),
-    onRequestOpenAbout: () => dispatch(openAboutMenu()),
-    onRequestCloseAbout: () => dispatch(closeAboutMenu()),
     onSeeCommunity: ownProps.onSeeCommunity ?? (() => dispatch(setPlayer(true))),
     onSetTimeTravelMode: mode => dispatch(setTimeTravel(mode))
 });

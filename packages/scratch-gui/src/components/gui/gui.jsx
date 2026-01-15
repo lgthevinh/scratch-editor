@@ -114,7 +114,6 @@ const GUIComponent = props => {
     const intl = useIntl();
     const {
         accountMenuOptions,
-        accountNavOpen,
         activeTabIndex,
         alertsVisible,
         authorId,
@@ -162,8 +161,6 @@ const GUIComponent = props => {
         menuBarHidden,
         renderLogin,
         onClickAbout,
-        onClickAccountNav,
-        onCloseAccountNav,
         onLogOut,
         onOpenRegistration,
         onToggleLoginOpen,
@@ -337,7 +334,6 @@ const GUIComponent = props => {
                     <MenuBar
                         ariaRole="banner"
                         ariaLabel={intl.formatMessage(ariaMessages.menuBar)}
-                        accountNavOpen={accountNavOpen}
                         authorId={authorId}
                         authorThumbnailUrl={authorThumbnailUrl}
                         authorUsername={authorUsername}
@@ -361,9 +357,7 @@ const GUIComponent = props => {
                         renderLogin={renderLogin}
                         showComingSoon={showComingSoon}
                         onClickAbout={onClickAbout}
-                        onClickAccountNav={onClickAccountNav}
                         onClickLogo={onClickLogo}
-                        onCloseAccountNav={onCloseAccountNav}
                         onLogOut={onLogOut}
                         onOpenRegistration={onOpenRegistration}
                         onProjectTelemetryEvent={onProjectTelemetryEvent}
@@ -576,7 +570,6 @@ const GUIComponent = props => {
 };
 
 GUIComponent.propTypes = {
-    accountNavOpen: PropTypes.bool,
     accountMenuOptions: AccountMenuOptionsPropTypes,
     activeTabIndex: PropTypes.number,
     authorId: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
@@ -623,9 +616,7 @@ GUIComponent.propTypes = {
     onActivateCostumesTab: PropTypes.func,
     onActivateSoundsTab: PropTypes.func,
     onActivateTab: PropTypes.func,
-    onClickAccountNav: PropTypes.func,
     onClickLogo: PropTypes.func,
-    onCloseAccountNav: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
     onLogOut: PropTypes.func,
     onNewSpriteClick: PropTypes.func,

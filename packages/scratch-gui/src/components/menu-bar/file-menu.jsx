@@ -102,7 +102,6 @@ const FileMenu = props => {
             onClick={handleOnOpen}
             aria-label={intl.formatMessage(fileMenu)}
             aria-expanded={isExpanded()}
-            tabIndex={0}
             ref={menuRef}
             onKeyDown={handleKeyPress}
         >

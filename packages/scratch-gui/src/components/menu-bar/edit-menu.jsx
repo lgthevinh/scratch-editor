@@ -54,7 +54,6 @@ const EditMenu = props => {
             onClick={handleOnOpen}
             aria-label={intl.formatMessage(editMenu)}
             aria-expanded={isExpanded()}
-            tabIndex={0}
             onKeyDown={handleKeyPress}
             ref={menuRef}
         >

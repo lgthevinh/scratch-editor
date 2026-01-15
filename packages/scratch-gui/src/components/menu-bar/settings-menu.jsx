@@ -58,6 +58,7 @@ const SettingsMenu = props => {
         activeTheme,
         onChangeTheme
     } = props;
+    
     const intl = useIntl();
 
     const enabledColorModesMap = useMemo(() => Object.keys(colorModeMap).reduce((acc, colorMode) => {
@@ -102,7 +103,6 @@ const SettingsMenu = props => {
             [menuBarStyles.active]: isExpanded()
         })}
         aria-expanded={isExpanded()}
-        tabIndex={0}
         aria-label={intl.formatMessage(ariaMessages.settingsMenu)}
         onClick={handleOnOpen}
         onKeyDown={handleKeyPress}
@@ -183,7 +183,7 @@ const mapStateToProps = state => ({
     activeTheme: state.scratchGui.settings.theme
 });
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
+const mapDispatchToProps = dispatch => ({
     onChangeColorMode: colorMode => {
         dispatch(setColorMode(colorMode));
         persistColorMode(colorMode);

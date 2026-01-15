@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 import {MenuItem as MenuItemComponent} from '../components/menu/menu.jsx';
+import propTypes from '../lib/prop-types.js';
 
 class MenuItem extends React.Component {
     constructor (props) {
@@ -18,13 +19,17 @@ class MenuItem extends React.Component {
         const {
             children,
             className,
-            onClick
+            onClick,
+            itemRef,
+            onParentKeyPress
         } = this.props;
         const clickAction = onClick ? onClick : this.navigateToHref;
         return (
             <MenuItemComponent
                 className={className}
                 onClick={clickAction}
+                itemRef={itemRef}
+                onParentKeyPress={onParentKeyPress}
             >
                 {children}
             </MenuItemComponent>
@@ -37,7 +42,9 @@ MenuItem.propTypes = {
     className: PropTypes.string,
     // can take an onClick prop, or take an href and build an onClick handler
     href: PropTypes.string,
-    onClick: PropTypes.func
+    onClick: PropTypes.func,
+    itemRef: propTypes.ref,
+    onParentKeyPress: PropTypes.func
 };
 
 export default MenuItem;

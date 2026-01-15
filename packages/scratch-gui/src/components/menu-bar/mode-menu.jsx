@@ -61,7 +61,6 @@ const ModeMenu = props => {
             ref={menuRef}
             aria-label={intl.formatMessage(modeMenu)}
             aria-expanded={isExpanded()}
-            tabIndex={0}
             onKeyDown={handleKeyPress}
         >
             <div className={classNames(styles.editMenu)}>
