@@ -117,7 +117,7 @@
     "redux-throttle": "0.1.1",
     "scratch-audio": "2.0.268",
     "scratch-blocks": "1.3.0",
-    "scratch-l10n": "6.1.54",
+    "scratch-l10n": "6.1.55",
     "scratch-paint": "4.1.47",
     "scratch-render-fonts": "1.0.252",
     "scratch-storage": "5.0.10",
@@ -136,9 +136,9 @@
     "redux": "^4.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.28.3",
-    "@babel/core": "7.28.5",
-    "@babel/preset-env": "7.28.5",
+    "@babel/cli": "7.28.6",
+    "@babel/core": "7.28.6",
+    "@babel/preset-env": "7.28.6",
     "@babel/preset-react": "7.28.5",
     "@testing-library/jest-dom": "5.17.0",
     "@testing-library/react": "14.3.1",
@@ -152,7 +152,7 @@
     "cheerio": "1.1.2",
     "cross-env": "7.0.3",
     "eslint": "9.39.2",
-    "eslint-config-scratch": "12.0.43",
+    "eslint-config-scratch": "12.0.44",
     "eslint-import-resolver-webpack": "0.13.10",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-react": "7.37.5",
@@ -178,7 +178,7 @@
     "web-audio-test-api": "0.5.2",
     "webpack": "5.104.1",
     "webpack-cli": "5.1.4",
-    "webpack-dev-server": "5.2.2",
+    "webpack-dev-server": "5.2.3",
     "yauzl": "3.2.0"
   },
   "jest": {

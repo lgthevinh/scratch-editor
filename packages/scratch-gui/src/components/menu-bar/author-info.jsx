@@ -33,6 +33,7 @@ const AuthorInfo = ({
             className={styles.avatar}
             imageUrl={imageUrl}
             showAvatarBadge={!!avatarBadge}
+            wrapperClassName={styles.avatarWrapper}
         />
         <div
             className={styles.titleAuthor}

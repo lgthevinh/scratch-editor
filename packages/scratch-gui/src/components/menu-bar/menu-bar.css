@@ -261,11 +261,11 @@
     font-weight: normal;
 }
 
-[dir="ltr"] .user-info .avatar {
+[dir="ltr"] .user-info .avatar-wrapper {
     margin-right: calc($space * .8125);
 }
 
-[dir="rtl"] .user-info .avatar {
+[dir="rtl"] .user-info .avatar-wrapper {
     margin-left: calc($space * .8125);
 }
 

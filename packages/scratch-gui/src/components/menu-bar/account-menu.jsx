@@ -87,6 +87,7 @@ const AccountMenu = ({
                 {avatarUrl ? (
                     <UserAvatar
                         className={styles.avatar}
+                        wrapperClassName={styles.avatarWrapper}
                         imageUrl={avatarUrl}
                         showAvatarBadge={!!avatarBadge}
                     />

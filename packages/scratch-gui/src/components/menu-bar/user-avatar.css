@@ -26,10 +26,3 @@
     height: calc($menu-bar-button-size * 1.28);
 }
 
-[dir="ltr"] .avatar-badge-wrapper {
-    margin-right: calc($space * .8125);
-}
-
-[dir="rtl"] .avatar-badge-wrapper {
-    margin-left: calc($space * .8125);
-}

@@ -6,10 +6,17 @@ import styles from './user-avatar.css';
 
 const UserAvatar = ({
     className,
+    wrapperClassName,
     imageUrl,
     showAvatarBadge = false
 }) => (
-    <div className={classNames(showAvatarBadge && styles.avatarBadgeWrapper)}>
+    <div
+        className={classNames(
+            wrapperClassName,
+            styles.avatarWrapper,
+            showAvatarBadge && styles.avatarBadgeWrapper)
+        }
+    >
         <img
             className={classNames(
                 className,
@@ -24,6 +31,7 @@ const UserAvatar = ({
 
 UserAvatar.propTypes = {
     className: PropTypes.string,
+    wrapperClassName: PropTypes.string,
     imageUrl: PropTypes.string,
     showAvatarBadge: PropTypes.bool
 };
