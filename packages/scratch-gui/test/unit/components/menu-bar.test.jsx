@@ -47,14 +47,14 @@ describe('MenuBar Component', () => {
 
     test('menu bar with no About handler has no About button', () => {
         const {container} = renderWithIntl(getComponent());
-        const button = container.querySelector('button[aria-label="About"]');
+        const button = container.querySelector('button[aria-label="About menu"]');
         expect(button).toBeFalsy();
     });
 
     test('menu bar with an About handler has an About button', () => {
         const onClickAbout = jest.fn();
         const {container} = renderWithIntl(getComponent({onClickAbout}));
-        const button = container.querySelector('button[aria-label="About"]');
+        const button = container.querySelector('button[aria-label="About menu"]');
         expect(button).toBeTruthy();
     });
 
@@ -62,7 +62,7 @@ describe('MenuBar Component', () => {
         test('clicking on About button calls the handler', () => {
             const onClickAbout = jest.fn();
             const {container} = renderWithIntl(getComponent({onClickAbout}));
-            const button = container.querySelector('button[aria-label="About"]');
+            const button = container.querySelector('button[aria-label="About menu"]');
     
             fireEvent.click(button);
             expect(onClickAbout).toHaveBeenCalledTimes(1);
@@ -71,7 +71,7 @@ describe('MenuBar Component', () => {
         test('not clicking on About button does not call the handler', () => {
             const onClickAbout = jest.fn();
             const {container} = renderWithIntl(getComponent({onClickAbout}));
-            const button = container.querySelector('button[aria-label="About"]');
+            const button = container.querySelector('button[aria-label="About menu"]');
     
             expect(onClickAbout).toHaveBeenCalledTimes(0);
         });
