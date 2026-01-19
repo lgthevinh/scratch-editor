@@ -14,7 +14,6 @@ import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 import styles from './settings-menu.css';
 
 import dropdownCaret from './dropdown-caret.svg';
-import propTypes from '../../lib/prop-types.js';
 
 const languageMenu = defineMessage({
     id: 'gui.aria.languageMenu',
@@ -24,33 +23,29 @@ const languageMenu = defineMessage({
 
 const LanguageMenu = ({
     currentLocale,
-    menuRef,
     isRtl,
     onChangeLanguage
 }) => {
     const intl = useIntl();
 
-    const itemRefs = React.useMemo(() => Object.keys(locales).map(() => React.createRef()), []);
     const selectedRef = useRef(null);
 
     const {
         isExpanded,
         handleKeyPress,
         handleKeyPressOpenMenu,
-        handleOnOpen
+        handleOnOpen,
+        menuRef
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 2,
         defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale))
     });
 
     useEffect(() => {
-        const selectedIndex = Object.keys(locales).indexOf(currentLocale);
-        if (isExpanded() && selectedIndex >= 0 && itemRefs[selectedIndex]?.current) {
-            itemRefs[selectedIndex].current.scrollIntoView({block: 'center'});
+        if (isExpanded()) {
+            selectedRef.current.scrollIntoView({block: 'center'});
         }
-    }, [currentLocale, isExpanded, itemRefs]);
+    }, [selectedRef, isExpanded]);
 
     const setRef = useCallback(component => {
         selectedRef.current = component;
@@ -64,7 +59,10 @@ const LanguageMenu = ({
     }, [isExpanded]);
 
     return (
-        <MenuItem expanded={isExpanded()}>
+        <MenuItem
+            expanded={isExpanded()}
+            data-menu-item-wrapper="true"
+        >
             <button
                 className={styles.option}
                 onClick={handleOnOpen}
@@ -74,6 +72,7 @@ const LanguageMenu = ({
                 aria-expanded={isExpanded()}
                 tabIndex={-1}
                 onKeyDown={handleKeyPress}
+                data-menu-item="true"
             >
                 <img
                     className={styles.icon}
@@ -97,7 +96,7 @@ const LanguageMenu = ({
             >
                 {
                     Object.keys(locales)
-                        .map((locale, index) => {
+                        .map(locale => {
                             const isSelected = currentLocale === locale;
 
                             return (<MenuItem
@@ -105,7 +104,7 @@ const LanguageMenu = ({
                                 className={styles.languageMenuItem}
                                 // eslint-disable-next-line react/jsx-no-bind
                                 onClick={() => onChangeLanguage(locale)}
-                                itemRef={itemRefs[index]}
+                                data-menu-item="true"
                                 onParentKeyPress={handleKeyPressOpenMenu}
                                 isSelected={isSelected}
                             >
@@ -126,7 +125,6 @@ const LanguageMenu = ({
 };
 
 LanguageMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     currentLocale: PropTypes.string,
     isRtl: PropTypes.bool,
     onChangeLanguage: PropTypes.func

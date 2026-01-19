@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React, {useMemo} from 'react';
+import React from 'react';
 import {FormattedMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
@@ -11,7 +11,6 @@ import {MenuItem, Submenu} from '../menu/menu.jsx';
 import styles from './settings-menu.css';
 
 import dropdownCaret from './dropdown-caret.svg';
-import propTypes from '../../lib/prop-types.js';
 
 const intlMessageShape = PropTypes.shape({
     defaultMessage: PropTypes.string,
@@ -26,8 +25,8 @@ const PreferenceItem = props => {
         <MenuItem
             onClick={props.onClick}
             onParentKeyPress={props.onParentKeyPress}
-            itemRef={props.itemRef}
             isSelected={props.isSelected}
+            {...props}
         >
             <div className={styles.option}>
                 <img
@@ -50,8 +49,7 @@ PreferenceItem.propTypes = {
         icon: PropTypes.string,
         label: intlMessageShape.isRequired
     }),
-    onParentKeyPress: PropTypes.func,
-    itemRef: PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    onParentKeyPress: PropTypes.func
 };
 
 const PreferenceMenu = ({
@@ -60,11 +58,8 @@ const PreferenceMenu = ({
     defaultMenuIconSrc,
     submenuLabel,
     selectedItemKey,
-    isRtl,
-    menuRef
+    isRtl
 }) => {
-    const itemRefs = useMemo(() => Object.keys(itemsMap).map(() => React.createRef()), [itemsMap]);
-
     const itemKeys = Object.keys(itemsMap);
     const selectedItem = itemsMap[selectedItemKey];
 
@@ -72,15 +67,17 @@ const PreferenceMenu = ({
         isExpanded,
         handleKeyPress,
         handleKeyPressOpenMenu,
-        handleOnOpen
+        handleOnOpen,
+        menuRef
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 2
     });
 
     return (
-        <MenuItem expanded={isExpanded()}>
+        <MenuItem
+            expanded={isExpanded()}
+            data-menu-item-wrapper="true"
+        >
             <button
                 className={styles.option}
                 onClick={handleOnOpen}
@@ -88,6 +85,7 @@ const PreferenceMenu = ({
                 aria-expanded={isExpanded()}
                 tabIndex={-1}
                 onKeyDown={handleKeyPress}
+                data-menu-item="true"
             >
                 <img
                     src={selectedItem.icon || defaultMenuIconSrc}
@@ -102,15 +100,15 @@ const PreferenceMenu = ({
                 />
             </button>
             <Submenu place={isRtl ? 'left' : 'right'}>
-                {itemKeys.map((itemKey, index) => (
+                {itemKeys.map(itemKey => (
                     <PreferenceItem
                         onParentKeyPress={handleKeyPressOpenMenu}
+                        data-menu-item="true"
                         key={itemKey}
                         isSelected={itemKey === selectedItemKey}
                         // eslint-disable-next-line react/jsx-no-bind
                         onClick={() => onChange(itemKey)}
                         item={itemsMap[itemKey]}
-                        itemRef={itemRefs[index]}
                     />)
                 )}
             </Submenu>
@@ -119,7 +117,6 @@ const PreferenceMenu = ({
 };
 
 PreferenceMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     itemsMap: PropTypes.objectOf(PropTypes.shape({
         icon: PropTypes.string,
         label: intlMessageShape.isRequired

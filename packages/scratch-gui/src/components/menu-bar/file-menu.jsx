@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
@@ -13,7 +13,6 @@ import dropdownCaret from './dropdown-caret.svg';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import sharedMessages from '../../lib/shared-messages';
-import propTypes from '../../lib/prop-types.js';
 
 import {
     manualUpdateProject,
@@ -29,7 +28,6 @@ const fileMenu = defineMessage({
 
 const FileMenu = ({
     isRtl,
-    menuRef,
     canSave,
     canCreateCopy,
     canRemix,
@@ -43,31 +41,14 @@ const FileMenu = ({
 }) => {
     const intl = useIntl();
 
-    const newProjectRef = useRef(null);
-    const saveRef = useRef(null);
-    const createRef = useRef(null);
-    const remixRef = useRef(null);
-    const loadFromComputerRef = useRef(null);
-    const saveToComputerRef = useRef(null);
-    
-    const itemRefs = [
-        newProjectRef,
-        ...(canSave ? [saveRef] : []),
-        ...(canCreateCopy ? [createRef] : []),
-        ...(canRemix ? [remixRef] : []),
-        loadFromComputerRef,
-        saveToComputerRef
-    ];
-
     const {
+        menuRef,
         isExpanded,
         handleKeyPress,
         handleKeyPressOpenMenu,
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 1
     });
 
@@ -123,7 +104,7 @@ const FileMenu = ({
                     <MenuItem
                         isRtl={isRtl}
                         onClick={onClickNew}
-                        itemRef={newProjectRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         {newProjectMessage}
@@ -134,7 +115,7 @@ const FileMenu = ({
                         {canSave && (
                             <MenuItem
                                 onClick={onClickSave}
-                                itemRef={saveRef}
+                                data-menu-item="true"
                                 onParentKeyPress={handleKeyPressOpenMenu}
                             >
                                 {saveNowMessage}
@@ -143,7 +124,7 @@ const FileMenu = ({
                         {canCreateCopy && (
                             <MenuItem
                                 onClick={onClickSaveAsCopy}
-                                itemRef={createRef}
+                                data-menu-item="true"
                                 onParentKeyPress={handleKeyPressOpenMenu}
                             >
                                 {createCopyMessage}
@@ -152,7 +133,7 @@ const FileMenu = ({
                         {canRemix && (
                             <MenuItem
                                 onClick={onClickRemix}
-                                itemRef={remixRef}
+                                data-menu-item="true"
                                 onParentKeyPress={handleKeyPressOpenMenu}
                             >
                                 {remixMessage}
@@ -163,7 +144,7 @@ const FileMenu = ({
                 <MenuSection>
                     <MenuItem
                         onClick={onStartSelectingFileUpload}
-                        itemRef={loadFromComputerRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         {intl.formatMessage(sharedMessages.loadFromComputerTitle)}
@@ -172,7 +153,7 @@ const FileMenu = ({
                         <MenuItem
                             className={className}
                             onClick={getSaveToComputerHandler(downloadProjectCallback)}
-                            itemRef={saveToComputerRef}
+                            data-menu-item="true"
                             onParentKeyPress={handleKeyPressOpenMenu}
                         >
                             <FormattedMessage
@@ -189,7 +170,6 @@ const FileMenu = ({
 };
 
 FileMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     isRtl: PropTypes.bool,
     canSave: PropTypes.bool.isRequired,
     canCreateCopy: PropTypes.bool.isRequired,

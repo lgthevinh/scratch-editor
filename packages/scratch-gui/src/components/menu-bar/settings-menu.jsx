@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React, {useRef, useMemo} from 'react';
+import React, {useMemo} from 'react';
 import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
@@ -23,7 +23,6 @@ import dropdownCaret from './dropdown-caret.svg';
 import settingsIcon from './icon--settings.svg';
 
 import themeIcon from '../../lib/assets/icon--theme.svg';
-import propTypes from '../../lib/prop-types.js';
 
 const settingsMenuAriaMessage = defineMessage({
     id: 'gui.aria.settingsMenu',
@@ -34,7 +33,6 @@ const settingsMenuAriaMessage = defineMessage({
 const enabledColorModes = [DEFAULT_MODE, HIGH_CONTRAST_MODE];
 
 const SettingsMenu = ({
-    menuRef,
     canChangeLanguage,
     canChangeColorMode,
     canChangeTheme,
@@ -62,25 +60,13 @@ const SettingsMenu = ({
     }, {}), [hasActiveMembership]);
     const availableThemesLength = useMemo(() => Object.keys(availableThemesMap).length, [availableThemesMap]);
 
-    const languageRef = useRef(null);
-    const themeRef = useRef(null);
-    const colorRef = useRef(null);
-    const itemRefs = [
-        ...(canChangeLanguage ? [languageRef] : []),
-        // TODO: If we do change the condition below for displaying the element, we have
-        // to change it here also. Perhaps a variable for those conditions might be of use
-        ...(canChangeTheme && availableThemesLength > 1 ? [themeRef] : []),
-        ...(canChangeColorMode ? [colorRef] : [])
-    ];
-
     const {
         isExpanded,
         handleOnOpen,
         handleOnClose,
-        handleKeyPress
+        handleKeyPress,
+        menuRef
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 1
     });
 
@@ -110,16 +96,11 @@ const SettingsMenu = ({
             onRequestClose={handleOnClose}
         >
             <MenuSection>
-                {canChangeLanguage && <LanguageMenu
-                    menuRef={languageRef}
-                    depth={2}
-                />}
+                {canChangeLanguage && <LanguageMenu />}
                 {canChangeTheme &&
                     // TODO: Consider always showing the theme menu, even if there is a single available theme
                     availableThemesLength > 1 &&
                     <PreferenceMenu
-                        menuRef={themeRef}
-                        depth={2}
                         itemsMap={availableThemesMap}
                         onChange={onChangeTheme}
                         defaultMenuIconSrc={themeIcon}
@@ -132,8 +113,6 @@ const SettingsMenu = ({
                         isRtl={isRtl}
                     />}
                 {canChangeColorMode && <PreferenceMenu
-                    menuRef={colorRef}
-                    depth={2}
                     itemsMap={enabledColorModesMap}
                     onChange={onChangeColorMode}
                     submenuLabel={{
@@ -150,7 +129,6 @@ const SettingsMenu = ({
 };
 
 SettingsMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     canChangeLanguage: PropTypes.bool.isRequired,
     canChangeColorMode: PropTypes.bool.isRequired,
     canChangeTheme: PropTypes.bool.isRequired,

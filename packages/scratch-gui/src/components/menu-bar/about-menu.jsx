@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {useIntl, defineMessage} from 'react-intl';
@@ -11,7 +11,6 @@ import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import styles from './menu-bar.css';
 import aboutIcon from './icon--about.svg';
-import propTypes from '../../lib/prop-types.js';
 
 const aboutMenuMessage = defineMessage({
     id: 'gui.aria.aboutMenu',
@@ -36,7 +35,6 @@ AboutButton.propTypes = {
 };
 
 const AboutMenu = ({
-    menuRef,
     onClick,
     isRtl
 }) => {
@@ -54,17 +52,15 @@ const AboutMenu = ({
     // generate a menu with items for each object in the array
 
     const intl = useIntl();
-    const itemRefs = useMemo(() => onClick.map(() => React.createRef(null)), [onClick]);
 
     const {
+        menuRef,
         isExpanded,
         handleOnOpen,
         handleOnClose,
         handleKeyPress,
         handleKeyPressOpenMenu
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 1
     });
 
@@ -98,13 +94,13 @@ const AboutMenu = ({
                 onRequestClose={handleOnClose}
             >
                 {
-                    onClick.map((itemProps, index) => (
+                    onClick.map(itemProps => (
                         <MenuItem
                             key={itemProps.title}
                             isRtl={isRtl}
                             onClick={wrapAboutMenuCallback(itemProps.onClick)}
                             onParentKeyPress={handleKeyPressOpenMenu}
-                            itemRef={itemRefs[index]}
+                            data-menu-item="true"
                         >
                             {itemProps.title}
                         </MenuItem>
@@ -116,7 +112,6 @@ const AboutMenu = ({
 };
 
 AboutMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     isRtl: PropTypes.bool.isRequired,
     onClick: PropTypes.oneOfType([
         PropTypes.func, // button mode: call this callback when the About button is clicked

@@ -1,12 +1,11 @@
 import styles from './account-menu.css';
 import stylesMenuBar from './menu-bar.css';
 import classNames from 'classnames';
-import React, {useMemo, useRef} from 'react';
+import React from 'react';
 import useMenuNavigation from '../../hooks/use-menu-navigation';
 import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
-import propTypes from '../../lib/prop-types';
 
 import {AccountMenuOptionsPropTypes} from '../../lib/account-menu-options';
 
@@ -23,7 +22,6 @@ const accountMenu = defineMessage({
 });
 
 const AccountMenu = ({
-    menuRef,
     menuOpts,
     username,
     isRtl,
@@ -42,31 +40,14 @@ const AccountMenu = ({
 
     const intl = useIntl();
 
-    const profileRef = useRef(null);
-    const myStuffRef = useRef(null);
-    const myClassesRef = useRef(null);
-    const myClassRef = useRef(null);
-    const accountSettingsRef = useRef(null);
-    const logoutRef = useRef(null);
-
-    const itemRefs = useMemo(() => [
-        ...(profileUrl ? [profileRef] : []),
-        ...(myStuffUrl ? [myStuffRef] : []),
-        ...(myClassesUrl ? [myClassesRef] : []),
-        ...(myClassUrl ? [myClassRef] : []),
-        ...(accountSettingsUrl ? [accountSettingsRef] : []),
-        ...(canLogout ? [logoutRef] : [])
-    ], [profileUrl, myStuffUrl, myClassesUrl, myClassUrl, accountSettingsUrl, canLogout]);
-
     const {
         isExpanded,
         handleOnOpen,
         handleOnClose,
         handleKeyPress,
-        handleKeyPressOpenMenu
+        handleKeyPressOpenMenu,
+        menuRef
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 1
     });
 
@@ -114,7 +95,7 @@ const AccountMenu = ({
                 {profileUrl ? (
                     <MenuItemContainer
                         href={profileUrl}
-                        itemRef={profileRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <FormattedMessage
@@ -128,7 +109,7 @@ const AccountMenu = ({
                 {myStuffUrl ? (
                     <MenuItemContainer
                         href={myStuffUrl}
-                        itemRef={myStuffRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <FormattedMessage
@@ -142,7 +123,7 @@ const AccountMenu = ({
                 {myClassesUrl ? (
                     <MenuItemContainer
                         href={myClassesUrl}
-                        itemRef={myClassesRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <FormattedMessage
@@ -156,7 +137,7 @@ const AccountMenu = ({
                 {myClassUrl ? (
                     <MenuItemContainer
                         href={myClassUrl}
-                        itemRef={myClassRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <FormattedMessage
@@ -170,7 +151,7 @@ const AccountMenu = ({
                 {accountSettingsUrl ? (
                     <MenuItemContainer
                         href={accountSettingsUrl}
-                        itemRef={accountSettingsRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <FormattedMessage
@@ -185,7 +166,7 @@ const AccountMenu = ({
                     <MenuSection>
                         <MenuItemContainer
                             onClick={onLogOut}
-                            itemRef={logoutRef}
+                            data-menu-item="true"
                             onParentKeyPress={handleKeyPressOpenMenu}
                         >
                             <FormattedMessage
@@ -202,7 +183,6 @@ const AccountMenu = ({
 };
 
 AccountMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     menuOpts: AccountMenuOptionsPropTypes,
     isRtl: PropTypes.bool,
     username: PropTypes.string,

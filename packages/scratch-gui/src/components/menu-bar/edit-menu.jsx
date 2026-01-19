@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
@@ -12,7 +12,6 @@ import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 import dropdownCaret from './dropdown-caret.svg';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
 import TurboMode from '../../containers/turbo-mode.jsx';
-import propTypes from '../../lib/prop-types.js';
 
 const editMenuAriaMessage = defineMessage({
     id: 'gui.aria.editMenu',
@@ -21,27 +20,20 @@ const editMenuAriaMessage = defineMessage({
 });
 
 const EditMenu = ({
-    menuRef,
     isRtl,
     onRestoreOption,
     restoreOptionMessage
 }) => {
     const intl = useIntl();
 
-    const restoreRef = useRef(null);
-    const turboRef = useRef(null);
-
-    const itemRefs = [restoreRef, turboRef];
-
     const {
+        menuRef,
         isExpanded,
         handleKeyPress,
         handleKeyPressOpenMenu,
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 1
     });
 
@@ -75,7 +67,7 @@ const EditMenu = ({
                     <MenuItem
                         className={classNames({[styles.disabled]: !restorable})}
                         onClick={onRestoreOption(handleRestore)}
-                        itemRef={restoreRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                         isDisabled={!restorable}
                     >
@@ -86,7 +78,7 @@ const EditMenu = ({
                     <TurboMode>{(toggleTurboMode, {turboMode}) => (
                         <MenuItem
                             onClick={toggleTurboMode}
-                            itemRef={turboRef}
+                            data-menu-item="true"
                             onParentKeyPress={handleKeyPressOpenMenu}
                         >
                             {turboMode ? (
@@ -111,7 +103,6 @@ const EditMenu = ({
 };
 
 EditMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     isRtl: PropTypes.bool,
     restoreOptionMessage: PropTypes.func.isRequired,
     onRestoreOption: PropTypes.func.isRequired

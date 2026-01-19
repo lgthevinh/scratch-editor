@@ -160,13 +160,6 @@ class MenuBar extends React.Component {
             'getSaveToComputerHandler',
             'restoreOptionMessage'
         ]);
-
-        this.settingsRef = React.createRef();
-        this.fileRef = React.createRef();
-        this.editRef = React.createRef();
-        this.modeRef = React.createRef();
-        this.accountRef = React.createRef();
-        this.aboutRef = React.createRef();
     }
     componentDidMount () {
         document.addEventListener('keydown', this.handleKeyPress);
@@ -341,7 +334,6 @@ class MenuBar extends React.Component {
                         </div>
                         {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) &&
                         (<SettingsMenu
-                            menuRef={this.settingsRef}
                             depth={1}
                             canChangeLanguage={this.props.canChangeLanguage}
                             canChangeColorMode={this.props.canChangeColorMode}
@@ -350,7 +342,6 @@ class MenuBar extends React.Component {
                             isRtl={this.props.isRtl}
                         />)}
                         {(this.props.canManageFiles) && (<FileMenu
-                            menuRef={this.fileRef}
                             depth={1}
                             onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
                             onClickNew={this.handleClickNew}
@@ -366,14 +357,12 @@ class MenuBar extends React.Component {
                             remixMessage={remixMessage}
                         />)}
                         <EditMenu
-                            menuRef={this.editRef}
                             depth={1}
                             isRtl={this.props.isRtl}
                             onRestoreOption={this.handleRestoreOption}
                             restoreOptionMessage={this.restoreOptionMessage}
                         />
                         {this.props.isTotallyNormal && (<ModeMenu
-                            menuRef={this.modeRef}
                             depth={1}
                             onSetMode={this.handleSetMode}
                             modeNow={this.props.modeNow}
@@ -518,7 +507,6 @@ class MenuBar extends React.Component {
                                 ) : null}
 
                                 <AccountMenu
-                                    menuRef={this.accountRef}
                                     menuOpts={menuOpts}
                                     username={this.props.username}
                                     isRtl={this.props.isRtl}
@@ -624,7 +612,6 @@ class MenuBar extends React.Component {
 
                 {this.props.onClickAbout && (
                     <AboutMenu
-                        menuRef={this.aboutRef}
                         onClick={this.props.onClickAbout}
                         isRtl={this.props.isRtl}
                     />

@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 import styles from './menu.css';
-import propTypes from '../../lib/prop-types';
 
 const MenuComponent = ({
     className = '',
@@ -66,10 +65,10 @@ const MenuItem = ({
     isSelected = false,
     isDisabled = false,
     onClick,
-    itemRef,
     ariaLabel,
     ariaRole,
-    onParentKeyPress
+    onParentKeyPress,
+    ...props
 }) => (
     <li
         className={classNames(
@@ -80,19 +79,18 @@ const MenuItem = ({
         )}
         onClick={onClick}
         tabIndex={-1}
-        ref={itemRef}
         aria-label={ariaLabel}
         aria-selected={isSelected}
         aria-disabled={isDisabled}
         role={ariaRole}
         onKeyDown={onParentKeyPress}
+        {...props}
     >
         {children}
     </li>
 );
 
 MenuItem.propTypes = {
-    itemRef: propTypes.ref,
     ariaLabel: PropTypes.string,
     ariaRole: PropTypes.string,
     children: PropTypes.node,
@@ -103,7 +101,6 @@ MenuItem.propTypes = {
     onClick: PropTypes.func,
     onParentKeyPress: PropTypes.func
 };
-
 
 const addDividerClassToFirstChild = (child, id) => (
     child && React.cloneElement(child, {

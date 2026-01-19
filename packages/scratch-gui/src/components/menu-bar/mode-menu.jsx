@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
@@ -8,8 +8,6 @@ import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
-
-import propTypes from '../../lib/prop-types.js';
 
 const EditorModes = {
     NOW: 'NOW',
@@ -26,28 +24,18 @@ const ModeMenu = ({
     isRtl,
     mode2020,
     modeNow,
-    onSetMode,
-    menuRef
+    onSetMode
 }) => {
     const intl = useIntl();
-
-    const normalRef = useRef(null);
-    const caturdayRef = useRef(null);
-    
-    const itemRefs = [
-        normalRef,
-        caturdayRef
-    ];
 
     const {
         isExpanded,
         handleOnOpen,
         handleOnClose,
         handleKeyPress,
-        handleKeyPressOpenMenu
+        handleKeyPressOpenMenu,
+        menuRef
     } = useMenuNavigation({
-        menuRef,
-        itemRefs,
         depth: 1
     });
 
@@ -78,7 +66,7 @@ const ModeMenu = ({
                 <MenuSection>
                     <MenuItem
                         onClick={onSetMode(EditorModes.NOW)}
-                        itemRef={normalRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <span className={classNames({[styles.inactive]: !modeNow})}>
@@ -93,7 +81,7 @@ const ModeMenu = ({
                     </MenuItem>
                     <MenuItem
                         onClick={onSetMode(EditorModes.MODE_2020)}
-                        itemRef={caturdayRef}
+                        data-menu-item="true"
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <span className={classNames({[styles.inactive]: !mode2020})}>
@@ -113,7 +101,6 @@ const ModeMenu = ({
 };
 
 ModeMenu.propTypes = {
-    menuRef: propTypes.ref.isRequired,
     onSetMode: PropTypes.func.isRequired,
     modeNow: PropTypes.bool.isRequired,
     mode2020: PropTypes.bool.isRequired,

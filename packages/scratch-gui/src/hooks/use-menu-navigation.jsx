@@ -1,127 +1,164 @@
-import {useCallback, useContext, useState, useEffect} from 'react';
+import {useCallback, useContext, useState, useRef} from 'react';
 import {MenuRefContext} from '../contexts/menu-ref-context';
 import {KEY} from '../lib/navigation-keys';
 
+const MENU_ITEM_SELECTOR = '[data-menu-item="true"]';
+const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
+
 /**
- * Provides keyboard navigation and focus management logic for menu components.
+ * Custom hook for keyboard navigation and focus management in menu components.
  *
- * This hook encapsulates shared menu behavior such as:
- * - opening and closing menus
- * - moving focus between menu items with arrow keys
- * - handling Escape, Enter, and Tab behavior
- * - coordinating open menus via MenuRefContext
+ * This hook provides:
+ * - Opening and closing menus
+ * - Handling Escape, Enter, Arrow and Tab keys
+ * - Coordinating nested open menus via MenuRefContext
+ * - Automatically focusing the first or default menu item when opening
+ * - BFS to find first-level menu items, including wrapped items
+ *
+ * Notes:
+ * - Menu items can be direct children or wrapped in a container marked with
+ *   `data-menu-item-wrapper="true"`. The BFS will traverse until it finds menu items
+ *   or wrapped menu items, but will not go deeper than needed.
+ * - The hook automatically skips the starting element itself when looking for siblings.
+ *
  * STEPS TO USE IT:
- * ______________________________________________________________________________________
- * 1. Define itemRefs as an array of refs for the submenu items, then pass
- * {itemRefs, menuRef (ref for component itself) and depth (starting from 1 for top-level menus)}
- * 2. In the top component (button/div/...) pass
- * - onClick={handleOnOpen}
- * - ref={menuRef}
- * - onKeyDown={handleKeyPress}
- * - tabIndex={0} if it's the core menu accessible via tab or tabIndex={1} if it's a submenu
- * - aria-expanded={isExpanded()} (also everywhere else where you require isExpanded() logic,
- * such as the css responsible for conditionally displaying the dropdown)
- * 3. In the submenu items pass:
- * - itemRef={itemRefs[index]}
- * - onParentKeyPress={handleKeyPressOpenMenu}
- * ______________________________________________________________________________________
+ * 1. In the top-level menu trigger (button/div/...) pass:
+ *    - onClick={handleOnOpen}
+ *    - ref={menuRef}
+ *    - onKeyDown={handleKeyPress}
+ *    - tabIndex={0} if it's the core menu accessible via Tab
+ *    - aria-expanded={isExpanded()}
+ * 2. Mark each submenu item or leaf menu item with:
+ *    - data-menu-item="true"
+ * 3. If an expandable submenu is wrapped, mark the wrapper with:
+ *    - data-menu-item-wrapper="true"
+ *    - see SettingsMenu -> LanguageMenu | PreferenceMenu logic for reference
  * @param {object} params
- *  Parameters object
- * @param {{ current: HTMLElement | null }} params.menuRef
- *   Ref to the menu trigger or container element.
- * @param {Array<{ current: HTMLElement | null }>} params.itemRefs
- *   Refs for each focusable menu item, in display order.
+ *   Parameters object
  * @param {number} params.depth
  *   Nesting depth of the menu (1 = top-level menu).
- * @param {number} params.defaultIndexOnOpen
- *   Default menu item index to open to
- * @returns {object} An object containing the focused index, menu state, and keyboard handlers:
+ * @param {number} [params.defaultIndexOnOpen]
+ *   Default menu item index to focus when opening the menu.
+ * @returns {object} An object containing the menu state and keyboard handlers:
+ *   - menuRef: reference to element to be used in component
  *   - focusedIndex: number — Index of the currently focused menu item.
  *   - isExpanded: function() — Returns true if the menu is expanded.
- *   - handleKeyPress: function(KeyboardEvent) — Handler for key presses on the menu.
- *   - handleKeyPressOpenMenu: function(KeyboardEvent) — Handler for key presses when the menu is open.
+ *   - handleKeyPress: function(KeyboardEvent) — Handles key presses on the menu.
+ *   - handleKeyPressOpenMenu: function(KeyboardEvent) — Handles key presses when the menu is open.
  *   - handleOnOpen: function() — Function to open the menu.
  *   - handleOnClose: function() — Function to close the menu.
  */
 export default function useMenuNavigation ({
-    menuRef,
-    itemRefs,
     depth,
     defaultIndexOnOpen = 0
 }) {
+    const menuRef = useRef(null);
     const menuContext = useContext(MenuRefContext);
     const [focusedIndex, setFocusedIndex] = useState(-1);
 
-    const refocusRef = useCallback(ref => {
-        if (ref?.current) {
-            ref.current.focus();
-        }
-    }, []);
+    // BFS to find first children with attribute
+    const findDirectSubitems = () => {
+        if (!menuRef?.current) return [];
+        const directSubitems = [];
+        // Start from the wrapper if element is inside one
+        const root = menuRef.current?.parentElement?.matches(MENU_ITEM_WRAPPER_SELECTOR) ?
+            menuRef.current.parentElement : menuRef.current;
+        const children = [...root.children];
 
-    useEffect(() => {
-        if (focusedIndex >= 0) {
-            refocusRef(itemRefs[focusedIndex]);
+        while (children.length > 0) {
+            // if child is a menu item itself
+            const element = children.shift();
+            if (element.matches(MENU_ITEM_SELECTOR)) {
+                // Skip original starting element if we went back to the wrapper
+                if (element !== menuRef.current) {
+                    directSubitems.push(element);
+                }
+                continue;
+            }
+            
+            if (element.matches(MENU_ITEM_WRAPPER_SELECTOR)) {
+                const wrappedItems = Array.from(element.children).filter(child =>
+                    child.matches(MENU_ITEM_SELECTOR)
+                );
+                directSubitems.push(...wrappedItems);
+            } else {
+                children.push(...element.children);
+            }
         }
-    }, [focusedIndex, refocusRef]);
+
+        return directSubitems;
+    };
 
     const isExpanded = useCallback(
         () => menuContext.isOpenMenu(menuRef),
         [menuContext, menuRef]
     );
 
+    const refocusIndex = useCallback(index => {
+        const items = findDirectSubitems(menuRef);
+        if (items?.[index]) {
+            items[index].focus();
+            setFocusedIndex(index);
+        }
+    }, [menuRef]);
+
     const handleOnOpen = useCallback(() => {
         if (menuContext.isOpenMenu(menuRef)) return;
 
         menuContext.openInnerMenu(menuRef, depth);
-        setFocusedIndex(defaultIndexOnOpen);
+
+        // Wait for the UI to be rendered before interacting with the DOM
+        requestAnimationFrame(() => {
+            refocusIndex(defaultIndexOnOpen);
+        });
     }, [menuContext, menuRef, depth, defaultIndexOnOpen]);
 
     const handleOnClose = useCallback(() => {
         setFocusedIndex(-1);
         menuContext.closeMenuByRef(menuRef);
-        refocusRef(menuRef);
-    }, [menuContext, menuRef, refocusRef]);
+        menuRef?.current?.focus();
+    }, [menuContext, menuRef]);
 
     const handleMove = useCallback(direction => {
-        // Calculate the next focused menu item index based on the direction.
-        // Wraps around the list so that moving past the first or last item
-        // loops to the other end, preventing out-of-bounds errors.
-        const nextIndex =
-            (focusedIndex + direction + itemRefs.length) %
-            itemRefs.length;
+        const items = findDirectSubitems(menuRef);
+        if (!items?.length) return;
 
-        setFocusedIndex(nextIndex);
-    }, [focusedIndex, itemRefs]);
+        const nextIndex = (focusedIndex + direction + items.length) % items.length;
+        refocusIndex(nextIndex);
+    }, [focusedIndex, menuRef, refocusIndex]);
 
     const handleKeyPressOpenMenu = useCallback(e => {
+        const items = findDirectSubitems(menuRef);
+
         // Logic for vertical menus, will need to change when implementing for vertical
-        if (e.key === KEY.ARROW_DOWN) {
+        switch (e.key) {
+        case KEY.ARROW_DOWN:
             e.preventDefault();
             handleMove(1);
-        }
-        if (e.key === KEY.ARROW_UP) {
+            break;
+        case KEY.ARROW_UP:
             e.preventDefault();
             handleMove(-1);
-        }
-        if (e.key === KEY.ARROW_LEFT || e.key === KEY.ESCAPE) {
+            break;
+        case KEY.ESCAPE:
+        case KEY.ARROW_LEFT:
             e.preventDefault();
             handleOnClose();
-        }
-
-        if (e.key === KEY.ENTER) {
+            break;
+        case KEY.ENTER:
             e.preventDefault();
             e.stopPropagation();
-            const focusedRef = itemRefs[focusedIndex];
-            if (focusedRef?.current) {
-                focusedRef.current.click();
-            }
+            items[focusedIndex]?.click();
+            break;
         }
-    }, [handleMove, handleOnClose, itemRefs, focusedIndex]);
+
+    }, [handleMove, handleOnClose, focusedIndex]);
 
     const handleKeyPress = useCallback(e => {
         if (isExpanded() && depth === 1 && e.key === KEY.TAB) {
             handleOnClose();
             menuContext.closeAllMenus();
+            return;
         }
 
         if (menuContext.isInnermostMenu(menuRef)) {
@@ -142,12 +179,12 @@ export default function useMenuNavigation ({
     ]);
 
     return {
+        menuRef,
         focusedIndex,
         isExpanded,
         handleKeyPress,
         handleKeyPressOpenMenu,
         handleOnOpen,
-        handleOnClose,
-        refocusRef
+        handleOnClose
     };
 }
