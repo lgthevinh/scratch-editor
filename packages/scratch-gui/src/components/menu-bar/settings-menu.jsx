@@ -64,7 +64,7 @@ const SettingsMenu = ({
         isExpanded,
         handleOnOpen,
         handleOnClose,
-        handleKeyPress,
+        handleKeyDown,
         menuRef
     } = useMenuNavigation({
         depth: 1
@@ -77,7 +77,7 @@ const SettingsMenu = ({
         aria-expanded={isExpanded()}
         aria-label={intl.formatMessage(settingsMenuAriaMessage)}
         onClick={handleOnOpen}
-        onKeyDown={handleKeyPress}
+        onKeyDown={handleKeyDown}
         ref={menuRef}
     >
         <img src={settingsIcon} />

@@ -32,8 +32,8 @@ const LanguageMenu = ({
 
     const {
         isExpanded,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         handleOnOpen,
         menuRef
     } = useMenuNavigation({
@@ -71,7 +71,7 @@ const LanguageMenu = ({
                 aria-label={intl.formatMessage(languageMenu)}
                 aria-expanded={isExpanded()}
                 tabIndex={-1}
-                onKeyDown={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 data-menu-item="true"
             >
                 <img
@@ -105,7 +105,7 @@ const LanguageMenu = ({
                                 // eslint-disable-next-line react/jsx-no-bind
                                 onClick={() => onChangeLanguage(locale)}
                                 data-menu-item="true"
-                                onParentKeyPress={handleKeyPressOpenMenu}
+                                onParentKeyPress={handleKeyDownOpenMenu}
                                 isSelected={isSelected}
                             >
                                 <img

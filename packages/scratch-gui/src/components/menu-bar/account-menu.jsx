@@ -44,8 +44,8 @@ const AccountMenu = ({
         isExpanded,
         handleOnOpen,
         handleOnClose,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
         depth: 1
@@ -61,7 +61,7 @@ const AccountMenu = ({
                     {[stylesMenuBar.active]: isExpanded()}
                 )}
                 onClick={handleOnOpen}
-                onKeyDown={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 aria-label={intl.formatMessage(accountMenu)}
                 aria-expanded={isExpanded()}
                 ref={menuRef}
@@ -96,7 +96,7 @@ const AccountMenu = ({
                     <MenuItemContainer
                         href={profileUrl}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <FormattedMessage
                             defaultMessage="Profile"
@@ -110,7 +110,7 @@ const AccountMenu = ({
                     <MenuItemContainer
                         href={myStuffUrl}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <FormattedMessage
                             defaultMessage="My Stuff"
@@ -124,7 +124,7 @@ const AccountMenu = ({
                     <MenuItemContainer
                         href={myClassesUrl}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <FormattedMessage
                             defaultMessage="My Classes"
@@ -138,7 +138,7 @@ const AccountMenu = ({
                     <MenuItemContainer
                         href={myClassUrl}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <FormattedMessage
                             defaultMessage="My Class"
@@ -152,7 +152,7 @@ const AccountMenu = ({
                     <MenuItemContainer
                         href={accountSettingsUrl}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <FormattedMessage
                             defaultMessage="Account settings"
@@ -167,7 +167,7 @@ const AccountMenu = ({
                         <MenuItemContainer
                             onClick={onLogOut}
                             data-menu-item="true"
-                            onParentKeyPress={handleKeyPressOpenMenu}
+                            onParentKeyPress={handleKeyDownOpenMenu}
                         >
                             <FormattedMessage
                                 defaultMessage="Sign out"

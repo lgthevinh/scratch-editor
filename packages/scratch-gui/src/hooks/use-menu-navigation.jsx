@@ -25,7 +25,7 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  * 1. In the top-level menu trigger (button/div/...) pass:
  *    - onClick={handleOnOpen}
  *    - ref={menuRef}
- *    - onKeyDown={handleKeyPress}
+ *    - onKeyDown={handleKeyDown}
  *    - tabIndex={0} if it's the core menu accessible via Tab
  *    - aria-expanded={isExpanded()}
  * 2. Mark each submenu item or leaf menu item with:
@@ -43,8 +43,8 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  *   - menuRef: reference to element to be used in component
  *   - focusedIndex: number — Index of the currently focused menu item.
  *   - isExpanded: function() — Returns true if the menu is expanded.
- *   - handleKeyPress: function(KeyboardEvent) — Handles key presses on the menu.
- *   - handleKeyPressOpenMenu: function(KeyboardEvent) — Handles key presses when the menu is open.
+ *   - handleKeyDown: function(KeyboardEvent) — Handles key presses on the menu.
+ *   - handleKeyDownOpenMenu: function(KeyboardEvent) — Handles key presses when the menu is open.
  *   - handleOnOpen: function() — Function to open the menu.
  *   - handleOnClose: function() — Function to close the menu.
  */
@@ -127,7 +127,7 @@ export default function useMenuNavigation ({
         refocusIndex(nextIndex);
     }, [focusedIndex, menuRef, refocusIndex]);
 
-    const handleKeyPressOpenMenu = useCallback(e => {
+    const handleKeyDownOpenMenu = useCallback(e => {
         const items = findDirectSubitems(menuRef);
 
         // Logic for vertical menus, will need to change when implementing for vertical
@@ -154,7 +154,7 @@ export default function useMenuNavigation ({
 
     }, [handleMove, handleOnClose, focusedIndex]);
 
-    const handleKeyPress = useCallback(e => {
+    const handleKeyDown = useCallback(e => {
         if (isExpanded() && depth === 1 && e.key === KEY.TAB) {
             handleOnClose();
             menuContext.closeAllMenus();
@@ -162,7 +162,7 @@ export default function useMenuNavigation ({
         }
 
         if (menuContext.isInnermostMenu(menuRef)) {
-            handleKeyPressOpenMenu(e);
+            handleKeyDownOpenMenu(e);
         } else if (!isExpanded() && (e.key === KEY.SPACE ||
             (e.key === KEY.ARROW_RIGHT && depth !== 1))) {
             e.preventDefault();
@@ -173,7 +173,7 @@ export default function useMenuNavigation ({
         menuContext,
         menuRef,
         isExpanded,
-        handleKeyPressOpenMenu,
+        handleKeyDownOpenMenu,
         handleOnOpen,
         handleOnClose
     ]);
@@ -182,8 +182,8 @@ export default function useMenuNavigation ({
         menuRef,
         focusedIndex,
         isExpanded,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         handleOnOpen,
         handleOnClose
     };

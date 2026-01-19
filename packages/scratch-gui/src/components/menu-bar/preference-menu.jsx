@@ -65,8 +65,8 @@ const PreferenceMenu = ({
 
     const {
         isExpanded,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         handleOnOpen,
         menuRef
     } = useMenuNavigation({
@@ -84,7 +84,7 @@ const PreferenceMenu = ({
                 ref={menuRef}
                 aria-expanded={isExpanded()}
                 tabIndex={-1}
-                onKeyDown={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 data-menu-item="true"
             >
                 <img
@@ -102,7 +102,7 @@ const PreferenceMenu = ({
             <Submenu place={isRtl ? 'left' : 'right'}>
                 {itemKeys.map(itemKey => (
                     <PreferenceItem
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                         data-menu-item="true"
                         key={itemKey}
                         isSelected={itemKey === selectedItemKey}

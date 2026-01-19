@@ -29,8 +29,8 @@ const EditMenu = ({
     const {
         menuRef,
         isExpanded,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
@@ -45,7 +45,7 @@ const EditMenu = ({
             onClick={handleOnOpen}
             aria-label={intl.formatMessage(editMenuAriaMessage)}
             aria-expanded={isExpanded()}
-            onKeyDown={handleKeyPress}
+            onKeyDown={handleKeyDown}
             ref={menuRef}
         >
             <img src={editIcon} />
@@ -68,7 +68,7 @@ const EditMenu = ({
                         className={classNames({[styles.disabled]: !restorable})}
                         onClick={onRestoreOption(handleRestore)}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                         isDisabled={!restorable}
                     >
                         {restoreOptionMessage(deletedItem)}
@@ -79,7 +79,7 @@ const EditMenu = ({
                         <MenuItem
                             onClick={toggleTurboMode}
                             data-menu-item="true"
-                            onParentKeyPress={handleKeyPressOpenMenu}
+                            onParentKeyPress={handleKeyDownOpenMenu}
                         >
                             {turboMode ? (
                                 <FormattedMessage

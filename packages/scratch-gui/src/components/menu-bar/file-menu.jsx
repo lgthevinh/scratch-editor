@@ -44,8 +44,8 @@ const FileMenu = ({
     const {
         menuRef,
         isExpanded,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
@@ -83,7 +83,7 @@ const FileMenu = ({
             aria-label={intl.formatMessage(fileMenu)}
             aria-expanded={isExpanded()}
             ref={menuRef}
-            onKeyDown={handleKeyPress}
+            onKeyDown={handleKeyDown}
         >
             <img src={fileIcon} />
             <span className={styles.collapsibleLabel}>
@@ -105,7 +105,7 @@ const FileMenu = ({
                         isRtl={isRtl}
                         onClick={onClickNew}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         {newProjectMessage}
                     </MenuItem>
@@ -116,7 +116,7 @@ const FileMenu = ({
                             <MenuItem
                                 onClick={onClickSave}
                                 data-menu-item="true"
-                                onParentKeyPress={handleKeyPressOpenMenu}
+                                onParentKeyPress={handleKeyDownOpenMenu}
                             >
                                 {saveNowMessage}
                             </MenuItem>
@@ -125,7 +125,7 @@ const FileMenu = ({
                             <MenuItem
                                 onClick={onClickSaveAsCopy}
                                 data-menu-item="true"
-                                onParentKeyPress={handleKeyPressOpenMenu}
+                                onParentKeyPress={handleKeyDownOpenMenu}
                             >
                                 {createCopyMessage}
                             </MenuItem>
@@ -134,7 +134,7 @@ const FileMenu = ({
                             <MenuItem
                                 onClick={onClickRemix}
                                 data-menu-item="true"
-                                onParentKeyPress={handleKeyPressOpenMenu}
+                                onParentKeyPress={handleKeyDownOpenMenu}
                             >
                                 {remixMessage}
                             </MenuItem>
@@ -145,7 +145,7 @@ const FileMenu = ({
                     <MenuItem
                         onClick={onStartSelectingFileUpload}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         {intl.formatMessage(sharedMessages.loadFromComputerTitle)}
                     </MenuItem>
@@ -154,7 +154,7 @@ const FileMenu = ({
                             className={className}
                             onClick={getSaveToComputerHandler(downloadProjectCallback)}
                             data-menu-item="true"
-                            onParentKeyPress={handleKeyPressOpenMenu}
+                            onParentKeyPress={handleKeyDownOpenMenu}
                         >
                             <FormattedMessage
                                 defaultMessage="Save to your computer"

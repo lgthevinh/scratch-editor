@@ -32,8 +32,8 @@ const ModeMenu = ({
         isExpanded,
         handleOnOpen,
         handleOnClose,
-        handleKeyPress,
-        handleKeyPressOpenMenu,
+        handleKeyDown,
+        handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
         depth: 1
@@ -48,7 +48,7 @@ const ModeMenu = ({
             ref={menuRef}
             aria-label={intl.formatMessage(modeMenu)}
             aria-expanded={isExpanded()}
-            onKeyDown={handleKeyPress}
+            onKeyDown={handleKeyDown}
         >
             <div className={classNames(styles.editMenu)}>
                 <FormattedMessage
@@ -67,7 +67,7 @@ const ModeMenu = ({
                     <MenuItem
                         onClick={onSetMode(EditorModes.NOW)}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <span className={classNames({[styles.inactive]: !modeNow})}>
                             {'✓'}
@@ -82,7 +82,7 @@ const ModeMenu = ({
                     <MenuItem
                         onClick={onSetMode(EditorModes.MODE_2020)}
                         data-menu-item="true"
-                        onParentKeyPress={handleKeyPressOpenMenu}
+                        onParentKeyPress={handleKeyDownOpenMenu}
                     >
                         <span className={classNames({[styles.inactive]: !mode2020})}>
                             {'✓'}

@@ -58,8 +58,8 @@ const AboutMenu = ({
         isExpanded,
         handleOnOpen,
         handleOnClose,
-        handleKeyPress,
-        handleKeyPressOpenMenu
+        handleKeyDown,
+        handleKeyDownOpenMenu
     } = useMenuNavigation({
         depth: 1
     });
@@ -78,7 +78,7 @@ const AboutMenu = ({
                 [styles.active]: isExpanded()
             })}
             onClick={handleOnOpen}
-            onKeyDown={handleKeyPress}
+            onKeyDown={handleKeyDown}
             aria-label={intl.formatMessage(aboutMenuMessage)}
             aria-expanded={isExpanded()}
             ref={menuRef}
@@ -99,7 +99,7 @@ const AboutMenu = ({
                             key={itemProps.title}
                             isRtl={isRtl}
                             onClick={wrapAboutMenuCallback(itemProps.onClick)}
-                            onParentKeyPress={handleKeyPressOpenMenu}
+                            onParentKeyPress={handleKeyDownOpenMenu}
                             data-menu-item="true"
                         >
                             {itemProps.title}
