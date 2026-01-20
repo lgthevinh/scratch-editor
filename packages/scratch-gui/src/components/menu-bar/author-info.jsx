@@ -37,8 +37,6 @@ const AuthorInfo = ({
         />
         <div
             className={styles.titleAuthor}
-            tabIndex={0}
-            role="presentation"
             aria-label={intl.formatMessage(authorInfo, {
                 projectTitle,
                 username

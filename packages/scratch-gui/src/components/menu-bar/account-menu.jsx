@@ -48,11 +48,15 @@ const AccountMenu = ({
         handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
-        depth: 1
+        depth: 1,
+        buttonContainsMenuItems: false
     });
 
     return (
-        <React.Fragment>
+        <div
+            data-menu-item-wrapper="true"
+            className={styles.accountMenu}
+        >
             <button
                 className={classNames(
                     styles.userInfo,
@@ -61,10 +65,10 @@ const AccountMenu = ({
                     {[stylesMenuBar.active]: isExpanded()}
                 )}
                 onClick={handleOnOpen}
+                ref={menuRef}
                 onKeyDown={handleKeyDown}
                 aria-label={intl.formatMessage(accountMenu)}
                 aria-expanded={isExpanded()}
-                ref={menuRef}
             >
                 {avatarUrl ? (
                     <UserAvatar
@@ -178,7 +182,7 @@ const AccountMenu = ({
                     </MenuSection>
                 ) : null}
             </MenuBarMenu>
-        </React.Fragment>
+        </div>
     );
 };
 

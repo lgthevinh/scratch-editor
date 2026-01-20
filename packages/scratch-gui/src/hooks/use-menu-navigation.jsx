@@ -39,6 +39,8 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  *   Nesting depth of the menu (1 = top-level menu).
  * @param {number} [params.defaultIndexOnOpen]
  *   Default menu item index to focus when opening the menu.
+ * @param {number} [params.buttonContainsMenuItems]
+ *   Set to false in case the menu items are not children of the button for the dropdown.
  * @returns {object} An object containing the menu state and keyboard handlers:
  *   - menuRef: reference to element to be used in component
  *   - focusedIndex: number — Index of the currently focused menu item.
@@ -50,7 +52,8 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  */
 export default function useMenuNavigation ({
     depth,
-    defaultIndexOnOpen = 0
+    defaultIndexOnOpen = 0,
+    buttonContainsMenuItems = true
 }) {
     const menuRef = useRef(null);
     const menuContext = useContext(MenuRefContext);
@@ -128,6 +131,17 @@ export default function useMenuNavigation ({
 
     const handleKeyDownOpenMenu = useCallback(e => {
         const items = findDirectSubitems(menuRef);
+
+        // copies logic from handleKeyDown in case the opening clickable
+        // component doesn't contain its subitems as children
+        // it is a little bit hacky, some of the logic here could be refactored a little bit
+        if (!buttonContainsMenuItems) {
+            if (isExpanded() && depth === 1 && e.key === KEY.TAB) {
+                handleOnClose();
+                menuContext.closeAllMenus();
+                return;
+            }
+        }
 
         // Logic for vertical menus, will need to change when implementing for vertical
         switch (e.key) {

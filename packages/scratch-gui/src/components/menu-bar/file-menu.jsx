@@ -102,7 +102,6 @@ const FileMenu = ({
             >
                 <MenuSection>
                     <MenuItem
-                        isRtl={isRtl}
                         onClick={onClickNew}
                         data-menu-item="true"
                         onParentKeyPress={handleKeyDownOpenMenu}

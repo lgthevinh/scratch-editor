@@ -334,7 +334,6 @@ class MenuBar extends React.Component {
                         </div>
                         {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) &&
                         (<SettingsMenu
-                            depth={1}
                             canChangeLanguage={this.props.canChangeLanguage}
                             canChangeColorMode={this.props.canChangeColorMode}
                             canChangeTheme={this.props.canChangeTheme}
@@ -342,7 +341,6 @@ class MenuBar extends React.Component {
                             isRtl={this.props.isRtl}
                         />)}
                         {(this.props.canManageFiles) && (<FileMenu
-                            depth={1}
                             onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
                             onClickNew={this.handleClickNew}
                             onClickRemix={this.props.onClickRemix}
@@ -357,13 +355,11 @@ class MenuBar extends React.Component {
                             remixMessage={remixMessage}
                         />)}
                         <EditMenu
-                            depth={1}
                             isRtl={this.props.isRtl}
                             onRestoreOption={this.handleRestoreOption}
                             restoreOptionMessage={this.restoreOptionMessage}
                         />
                         {this.props.isTotallyNormal && (<ModeMenu
-                            depth={1}
                             onSetMode={this.handleSetMode}
                             modeNow={this.props.modeNow}
                             mode2020={this.props.mode2020}

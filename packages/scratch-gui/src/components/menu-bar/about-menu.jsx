@@ -97,7 +97,6 @@ const AboutMenu = ({
                     onClick.map(itemProps => (
                         <MenuItem
                             key={itemProps.title}
-                            isRtl={isRtl}
                             onClick={wrapAboutMenuCallback(itemProps.onClick)}
                             onParentKeyPress={handleKeyDownOpenMenu}
                             data-menu-item="true"
@@ -112,7 +111,7 @@ const AboutMenu = ({
 };
 
 AboutMenu.propTypes = {
-    isRtl: PropTypes.bool.isRequired,
+    isRtl: PropTypes.bool,
     onClick: PropTypes.oneOfType([
         PropTypes.func, // button mode: call this callback when the About button is clicked
         PropTypes.arrayOf( // menu mode: list of items in the About menu

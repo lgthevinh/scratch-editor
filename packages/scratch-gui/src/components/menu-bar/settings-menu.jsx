@@ -132,7 +132,7 @@ SettingsMenu.propTypes = {
     canChangeColorMode: PropTypes.bool.isRequired,
     canChangeTheme: PropTypes.bool.isRequired,
     hasActiveMembership: PropTypes.bool.isRequired,
-    isRtl: PropTypes.bool.isRequired,
+    isRtl: PropTypes.bool,
     activeColorMode: PropTypes.string,
     onChangeColorMode: PropTypes.func,
     activeTheme: PropTypes.string,
@@ -141,7 +141,8 @@ SettingsMenu.propTypes = {
 
 const mapStateToProps = state => ({
     activeColorMode: state.scratchGui.settings.colorMode,
-    activeTheme: state.scratchGui.settings.theme
+    activeTheme: state.scratchGui.settings.theme,
+    isRtl: state.locales.isRtl
 });
 
 const mapDispatchToProps = dispatch => ({
