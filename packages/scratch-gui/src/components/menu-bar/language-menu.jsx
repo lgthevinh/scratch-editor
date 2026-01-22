@@ -24,7 +24,8 @@ const languageMenu = defineMessage({
 const LanguageMenu = ({
     currentLocale,
     isRtl,
-    onChangeLanguage
+    onChangeLanguage,
+    depth
 }) => {
     const intl = useIntl();
 
@@ -37,7 +38,7 @@ const LanguageMenu = ({
         handleOnOpen,
         menuRef
     } = useMenuNavigation({
-        depth: 2,
+        depth,
         defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale))
     });
 
@@ -119,7 +120,8 @@ const LanguageMenu = ({
 LanguageMenu.propTypes = {
     currentLocale: PropTypes.string,
     isRtl: PropTypes.bool,
-    onChangeLanguage: PropTypes.func
+    onChangeLanguage: PropTypes.func,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

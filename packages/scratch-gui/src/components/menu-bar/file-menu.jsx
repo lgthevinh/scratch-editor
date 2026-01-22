@@ -37,7 +37,8 @@ const FileMenu = ({
     onClickRemix,
     onStartSelectingFileUpload,
     getSaveToComputerHandler,
-    remixMessage
+    remixMessage,
+    depth
 }) => {
     const intl = useIntl();
 
@@ -49,7 +50,7 @@ const FileMenu = ({
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
-        depth: 1
+        depth
     });
 
     const saveNowMessage = (
@@ -179,7 +180,8 @@ FileMenu.propTypes = {
     onClickRemix: PropTypes.func,
     onClickNew: PropTypes.func.isRequired,
     getSaveToComputerHandler: PropTypes.func.isRequired,
-    remixMessage: PropTypes.node
+    remixMessage: PropTypes.node,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

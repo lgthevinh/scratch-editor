@@ -9,7 +9,8 @@ import Button from '../button/button.jsx';
 import {MenuItem} from '../menu/menu.jsx';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
-import styles from './menu-bar.css';
+import stylesMenuBar from './menu-bar.css';
+import stylesAboutMenu from './about-menu.css';
 import aboutIcon from './icon--about.svg';
 
 const aboutMenuMessage = defineMessage({
@@ -22,8 +23,8 @@ const AboutButton = props => {
     const intl = useIntl();
 
     return (<Button
-        className={classNames(styles.menuBarItem, styles.hoverable)}
-        iconClassName={styles.aboutIcon}
+        className={classNames(stylesMenuBar.menuBarItem, stylesMenuBar.hoverable)}
+        iconClassName={stylesAboutMenu.aboutIcon}
         iconSrc={aboutIcon}
         onClick={props.onClick}
         aria-label={intl.formatMessage(aboutMenuMessage)}
@@ -36,7 +37,8 @@ AboutButton.propTypes = {
 
 const AboutMenu = ({
     onClick,
-    isRtl
+    isRtl,
+    depth
 }) => {
     if (!onClick) {
         // hide the button
@@ -61,7 +63,7 @@ const AboutMenu = ({
         handleKeyDown,
         handleKeyDownOpenMenu
     } = useMenuNavigation({
-        depth: 1
+        depth
     });
 
     const wrapAboutMenuCallback = useCallback(
@@ -74,8 +76,8 @@ const AboutMenu = ({
 
     return (
         <button
-            className={classNames(styles.menuBarItem, styles.hoverable, {
-                [styles.active]: isExpanded()
+            className={classNames(stylesMenuBar.menuBarItem, stylesMenuBar.hoverable, {
+                [stylesMenuBar.active]: isExpanded()
             })}
             onClick={handleOnOpen}
             onKeyDown={handleKeyDown}
@@ -84,11 +86,11 @@ const AboutMenu = ({
             ref={menuRef}
         >
             <img
-                className={styles.aboutIcon}
+                className={stylesAboutMenu.aboutIcon}
                 src={aboutIcon}
             />
             <MenuBarMenu
-                className={classNames(styles.menuBarMenu)}
+                className={classNames(stylesMenuBar.menuBarMenu)}
                 open={isExpanded()}
                 place={isRtl ? 'right' : 'left'}
                 onRequestClose={handleOnClose}
@@ -120,7 +122,8 @@ AboutMenu.propTypes = {
                 onClick: PropTypes.func // call this callback when the menu item is clicked
             })
         )
-    ])
+    ]),
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

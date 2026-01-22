@@ -1,4 +1,4 @@
-import styles from './account-menu.css';
+import stylesAccountMenu from './account-menu.css';
 import stylesMenuBar from './menu-bar.css';
 import classNames from 'classnames';
 import React from 'react';
@@ -26,7 +26,8 @@ const AccountMenu = ({
     username,
     isRtl,
     onLogOut,
-    avatarBadge
+    avatarBadge,
+    depth
 }) => {
     const {
         avatarUrl,
@@ -48,14 +49,14 @@ const AccountMenu = ({
         handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
-        depth: 1
+        depth
     });
 
     return (
         <button
             className={classNames(
                 stylesMenuBar.accountInfoGroup,
-                styles.accountMenu
+                stylesAccountMenu.accountMenu
             )}
             ref={menuRef}
             onKeyDown={handleKeyDown}
@@ -65,7 +66,7 @@ const AccountMenu = ({
         >
             <div
                 className={classNames(
-                    styles.userInfo,
+                    stylesAccountMenu.userInfo,
                     stylesMenuBar.menuBarItem,
                     stylesMenuBar.hoverable,
                     {[stylesMenuBar.active]: isExpanded()}
@@ -73,16 +74,17 @@ const AccountMenu = ({
             >
                 {avatarUrl ? (
                     <UserAvatar
-                        className={styles.avatar}
-                        wrapperClassName={styles.avatarWrapper}
+                        className={stylesAccountMenu.avatar}
+                        wrapperClassName={stylesAccountMenu.avatarWrapper}
                         imageUrl={avatarUrl}
                         showAvatarBadge={!!avatarBadge}
                     />
                 ) : null}
-                <span className={styles.profileName}>
+                <span className={stylesAccountMenu.profileName}>
                     {username}
                 </span>
-                <div className={styles.dropdownCaretPosition}>
+                <div className={stylesAccountMenu.dropdownCaretPosition}>
+                    {/* TODO: consider reapplying stylesMenuBar.dropdownCaretIcon */}
                     <img src={dropdownCaret} />
                 </div>
             </div>
@@ -189,7 +191,8 @@ AccountMenu.propTypes = {
     isRtl: PropTypes.bool,
     username: PropTypes.string,
     onLogOut: PropTypes.func,
-    avatarBadge: PropTypes.number
+    avatarBadge: PropTypes.number,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

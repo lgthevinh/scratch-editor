@@ -22,7 +22,8 @@ const editMenuAriaMessage = defineMessage({
 const EditMenu = ({
     isRtl,
     onRestoreOption,
-    restoreOptionMessage
+    restoreOptionMessage,
+    depth
 }) => {
     const intl = useIntl();
 
@@ -34,7 +35,7 @@ const EditMenu = ({
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
-        depth: 1
+        depth
     });
 
     return (
@@ -105,7 +106,8 @@ const EditMenu = ({
 EditMenu.propTypes = {
     isRtl: PropTypes.bool,
     restoreOptionMessage: PropTypes.func.isRequired,
-    onRestoreOption: PropTypes.func.isRequired
+    onRestoreOption: PropTypes.func.isRequired,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

@@ -40,7 +40,8 @@ const SettingsMenu = ({
     activeColorMode,
     onChangeColorMode,
     activeTheme,
-    onChangeTheme
+    onChangeTheme,
+    depth
 }) => {
     const intl = useIntl();
 
@@ -66,7 +67,7 @@ const SettingsMenu = ({
         handleKeyDown,
         menuRef
     } = useMenuNavigation({
-        depth: 1
+        depth
     });
 
     return (<button
@@ -97,7 +98,7 @@ const SettingsMenu = ({
             onRequestClose={handleOnClose}
         >
             <MenuSection>
-                {canChangeLanguage && <LanguageMenu />}
+                {canChangeLanguage && <LanguageMenu depth={2} />}
                 {canChangeTheme &&
                     // TODO: Consider always showing the theme menu, even if there is a single available theme
                     availableThemesLength > 1 &&
@@ -112,6 +113,7 @@ const SettingsMenu = ({
                         }}
                         selectedItemKey={activeTheme}
                         isRtl={isRtl}
+                        depth={2}
                     />}
                 {canChangeColorMode && <PreferenceMenu
                     itemsMap={enabledColorModesMap}
@@ -123,6 +125,7 @@ const SettingsMenu = ({
                     }}
                     selectedItemKey={activeColorMode}
                     isRtl={isRtl}
+                    depth={2}
                 />}
             </MenuSection>
         </MenuBarMenu>
@@ -138,7 +141,8 @@ SettingsMenu.propTypes = {
     activeColorMode: PropTypes.string,
     onChangeColorMode: PropTypes.func,
     activeTheme: PropTypes.string,
-    onChangeTheme: PropTypes.func
+    onChangeTheme: PropTypes.func,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

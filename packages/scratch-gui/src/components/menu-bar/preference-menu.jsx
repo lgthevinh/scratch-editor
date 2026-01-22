@@ -58,7 +58,8 @@ const PreferenceMenu = ({
     defaultMenuIconSrc,
     submenuLabel,
     selectedItemKey,
-    isRtl
+    isRtl,
+    depth
 }) => {
     const itemKeys = Object.keys(itemsMap);
     const selectedItem = itemsMap[selectedItemKey];
@@ -70,7 +71,7 @@ const PreferenceMenu = ({
         handleOnOpen,
         menuRef
     } = useMenuNavigation({
-        depth: 2
+        depth
     });
 
     return (
@@ -123,7 +124,8 @@ PreferenceMenu.propTypes = {
     defaultMenuIconSrc: PropTypes.string,
     submenuLabel: intlMessageShape.isRequired,
     selectedItemKey: PropTypes.string,
-    isRtl: PropTypes.bool
+    isRtl: PropTypes.bool,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

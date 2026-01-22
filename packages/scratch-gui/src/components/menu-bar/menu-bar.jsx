@@ -339,6 +339,7 @@ class MenuBar extends React.Component {
                             canChangeTheme={this.props.canChangeTheme}
                             hasActiveMembership={this.props.hasActiveMembership}
                             isRtl={this.props.isRtl}
+                            depth={1}
                         />)}
                         {(this.props.canManageFiles) && (<FileMenu
                             onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
@@ -353,17 +354,20 @@ class MenuBar extends React.Component {
                             intl={this.props.intl}
                             isRtl={this.props.isRtl}
                             remixMessage={remixMessage}
+                            depth={1}
                         />)}
                         <EditMenu
                             isRtl={this.props.isRtl}
                             onRestoreOption={this.handleRestoreOption}
                             restoreOptionMessage={this.restoreOptionMessage}
+                            depth={1}
                         />
                         {this.props.isTotallyNormal && (<ModeMenu
                             onSetMode={this.handleSetMode}
                             modeNow={this.props.modeNow}
                             mode2020={this.props.mode2020}
                             isRtl={this.props.isRtl}
+                            depth={1}
                         />)}
                     </div>
                     {this.props.canEditTitle ? (
@@ -508,6 +512,7 @@ class MenuBar extends React.Component {
                                     isRtl={this.props.isRtl}
                                     onLogOut={this.props.onLogOut}
                                     avatarBadge={this.props.avatarBadge}
+                                    depth={1}
                                 />
                             </React.Fragment>
                         ) : (
@@ -610,6 +615,7 @@ class MenuBar extends React.Component {
                     <AboutMenu
                         onClick={this.props.onClickAbout}
                         isRtl={this.props.isRtl}
+                        depth={1}
                     />
                 )}
             </Box>

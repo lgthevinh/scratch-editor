@@ -24,7 +24,8 @@ const ModeMenu = ({
     isRtl,
     mode2020,
     modeNow,
-    onSetMode
+    onSetMode,
+    depth
 }) => {
     const intl = useIntl();
 
@@ -36,7 +37,7 @@ const ModeMenu = ({
         handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
-        depth: 1
+        depth
     });
 
     return (
@@ -104,7 +105,8 @@ ModeMenu.propTypes = {
     onSetMode: PropTypes.func.isRequired,
     modeNow: PropTypes.bool.isRequired,
     mode2020: PropTypes.bool.isRequired,
-    isRtl: PropTypes.bool
+    isRtl: PropTypes.bool,
+    depth: PropTypes.number
 };
 
 const mapStateToProps = state => ({

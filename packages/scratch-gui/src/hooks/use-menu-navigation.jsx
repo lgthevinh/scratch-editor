@@ -51,7 +51,7 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  *   - handleOnClose: function() — Function to close the menu.
  */
 export default function useMenuNavigation ({
-    depth,
+    depth = 1,
     defaultIndexOnOpen = 0
 }) {
     const menuRef = useRef(null);
