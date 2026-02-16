@@ -1,6 +1,6 @@
 import {FormattedMessage, defineMessages, useIntl} from 'react-intl';
 import PropTypes from 'prop-types';
-import React, {useCallback, useContext, useLayoutEffect} from 'react';
+import React, {useCallback, useRef, useLayoutEffect} from 'react';
 import {connect} from 'react-redux';
 import VM from '@scratch/scratch-vm';
 
@@ -21,7 +21,8 @@ import styles from './stage-header.css';
 import {storeProjectThumbnail} from '../../lib/store-project-thumbnail.js';
 import dataURItoBlob from '../../lib/data-uri-to-blob.js';
 import throttle from 'lodash.throttle';
-import {ModalFocusContext} from '../../contexts/modal-focus-context.jsx';
+
+import useFocusTrap from '../../hooks/useFocusTrap.js';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -74,22 +75,18 @@ const StageHeaderComponent = function (props) {
     } = props;
     const intl = useIntl();
 
-    const {
-        captureFocus,
-        restoreFocus,
-        restrictFocusableElements,
-        unrestrictFocusableElements
-    } = useContext(ModalFocusContext);
+    const containerRef = useRef(null);
+    const {trapFocus, releaseFocus} = useFocusTrap(containerRef);
 
     useLayoutEffect(() => {
         if (isFullScreen) {
-            captureFocus();
-            restrictFocusableElements();
+            trapFocus();
         } else {
-            unrestrictFocusableElements();
-            restoreFocus();
+            releaseFocus();
         }
-    }, [isFullScreen]);
+
+        return releaseFocus;
+    }, [isFullScreen, trapFocus, releaseFocus]);
 
     let header = null;
 
@@ -144,7 +141,10 @@ const StageHeaderComponent = function (props) {
             </div>
         );
         header = (
-            <Box className={styles.stageHeaderWrapperOverlay}>
+            <Box
+                className={styles.stageHeaderWrapperOverlay}
+                componentRef={containerRef}
+            >
                 <Box
                     className={styles.stageMenuWrapper}
                     style={{width: stageDimensions.width}}

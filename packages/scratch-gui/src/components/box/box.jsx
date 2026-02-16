@@ -48,6 +48,7 @@ const Box = props => {
         style,
         ...componentProps
     } = props;
+    
     return React.createElement(element, {
         className: classNames(className, styles.box),
         ref: componentRef,
