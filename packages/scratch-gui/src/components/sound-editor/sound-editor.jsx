@@ -157,6 +157,7 @@ const SoundEditor = props => {
                     <div className={styles.buttonGroup}>
                         <button
                             aria-label={intl.formatMessage(messages.undo)}
+                            title={intl.formatMessage(messages.undo)}
                             className={styles.button}
                             disabled={!props.canUndo}
                             onClick={props.onUndo}
@@ -171,6 +172,7 @@ const SoundEditor = props => {
                             className={styles.button}
                             disabled={!props.canRedo}
                             aria-label={intl.formatMessage(messages.redo)}
+                            title={intl.formatMessage(messages.redo)}
                             onClick={props.onRedo}
                         >
                             <img
@@ -233,6 +235,7 @@ const SoundEditor = props => {
                         <button
                             className={classNames(styles.roundButton, styles.stopButton)}
                             aria-label={intl.formatMessage(messages.stop)}
+                            title={intl.formatMessage(messages.stop)}
                             onClick={props.onStop}
                         >
                             <img
@@ -244,6 +247,7 @@ const SoundEditor = props => {
                         <button
                             className={classNames(styles.roundButton, styles.playButton)}
                             aria-label={intl.formatMessage(messages.play)}
+                            title={intl.formatMessage(messages.play)}
                             onClick={props.onPlay}
                         >
                             <img
