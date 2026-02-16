@@ -16,14 +16,43 @@ const ActionMenu = ({
     onClick
 }) => {
     const [forceHide, setForceHide] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const closeTimeoutRef = useRef(null);
     const mainTooltipId = useRef(`tooltip-${Math.random()}`).current;
-
     const containerRef = useRef(null);
     const buttonRef = useRef(null);
-    const [isExpanded, setIsExpanded] = useState(false);
     const itemRefs = useRef([]);
+
+    const handleToggleOpenState = useCallback(() => {
+        // Mouse enter back in after timeout was started prevents it from closing.
+        
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        } else if (!isExpanded) {
+            setIsExpanded(true);
+            setForceHide(false);
+        }
+    }, [isExpanded]);
+
+    const handleTouchStart = useCallback(e => {
+    // Prevent this touch from becoming a click if menu is closed
+        if (!isExpanded) {
+            e.preventDefault();
+            handleToggleOpenState();
+        }
+    }, [isExpanded, handleToggleOpenState]);
+    
+    useEffect(() => {
+        const buttonEl = buttonRef.current;
+        if (!buttonEl) return;
+
+        buttonEl.addEventListener('touchstart', handleTouchStart);
+        return () => {
+            buttonEl.removeEventListener('touchstart', handleTouchStart);
+        };
+    }, [handleTouchStart]);
 
     useEffect(() => {
         if (!isExpanded) {
@@ -73,16 +102,11 @@ const ActionMenu = ({
     }, [itemRefs, focusItem]);
 
     const handleKeyDown = useCallback(e => {
-        switch (e.key) {
-        case KEY.ARROW_DOWN:
+        if (e.key === KEY.ARROW_DOWN || e.key === KEY.ARROW_UP) {
             e.preventDefault();
-            handleMove(1);
-            break;
-        case KEY.ARROW_UP:
-            e.preventDefault();
-            handleMove(-1);
-            break;
-        case KEY.TAB:
+            const direction = e.key === KEY.ARROW_UP ? -1 : 1;
+            handleMove(direction);
+        } else if (e.key === KEY.TAB) {
             setIsExpanded(false);
             // A little bit hacky logic for shift + tab to move focus to previous element
             if (e.shiftKey) {
@@ -115,18 +139,6 @@ const ActionMenu = ({
         }, CLOSE_DELAY);
     }, []);
 
-    const handleToggleOpenState = useCallback(() => {
-        // Mouse enter back in after timeout was started prevents it from closing.
-        
-        if (closeTimeoutRef.current) {
-            clearTimeout(closeTimeoutRef.current);
-            closeTimeoutRef.current = null;
-        } else if (!isExpanded) {
-            setIsExpanded(true);
-            setForceHide(false);
-        }
-    }, [isExpanded]);
-
     const clickDelayer = useCallback(
         // Return a wrapped action that manages the menu closing.
         // @todo we may be able to use react-transition for this in the future
@@ -144,24 +156,6 @@ const ActionMenu = ({
         }),
         []
     );
-
-    const handleTouchStart = useCallback(e => {
-    // Prevent this touch from becoming a click if menu is closed
-        if (!isExpanded) {
-            e.preventDefault();
-            handleToggleOpenState();
-        }
-    }, [isExpanded, handleToggleOpenState]);
-    
-    useEffect(() => {
-        const buttonEl = buttonRef.current;
-        if (!buttonEl) return;
-
-        buttonEl.addEventListener('touchstart', handleTouchStart);
-        return () => {
-            buttonEl.removeEventListener('touchstart', handleTouchStart);
-        };
-    }, [handleTouchStart]);
 
     return (
         <div
@@ -216,10 +210,7 @@ const ActionMenu = ({
                             const hasFileInput = fileInput;
                             const tooltipId = `${mainTooltipId}-${title}`;
                             return (
-                                <li
-                                    key={`${tooltipId}-${keyId}`}
-                                    tabIndex={-1}
-                                >
+                                <li key={`${tooltipId}-${keyId}`}>
                                     <button
                                         aria-label={title}
                                         className={classNames(styles.button, styles.moreButton, {
