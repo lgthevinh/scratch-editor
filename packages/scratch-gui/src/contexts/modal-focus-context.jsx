@@ -8,8 +8,6 @@ export const ModalFocusContext = createContext(null);
  *
  * It keeps track of the element that was focused prior to a modal opening (`captureFocus`)
  * and attempts to restore focus to that element when the modal closes (`restoreFocus`).
- * It can make all other elements outside the modal unfocusable via tab (`restrictFocusableElements`)
- * and return their original focusability (`unrestrictFocusableElements`).
  *
  * This uses a ref to store the DOM element, ensuring that focus restoration only occurs
  * if the original element is still connected to the DOM.
@@ -36,10 +34,7 @@ export const ModalFocusProvider = ({children}) => {
             captureFocus,
             restoreFocus
         }),
-        [
-            captureFocus,
-            restoreFocus
-        ]
+        [captureFocus, restoreFocus]
     );
 
     return (
