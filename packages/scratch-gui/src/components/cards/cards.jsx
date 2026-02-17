@@ -357,7 +357,7 @@ const Cards = props => {
     const cardRef = useRef(null);
 
     useEffect(() => {
-    // Only focus if there’s an actual tutorial step (image/video)
+        // Only focus if there’s an actual tutorial step (image/video)
         const steps = content[activeDeckId]?.steps;
         const isTutorialStep = steps?.[step]?.video || steps?.[step]?.image;
 
