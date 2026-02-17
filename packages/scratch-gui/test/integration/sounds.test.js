@@ -49,7 +49,7 @@ describe('Working with sounds', () => {
         await clickText('Chomp'); // Should close the modal, then click the sounds in the selector
         await findByXpath("//input[@value='Chomp']"); // Should show editor for new sound
 
-        await clickXpath('//button[@aria-label="Play"]');
+        await clickXpath('//button[@title="Play"]');
 
         await clickText('Louder');
         await clickText('Softer');

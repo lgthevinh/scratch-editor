@@ -68,7 +68,7 @@ describe('Sound Editor Container', () => {
         expect(mockAudioBufferPlayer.instance.play).not.toHaveBeenCalled();
         expect(mockAudioBufferPlayer.instance.stop).not.toHaveBeenCalled();
 
-        const playButton = screen.getByRole('button', {name: 'Play'});
+        const playButton = screen.getByTitle('Play');
         fireEvent.click(playButton);
         expect(mockAudioBufferPlayer.instance.play).toHaveBeenCalled();
 
@@ -77,7 +77,7 @@ describe('Sound Editor Container', () => {
             mockAudioBufferPlayer.instance.onUpdate(0.5);
         });
 
-        const stopButton = await waitFor(() => screen.getByRole('button', {name: 'Stop'}));
+        const stopButton = await waitFor(() => screen.getByTitle('Stop'));
         fireEvent.click(stopButton);
         expect(mockAudioBufferPlayer.instance.stop).toHaveBeenCalled();
     });

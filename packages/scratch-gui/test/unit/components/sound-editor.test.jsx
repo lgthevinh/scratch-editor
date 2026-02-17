@@ -60,7 +60,7 @@ describe('Sound Editor Component', () => {
                 playhead={null}
             />
         );
-        const playButton = container.querySelector('button[aria-label="Play"]');
+        const playButton = container.querySelector('button[title="Play"]');
         fireEvent.click(playButton);
         expect(props.onPlay).toHaveBeenCalled();
     });
@@ -72,7 +72,7 @@ describe('Sound Editor Component', () => {
                 playhead={0.5}
             />
         );
-        const stopButton = container.querySelector('button[aria-label="Stop"]');
+        const stopButton = container.querySelector('button[title="Stop"]');
         fireEvent.click(stopButton);
         expect(props.onStop).toHaveBeenCalled();
     });
@@ -155,7 +155,7 @@ describe('Sound Editor Component', () => {
                 />
             );
 
-            const undoButtonEnabled = container.querySelector('button[aria-label="Undo"]');
+            const undoButtonEnabled = container.querySelector('button[title="Undo"]');
             expect(undoButtonEnabled.disabled).toBe(true);
         });
 
@@ -167,7 +167,7 @@ describe('Sound Editor Component', () => {
                 />
             );
 
-            const redoButtonEnabled = container.querySelector('button[aria-label="Redo"]');
+            const redoButtonEnabled = container.querySelector('button[title="Redo"]');
             expect(redoButtonEnabled.disabled).toBe(true);
         });
     });
@@ -178,7 +178,7 @@ describe('Sound Editor Component', () => {
                 <SoundEditor {...props} />
             );
 
-            const undoButton = container.querySelector('button[aria-label="Undo"]');
+            const undoButton = container.querySelector('button[title="Undo"]');
             fireEvent.click(undoButton);
             expect(props.onUndo).toHaveBeenCalled();
         });
@@ -188,7 +188,7 @@ describe('Sound Editor Component', () => {
                 <SoundEditor {...props} />
             );
 
-            const redoButton = container.querySelector('button[aria-label="Redo"]');
+            const redoButton = container.querySelector('button[title="Redo"]');
             fireEvent.click(redoButton);
             expect(props.onRedo).toHaveBeenCalled();
         });

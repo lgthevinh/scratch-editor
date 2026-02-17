@@ -17,6 +17,7 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         <button
           aria-label="Undo"
+          title="Undo"
         >
           <img
             draggable="false"
@@ -25,6 +26,7 @@ exports[`Sound Editor Component matches snapshot 1`] = `
         </button>
         <button
           aria-label="Redo"
+          title="Redo"
         >
           <img
             draggable="false"
@@ -162,6 +164,7 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <button
         aria-label="Stop"
         class=""
+        title="Stop"
       >
         <img
           draggable="false"

@@ -18,6 +18,7 @@ exports[`Sound Editor Container should pass the correct data to the component fr
         <button
           aria-label="Undo"
           disabled=""
+          title="Undo"
         >
           <img
             draggable="false"
@@ -27,6 +28,7 @@ exports[`Sound Editor Container should pass the correct data to the component fr
         <button
           aria-label="Redo"
           disabled=""
+          title="Redo"
         >
           <img
             draggable="false"
@@ -111,6 +113,7 @@ exports[`Sound Editor Container should pass the correct data to the component fr
       <button
         aria-label="Play"
         class=""
+        title="Play"
       >
         <img
           draggable="false"
