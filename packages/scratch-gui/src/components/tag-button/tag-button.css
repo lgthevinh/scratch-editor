@@ -14,7 +14,7 @@
     max-height: 1rem;
 }
 
-.active {
+.tag-button.active {
     background: $data-primary;
 }
 

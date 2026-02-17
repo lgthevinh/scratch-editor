@@ -5,7 +5,7 @@ const categorySeparator = '<sep gap="36"/>';
 
 const blockSeparator = '<sep gap="36"/>'; // At default scale, about 28px
 
- 
+
 const motion = function (isInitialSetup, isStage, targetId, colors) {
     const stageSelected = ScratchBlocks.ScratchMsgs.translate(
         'MOTION_STAGE_SELECTED',
@@ -513,6 +513,7 @@ const sensing = function (isInitialSetup, isStage, targetId, colors) {
         <block id="current" type="sensing_current"/>
         <block type="sensing_dayssince2000"/>
         ${blockSeparator}
+        <block id="online" type="sensing_online" />
         <block type="sensing_username"/>
         ${categorySeparator}
     </category>
@@ -736,7 +737,7 @@ const myBlocks = function (isInitialSetup, isStage, targetId, colors) {
     </category>
     `;
 };
- 
+
 
 const xmlOpen = '<xml style="display: none">';
 const xmlClose = '</xml>';

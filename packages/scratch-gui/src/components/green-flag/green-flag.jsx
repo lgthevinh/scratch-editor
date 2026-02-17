@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, {useCallback} from 'react';
 import {defineMessage, useIntl} from 'react-intl';
 
 import greenFlagIcon from './icon--green-flag.svg';
@@ -23,10 +23,20 @@ const GreenFlagComponent = function (props) {
     } = props;
 
     const intl = useIntl();
+
+    // Unfocus so project stage can capture keyboard events for
+    // blocks that react to arrow movement for example
+    const handleOnClick = useCallback(e => {
+        onClick(e);
+
+        const target = e.currentTarget;
+        if (target) target.blur();
+    }, [onClick]);
+
     return (
         <button
             className={styles.greenFlagButton}
-            onClick={onClick}
+            onClick={handleOnClick}
             aria-label={intl.formatMessage(startProjectMessage)}
             data-focusable={isFullScreen || null}
             {...componentProps}
