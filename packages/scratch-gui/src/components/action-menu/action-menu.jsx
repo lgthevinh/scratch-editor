@@ -83,18 +83,16 @@ const ActionMenu = ({
 
     const handleOnFocus = useCallback(() => {
         setIsExpanded(true);
-        const items = itemRefs.current;
-        if (!items.length) return;
-
-        // default to last item (first above)
-        const defaultItem = items[items.length - 1];
-        focusItem(defaultItem);
-        // TODO: refresh tooltip so it repositions correctly
-    }, [itemRefs, focusItem, setIsExpanded]);
+    }, [setIsExpanded]);
 
     const handleMove = useCallback(direction => {
         const items = itemRefs.current;
         if (!items.length) return;
+
+        if (!items.includes(document.activeElement)) {
+            focusItem(direction === 1 ? items[0] : items[items.length - 1]);
+            return;
+        }
 
         const currentIndex = items.indexOf(document.activeElement);
         const nextIndex = (currentIndex + direction + items.length) % items.length;
@@ -108,27 +106,7 @@ const ActionMenu = ({
             handleMove(direction);
         } else if (e.key === KEY.TAB) {
             setIsExpanded(false);
-            // A little bit hacky logic for shift + tab to move focus to previous element
-            if (e.shiftKey) {
-                e.preventDefault();
-                const focusables = Array.from(
-                    document.querySelectorAll('a, button, input, select, textarea, [tabindex]')
-                );
-
-                const filteredFocusables = focusables.filter(el => {
-                    // Skip disabled, hidden, or tabindex=-1
-                    if (el.disabled) return false;
-                    if (el.offsetParent === null) return false;
-                    const tabindex = el.getAttribute('tabindex');
-                    if (tabindex === '-1') return false;
-                    return true;
-                });
-                const currentIndex = filteredFocusables.indexOf(buttonRef.current);
-                if (currentIndex > 0) {
-                    filteredFocusables[currentIndex - 1].focus();
-                }
-            }
-            return;
+            focusItem(buttonRef.current);
         }
     }, [handleMove, isExpanded, setIsExpanded]);
 
@@ -165,6 +143,7 @@ const ActionMenu = ({
             })}
             onMouseEnter={handleToggleOpenState}
             onMouseLeave={handleClosePopover}
+            onKeyDown={handleKeyDown}
             onFocus={handleToggleOpenState}
             onBlur={handleClosePopover}
             ref={containerRef}
@@ -220,7 +199,6 @@ const ActionMenu = ({
                                         data-tip={title}
                                         onClick={hasFileInput ? handleClick : clickDelayer(handleClick)}
                                         tabIndex={-1}
-                                        onKeyDown={handleKeyDown}
                                         ref={el => {
                                             itemRefs.current[keyId] = el;
                                         }}
