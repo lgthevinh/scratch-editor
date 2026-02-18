@@ -54,12 +54,6 @@ const ActionMenu = ({
         };
     }, [handleTouchStart]);
 
-    useEffect(() => {
-        if (!isExpanded) {
-            buttonRef?.current?.blur();
-        }
-    }, [isExpanded, buttonRef]);
-
     // Handle clicks/touches outside to close menu
     useEffect(() => {
         const handleTouchOutside = e => {
@@ -81,10 +75,6 @@ const ActionMenu = ({
         }
     }, []);
 
-    const handleOnFocus = useCallback(() => {
-        setIsExpanded(true);
-    }, [setIsExpanded]);
-
     const handleMove = useCallback(direction => {
         const items = itemRefs.current;
         if (!items.length) return;
@@ -104,7 +94,7 @@ const ActionMenu = ({
             e.preventDefault();
             const direction = e.key === KEY.ARROW_UP ? -1 : 1;
             handleMove(direction);
-        } else if (e.key === KEY.TAB) {
+        } else if (e.key === KEY.TAB || e.key === KEY.ESCAPE) {
             setIsExpanded(false);
             focusItem(buttonRef.current);
         }
@@ -153,7 +143,6 @@ const ActionMenu = ({
                 className={classNames(styles.button, styles.mainButton)}
                 data-for={mainTooltipId}
                 data-tip={mainTitle}
-                onFocus={handleOnFocus}
                 onClick={clickDelayer(onClick)}
                 ref={buttonRef}
             >
@@ -256,4 +245,7 @@ ActionMenu.propTypes = {
     tooltipPlace: PropTypes.string
 };
 
-export default ActionMenu;
+export default React.memo(ActionMenu, (prevProps, nextProps) =>
+    // Only re-render if the title changes
+    prevProps.title === nextProps.title
+);
