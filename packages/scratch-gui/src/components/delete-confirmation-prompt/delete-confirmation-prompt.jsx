@@ -1,5 +1,5 @@
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
-import React, {useCallback} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
@@ -91,6 +91,8 @@ const DeleteConfirmationPrompt = ({
 
     return (<ReactModal
         isOpen
+        // We have to inline the styles, since a part
+        // of them are dynamically generated
         style={{
             content: {
                 ...modalPositionValues,
