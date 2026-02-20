@@ -22,7 +22,7 @@ import {storeProjectThumbnail} from '../../lib/store-project-thumbnail.js';
 import dataURItoBlob from '../../lib/data-uri-to-blob.js';
 import throttle from 'lodash.throttle';
 
-import useFocusTrap from '../../hooks/useFocusTrap.js';
+import useFocusTrap from '../../hooks/use-focus-trap.js';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -130,7 +130,6 @@ const StageHeaderComponent = function (props) {
                     className={styles.stageButton}
                     onClick={handleExitFullScreen}
                     onKeyPress={onKeyPress}
-                    aria-label={intl.formatMessage(messages.unFullStageSizeMessage)}
                     data-focusable
                 >
                     <img

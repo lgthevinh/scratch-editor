@@ -55,6 +55,7 @@ const DirectionPicker = props => {
     const containerRef = useRef(null);
     const popoverRef = useRef(null);
 
+    // Close the popover once we focus out of it
     useEffect(() => {
         if (!props.popoverOpen) return;
 
