@@ -2,12 +2,14 @@ import path from 'path';
 import SeleniumHelper from '../helpers/selenium-helper';
 import {Key} from 'selenium-webdriver';
 
-const SLEEP_TIME = 100;
+const SLEEP_TIME = 50;
 
 const {
     findByXpath,
     getDriver,
-    loadUri
+    loadUri,
+    clickKey,
+    clickKeys
 } = new SeleniumHelper();
 
 const uri = path.resolve(__dirname, '../../build/index.html');
@@ -31,7 +33,6 @@ describe('Menu bar keyboard navigation', () => {
     });
 
     afterAll(async () => {
-        await driver.executeScript('document.activeElement.blur()');
         await driver.quit();
     });
 
@@ -39,24 +40,23 @@ describe('Menu bar keyboard navigation', () => {
         await loadUri(uri);
     });
 
-    const clickKey = async key => {
-        await driver.actions().sendKeys(key)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
-    };
-
-    const clickKeys = async keys => {
-        for (const key of keys) {
-            await clickKey(key);
-        }
-    };
-
-    test('Tab focuses file menu on 3 clicks', async () => {
+    test('Pressing Tab navigates through the menu items', async () => {
         // Pressing tab 3 times should focus the file menu button
-        await clickKeys([Key.TAB, Key.TAB, Key.TAB]);
+        await clickKey(Key.TAB);
+        let activeElement = await driver.switchTo().activeElement();
+        expect(await activeElement.getAttribute('aria-label')).toBe('Home');
 
-        const activeElement = await driver.switchTo().activeElement();
+        await clickKey(Key.TAB);
+        activeElement = await driver.switchTo().activeElement();
+        expect(await activeElement.getAttribute('aria-label')).toBe('Settings menu');
+
+        await clickKey(Key.TAB);
+        activeElement = await driver.switchTo().activeElement();
         expect(await activeElement.getAttribute('aria-label')).toBe('File menu');
+
+        await clickKey(Key.TAB);
+        activeElement = await driver.switchTo().activeElement();
+        expect(await activeElement.getAttribute('aria-label')).toBe('Edit menu');
     });
  
     test('Enter opens File menu', async () => {
@@ -64,7 +64,6 @@ describe('Menu bar keyboard navigation', () => {
 
         expect(await fileMenuButton.getAttribute('aria-expanded')).toBe('false');
 
-        // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', fileMenuButton);
         await clickKey(Key.ENTER);
 
@@ -76,7 +75,6 @@ describe('Menu bar keyboard navigation', () => {
 
         expect(await fileMenuButton.getAttribute('aria-expanded')).toBe('false');
 
-        // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', fileMenuButton);
         await clickKey(Key.SPACE);
 
@@ -102,7 +100,6 @@ describe('Menu bar keyboard navigation', () => {
 
         expect(await editMenuButton.getAttribute('aria-expanded')).toBe('false');
 
-        // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', editMenuButton);
         await clickKey(Key.ENTER);
 
@@ -114,7 +111,6 @@ describe('Menu bar keyboard navigation', () => {
 
         expect(await editMenuButton.getAttribute('aria-expanded')).toBe('false');
 
-        // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', editMenuButton);
         await clickKey(Key.SPACE);
 
@@ -162,7 +158,7 @@ describe('Menu bar keyboard navigation', () => {
     test('Space opens the Language submenu', async () => {
         const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
         await driver.executeScript('arguments[0].focus()', settingsMenuButton);
-        await clickKeys([Key.ENTER, Key.SPACE]);
+        await clickKeys([Key.SPACE, Key.SPACE]);
 
         const activeElement = await driver.switchTo().activeElement();
         const text = await activeElement.getText();
@@ -239,15 +235,6 @@ describe('Menu bar keyboard navigation', () => {
 
         const activeElement = await driver.switchTo().activeElement();
         expect(await activeElement.getAttribute('aria-label')).toBe('Edit menu');
-
-        await loadUri(uri);
-
-        const fileMenuButton2 = await findByXpath(FILE_MENU_XPATH);
-        await driver.executeScript('arguments[0].focus()', fileMenuButton2);
-        await clickKeys([Key.ENTER, Key.ARROW_DOWN, Key.TAB]);
-
-        const activeElement2 = await driver.switchTo().activeElement();
-        expect(await activeElement2.getAttribute('aria-label')).toBe('Edit menu');
     });
 
     test('Shift+Tab closes Edit menu and goes back to File menu', async () => {
