@@ -31,7 +31,6 @@ const logTopicChange = topicIndex => {
 
 const DebugModal = ({isOpen, onClose = () => {}}) => {
     const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
-    const slideRefs = React.useMemo(() => sections.map(() => React.createRef()), []);
 
     // Preload images
     useEffect(() => {
@@ -70,27 +69,30 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
         if ([KEY.ARROW_LEFT, KEY.ARROW_UP, KEY.ARROW_RIGHT, KEY.ARROW_DOWN].includes(e.key)) {
             e.preventDefault();
 
-            let nextIndex;
-            if (e.key === KEY.ARROW_LEFT || e.key === KEY.ARROW_UP) {
-                nextIndex = selectedTopicIndex > 0 ? selectedTopicIndex - 1 : sections.length - 1;
-            } else {
-                nextIndex = selectedTopicIndex < sections.length - 1 ? selectedTopicIndex + 1 : 0;
-            }
+            setSelectedTopicIndex(prev => {
+                let nextIndex = prev;
 
-            if (slideRefs[nextIndex] && slideRefs[nextIndex].current) {
-                slideRefs[nextIndex].current.focus();
-            }
+                if ((e.key === KEY.ARROW_LEFT || e.key === KEY.ARROW_UP) && prev > 0) {
+                    nextIndex = prev - 1;
+                } else if ((e.key === KEY.ARROW_RIGHT || e.key === KEY.ARROW_DOWN) &&
+                    prev < sections.length - 1) {
+                    nextIndex = prev + 1;
+                }
 
-            setSelectedTopicIndex(nextIndex);
-            logTopicChange(nextIndex);
+                if (nextIndex !== prev) {
+                    logTopicChange(nextIndex);
+                }
+
+                return nextIndex;
+            });
         }
-    }, [selectedTopicIndex]);
+    }, []);
 
     useEffect(() => {
         if (!isOpen) return;
 
-        window.addEventListener('keydown', handleKeyDownSlides);
-        return () => window.removeEventListener('keydown', handleKeyDownSlides);
+        document.addEventListener('keydown', handleKeyDownSlides);
+        return () => document.removeEventListener('keydown', handleKeyDownSlides);
     }, [isOpen, handleKeyDownSlides]);
 
     const handleKeyDownPrevious = useCallback(e => {
@@ -153,9 +155,7 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                             })}
                             // eslint-disable-next-line react/jsx-no-bind
                             onClick={() => handleTopicSelect(index)}
-                            tabIndex={-1}
                             role="button"
-                            ref={slideRefs[index]}
                         >
                             <div className={styles.debugIcon}>
                                 <img
