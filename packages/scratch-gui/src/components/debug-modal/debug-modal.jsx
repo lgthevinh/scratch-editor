@@ -96,13 +96,13 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
     }, [isOpen, handleKeyDownSlides]);
 
     const handleKeyDownPrevious = useCallback(e => {
-        if (e.key === KEY.ENTER) {
+        if (e.key === KEY.SPACE) {
             handlePrevious();
         }
     }, [handlePrevious]);
 
     const handleKeyDownNext = useCallback(e => {
-        if (e.key === KEY.ENTER) {
+        if (e.key === KEY.SPACE) {
             handleNext();
         }
     }, [handleNext]);
@@ -187,28 +187,32 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                         />
                     </div>
                     <div className={styles.navigationButtons}>
-                        <img
-                            src={prevIcon}
-                            alt="Previous"
+                        <button
                             onClick={handlePrevious}
-                            className={classNames(styles.previousIcon, {
-                                [styles.hidden]: selectedTopicIndex === 0
-                            })}
-                            tabIndex={0}
-                            role="button"
+                            className={classNames(styles.previousIcon,
+                                styles.buttonStyleRemover,
+                                {[styles.hidden]: selectedTopicIndex === 0})}
                             onKeyDown={handleKeyDownPrevious}
-                        />
-                        <img
-                            src={nextIcon}
-                            alt="Next"
+                        >
+                            <img
+                                src={prevIcon}
+                                alt="Previous"
+                            />
+                        </button>
+                        <button
                             onClick={handleNext}
-                            className={classNames(styles.nextIcon, {
-                                [styles.hidden]: selectedTopicIndex === sections.length - 1
-                            })}
-                            tabIndex={0}
-                            role="button"
+                            className={classNames(styles.nextIcon,
+                                styles.buttonStyleRemover,
+                                {
+                                    [styles.hidden]: selectedTopicIndex === sections.length - 1
+                                })}
                             onKeyDown={handleKeyDownNext}
-                        />
+                        >
+                            <img
+                                src={nextIcon}
+                                alt="Next"
+                            />
+                        </button>
                     </div>
                 </div>
             </div>

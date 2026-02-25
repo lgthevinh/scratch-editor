@@ -160,3 +160,15 @@
         margin: 5px;
     }
 }
+
+/* TO DO: export this class for reuse */
+.button-style-remover {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-align: inherit;
+}
