@@ -63,6 +63,35 @@ describe('useMenuNavigation', () => {
         expect(result.current.isExpanded()).toBe(false);
     });
 
+    test('skips over elements without data-menu-item or with data-menu-item="false"', () => {
+        const wrapperDiv = document.createElement('div');
+
+        const itemWithFalse = document.createElement('button');
+        itemWithFalse.setAttribute('data-menu-item', 'false');
+        wrapperDiv.appendChild(itemWithFalse);
+
+        const validItem = document.createElement('button');
+        validItem.setAttribute('data-menu-item', 'true');
+        wrapperDiv.appendChild(validItem);
+
+        document.body.appendChild(wrapperDiv);
+
+        const {result} = renderHook(() => useMenuNavigation({depth: 2, defaultIndexOnOpen: 0}), {
+            wrapper: createWrapper
+        });
+
+        result.current.menuRef.current = wrapperDiv;
+
+        const validFocusSpy = jest.spyOn(validItem, 'focus');
+        const invalidFocusSpy = jest.spyOn(itemWithFalse, 'focus');
+
+        result.current.handleOnOpen();
+        jest.runAllTimers();
+
+        expect(validFocusSpy).toHaveBeenCalled();
+        expect(invalidFocusSpy).not.toHaveBeenCalled();
+    });
+
     test('handleOnOpen should open menu and focus first item', () => {
         const focusSpy = jest.spyOn(item1, 'focus');
 
@@ -262,7 +291,7 @@ describe('useMenuNavigation', () => {
     //   <li data-menu-item>Item 2</li>
     //  </div>
     // <div>
-    test('handleOnOpen focuses first item inside submenu wrapper, not the button and then refocuses on close', () => {
+    test('focuses first item inside submenu wrapper with handleOnOpen, skipping parent menu button', () => {
         const wrapperDiv = document.createElement('div');
         wrapperDiv.setAttribute('tabIndex', '-1');
         wrapperDiv.setAttribute('data-menu-item-wrapper', 'true');
