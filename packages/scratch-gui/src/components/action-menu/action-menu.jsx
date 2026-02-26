@@ -17,6 +17,7 @@ const ActionMenu = ({
 }) => {
     const [forceHide, setForceHide] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const ignoreNextFocusRef = useRef(false);
 
     const closeTimeoutRef = useRef(null);
     const mainTooltipId = useRef(`tooltip-${Math.random()}`).current;
@@ -36,6 +37,10 @@ const ActionMenu = ({
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
         } else if (!isExpanded) {
+            if (ignoreNextFocusRef.current) {
+                ignoreNextFocusRef.current = false;
+                return;
+            }
             setIsExpanded(true);
             setForceHide(false);
             focusItem(buttonRef.current);
@@ -69,9 +74,9 @@ const ActionMenu = ({
             }
         };
 
-        document.addEventListener('touchstart', handleTouchOutside);
+        document.addEventListener('mousedown', handleTouchOutside);
         return () => {
-            document.removeEventListener('touchstart', handleTouchOutside);
+            document.removeEventListener('mousedown', handleTouchOutside);
         };
     }, [containerRef, setIsExpanded]);
 
@@ -91,15 +96,26 @@ const ActionMenu = ({
 
     const handleKeyDown = useCallback(e => {
         if (e.key === KEY.ARROW_DOWN || e.key === KEY.ARROW_UP) {
+            const direction = e.key === KEY.ARROW_UP ? -1 : 1;
             e.preventDefault();
             if (!isExpanded) {
                 setIsExpanded(true);
+                setTimeout(() => {
+                    handleMove(direction);
+                }, CLOSE_DELAY);
+            } else {
+                handleMove(direction);
             }
-            const direction = e.key === KEY.ARROW_UP ? -1 : 1;
-            handleMove(direction);
-        } else if (e.key === KEY.TAB || e.key === KEY.ESCAPE) {
+        } else if (e.key === KEY.TAB) {
             setIsExpanded(false);
             focusItem(buttonRef.current);
+        } else if (e.key === KEY.ESCAPE) {
+            e.stopPropagation();
+            setIsExpanded(false);
+            ignoreNextFocusRef.current = true;
+            requestAnimationFrame(() => {     
+                buttonRef.current?.focus();
+            });
         }
     }, [handleMove, isExpanded, setIsExpanded]);
 
@@ -172,7 +188,6 @@ const ActionMenu = ({
             onMouseLeave={handleClosePopover}
             onKeyDown={handleKeyDown}
             onFocus={handleToggleOpenState}
-            onBlur={handleClosePopover}
             ref={containerRef}
         >
             <button
