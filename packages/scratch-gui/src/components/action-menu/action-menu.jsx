@@ -98,13 +98,14 @@ const ActionMenu = ({
         if (e.key === KEY.ARROW_DOWN || e.key === KEY.ARROW_UP) {
             const direction = e.key === KEY.ARROW_UP ? -1 : 1;
             e.preventDefault();
-            if (!isExpanded) {
+            if (isExpanded) {
+                handleMove(direction);
+            } else {
                 setIsExpanded(true);
+                // wait to expand before moving focus to menu item and displaying tooltip
                 setTimeout(() => {
                     handleMove(direction);
                 }, CLOSE_DELAY);
-            } else {
-                handleMove(direction);
             }
         } else if (e.key === KEY.TAB) {
             setIsExpanded(false);
@@ -113,7 +114,7 @@ const ActionMenu = ({
             e.stopPropagation();
             setIsExpanded(false);
             ignoreNextFocusRef.current = true;
-            requestAnimationFrame(() => {     
+            requestAnimationFrame(() => {
                 buttonRef.current?.focus();
             });
         }
