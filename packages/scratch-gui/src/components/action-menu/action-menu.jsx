@@ -17,8 +17,7 @@ const ActionMenu = ({
 }) => {
     const [forceHide, setForceHide] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const lastFocusedItem = useRef(null);
-
+    
     const closeTimeoutRef = useRef(null);
     const mainTooltipId = useRef(`tooltip-${Math.random()}`).current;
     // refs to handle custom keyboard navigation behavior
@@ -28,19 +27,9 @@ const ActionMenu = ({
 
     const focusItem = useCallback(item => {
         if (item) {
-            lastFocusedItem.current = item;
             item.focus();
         }
     }, []);
-
-    const refocusLastFocusedItem = useCallback(() => {
-        requestAnimationFrame(() => {
-            if (lastFocusedItem.current) {
-                lastFocusedItem.current.blur();
-                focusItem(lastFocusedItem.current);
-            }
-        });
-    }, [focusItem]);
 
     const handleToggleOpenState = useCallback(() => {
         // Mouse enter back in after timeout was started prevents it from closing.
@@ -50,11 +39,7 @@ const ActionMenu = ({
         } else if (!isExpanded) {
             setIsExpanded(true);
             setForceHide(false);
-            focusItem(lastFocusedItem.current || buttonRef.current);
-            // tooltip refocus tweak
-            setTimeout(() => {
-                refocusLastFocusedItem();
-            }, CLOSE_DELAY);
+            focusItem(buttonRef.current);
         }
     }, [isExpanded]);
 
@@ -105,6 +90,13 @@ const ActionMenu = ({
         focusItem(items[nextIndex]);
     }, [itemRefs, focusItem]);
 
+    const handleClosePopover = useCallback(() => {
+        closeTimeoutRef.current = setTimeout(() => {
+            setIsExpanded(false);
+            closeTimeoutRef.current = null;
+        }, CLOSE_DELAY);
+    }, []);
+
     const handleKeyDown = useCallback(e => {
         if (e.key === KEY.ARROW_DOWN || e.key === KEY.ARROW_UP) {
             const direction = e.key === KEY.ARROW_UP ? -1 : 1;
@@ -124,30 +116,12 @@ const ActionMenu = ({
         } else if (e.key === KEY.ESCAPE) {
             focusItem(buttonRef.current);
         } else if (e.key === KEY.ENTER) {
-            // timeout in case it loads something that loses the tooltip message
-            // the exact delay number may need to adjust based on the time it takes to load
-            setTimeout(() => {
-                refocusLastFocusedItem();
-            }, CLOSE_DELAY);
+            ReactTooltip.hide();
+            setIsExpanded(false);
+            setForceHide(true);
+            buttonRef.current.blur();
         }
     }, [handleMove, isExpanded, setIsExpanded]);
-
-    const handleClosePopover = useCallback(() => {
-        closeTimeoutRef.current = setTimeout(() => {
-            setIsExpanded(false);
-            closeTimeoutRef.current = null;
-            lastFocusedItem.current = null;
-        }, CLOSE_DELAY);
-    }, []);
-
-    useEffect(() => {
-        if (isExpanded) {
-            refocusLastFocusedItem();
-            ReactTooltip.hide();
-        } else {
-            ReactTooltip.hide();
-        }
-    }, [isExpanded, focusItem, itemRefs.current.length]);
 
     // needed to resolve collision of styling based on mouse hovering and keyboard movement,
     // so as not to highlight multiple items at the same time
@@ -222,12 +196,10 @@ const ActionMenu = ({
                             
                             const handleClick = useCallback(e => {
                                 onClickItem(e);
-                                // timeout in case it loads something that loses the tooltip message
-                                // the exact delay number may need to adjust based on the time it takes to load
-                                lastFocusedItem.current = e.currentTarget;
-                                setTimeout(() => {
-                                    refocusLastFocusedItem();
-                                }, CLOSE_DELAY);
+                                ReactTooltip.hide();
+                                setIsExpanded(false);
+                                setForceHide(true);
+                                buttonRef.current.blur();
                             }, [onClickItem]);
 
                             return (
