@@ -230,9 +230,8 @@ const ProjectSaverHOC = function (WrappedComponent) {
          * @param  {number|string|undefined} projectId - defined value will PUT/update; undefined/null will POST/create
          * @returns {Promise} - resolves with json object containing project's existing or new id
          * @param {?object} requestParams - object of params to add to request body
-         * @param {?object} options - additional options for the store operation
          */
-        storeProject (projectId, requestParams, options) {
+        storeProject (projectId, requestParams) {
             requestParams = requestParams || {};
             this.clearAutoSaveTimeout();
             // Serialize VM state now before embarking on
@@ -268,18 +267,9 @@ const ProjectSaverHOC = function (WrappedComponent) {
                 .then(() => saveProject(projectId, savedVMState, requestParams))
                 .then(response => {
                     this.props.onSetProjectUnchanged();
-                    const id = response.id.toString();
-                    if (this.props.onUpdateProjectThumbnail && id && (
-                        !this.props.manuallySaveThumbnails ||
-                        // Always save thumbnail on project creation
-                        options?.isCreatingProject)) {
-                        storeProjectThumbnail(this.props.vm, dataURI => {
-                            this.props.onUpdateProjectThumbnail(
-                                id,
-                                dataURItoBlob(dataURI)
-                            );
-                        });
-                    }
+                    // Thumbnails are now manual only
+                    // Do not update thumbnail on save
+                    
                     this.reportTelemetryEvent('projectDidSave');
                     return response;
                 })
@@ -287,6 +277,26 @@ const ProjectSaverHOC = function (WrappedComponent) {
                     log.error(err);
                     throw err; // pass the error up the chain
                 });
+        }
+
+        updateThumbnail (projectId, requestParams, options) {
+            try {
+                if (this.props.onUpdateProjectThumbnail && projectId && (
+                    !this.props.manuallySaveThumbnails ||
+                    // Always save thumbnail on project creation
+                    options?.isCreatingProject)) {
+                    storeProjectThumbnail(this.props.vm, dataURI => {
+                        this.props.onUpdateProjectThumbnail(
+                            projectId,
+                            dataURItoBlob(dataURI),
+                            requestParams
+                        );
+                    });
+                }
+            } catch (err) {
+                log.error(err);
+                throw err;
+            }
         }
 
         /**
