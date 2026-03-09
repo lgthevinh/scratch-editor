@@ -135,7 +135,6 @@ const ActionMenu = ({
         if (items[index]) {
             focusItem(items[index]);
         } else {
-            console.log('focus main button');
             // Not a menu item, so it must be the main button
             focusItem(buttonRef.current);
         }
