@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import ReactTooltip from 'react-tooltip';
 import styles from './action-menu.css';
 import {KEY} from '../../lib/navigation-keys';
+import { set } from '../../../../scratch-svg-renderer/src/svg-element';
 
 const CLOSE_DELAY = 300; // ms
 
@@ -39,7 +40,10 @@ const ActionMenu = ({
         } else if (!isExpanded) {
             setIsExpanded(true);
             setForceHide(false);
-            focusItem(buttonRef.current);
+            setTimeout(() => {
+                document.activeElement.blur();
+                focusItem(buttonRef.current);
+            }, CLOSE_DELAY);
         }
     }, [isExpanded]);
 
@@ -131,6 +135,7 @@ const ActionMenu = ({
         if (items[index]) {
             focusItem(items[index]);
         } else {
+            console.log('focus main button');
             // Not a menu item, so it must be the main button
             focusItem(buttonRef.current);
         }
@@ -138,10 +143,12 @@ const ActionMenu = ({
 
     const handleItemClick = useCallback(onClickItem => e => {
         onClickItem(e);
-        ReactTooltip.hide();
-        setIsExpanded(false);
-        setForceHide(true);
-        buttonRef.current.blur();
+        document.activeElement.blur();
+        focusItem(buttonRef.current);
+        setTimeout(() => {
+            document.activeElement.blur();
+            focusItem(buttonRef.current);
+        }, CLOSE_DELAY);
     }, []);
 
     return (
