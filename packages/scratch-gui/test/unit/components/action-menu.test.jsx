@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import ActionMenu from '../../../src/components/action-menu/action-menu.jsx';
 import {KEY} from '../../../src/lib/navigation-keys';
 import React, {act} from 'react';
@@ -94,15 +94,14 @@ describe('ActionMenu keyboard navigation', () => {
         const firstItem = screen.getByRole('button', {name: 'Button 1'});
         expect(document.activeElement).toBe(firstItem);
 
-        await act(async () => {
-            await user.tab();
-            // Wait 1 second for any menu close animations or timeouts
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        act(() => {
+            user.tab();
         });
 
-        expect(document.activeElement).toBe(afterButton);
-        const menuContainer = mainButton.parentElement;
-        expect(menuContainer).not.toHaveClass('expanded');
+        await waitFor(() => {
+            expect(document.activeElement).toBe(afterButton);
+            expect(mainButton.parentElement).not.toHaveClass('expanded');
+        });
     });
 
     test('shift + tab closes menu and focuses previous element', async () => {
@@ -124,13 +123,13 @@ describe('ActionMenu keyboard navigation', () => {
 
         const menuContainer = mainButton.parentElement;
         expect(menuContainer).toHaveClass('expanded');
-        await act(async () => {
-            await user.tab({shift: true});
-            // Wait 1 second for any menu close animations or timeouts
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        act(() => {
+            user.tab({shift: true});
         });
-        
-        expect(document.activeElement).toBe(beforeButton);
-        expect(menuContainer).not.toHaveClass('expanded');
+
+        await waitFor(() => {
+            expect(document.activeElement).toBe(beforeButton);
+            expect(mainButton.parentElement).not.toHaveClass('expanded');
+        });
     });
 });
