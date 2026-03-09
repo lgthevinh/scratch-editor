@@ -4,7 +4,6 @@ import classNames from 'classnames';
 import ReactTooltip from 'react-tooltip';
 import styles from './action-menu.css';
 import {KEY} from '../../lib/navigation-keys';
-import { set } from '../../../../scratch-svg-renderer/src/svg-element';
 
 const CLOSE_DELAY = 300; // ms
 
@@ -31,6 +30,16 @@ const ActionMenu = ({
             item.focus();
         }
     }, []);
+   
+    useEffect(() => {
+        if (isExpanded) {
+            setTimeout(() => {
+                const focusedElement = document.activeElement;
+                focusedElement.blur();
+                focusItem(focusedElement);
+            }, CLOSE_DELAY * 1.5);
+        }
+    }, [isExpanded]);
 
     const handleToggleOpenState = useCallback(() => {
         // Mouse enter back in after timeout was started prevents it from closing.
@@ -40,10 +49,6 @@ const ActionMenu = ({
         } else if (!isExpanded) {
             setIsExpanded(true);
             setForceHide(false);
-            setTimeout(() => {
-                document.activeElement.blur();
-                focusItem(buttonRef.current);
-            }, CLOSE_DELAY);
         }
     }, [isExpanded]);
 
@@ -142,14 +147,11 @@ const ActionMenu = ({
 
     const handleItemClick = useCallback(onClickItem => e => {
         onClickItem(e);
-        document.activeElement.blur();
-        focusItem(buttonRef.current);
-        // Timeout to refocus tooltip after some page component loads,
-        // happens with some menu items
         setTimeout(() => {
-            document.activeElement.blur();
-            focusItem(buttonRef.current);
-        }, CLOSE_DELAY);
+            const focusedElement = document.activeElement;
+            focusedElement.blur();
+            focusItem(focusedElement);
+        }, CLOSE_DELAY * 1.5);
     }, []);
 
     return (
