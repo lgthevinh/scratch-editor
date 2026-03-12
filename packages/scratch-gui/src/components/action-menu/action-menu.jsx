@@ -36,9 +36,12 @@ const ActionMenu = ({
             const focusedElement = document.activeElement;
             focusedElement.blur();
             focusItem(focusedElement);
-        }, CLOSE_DELAY * 1.5);
-    }, []);
+        }, 500);
+        // wait enough time for rerenders to happen on the page
+        // that may lose the focus on the page, forcing us to rerender tooltip
+    }, [focusItem]);
    
+    // Restore focus after expanding (e.g., returning from a modal).
     useEffect(() => {
         if (isExpanded) {
             refocusActiveElement();
@@ -64,6 +67,8 @@ const ActionMenu = ({
         }
     }, [isExpanded, handleToggleOpenState]);
     
+    // Use native `touchstart` so the first tap opens the menu
+    // instead of triggering the button's click on touch devices.
     useEffect(() => {
         const buttonEl = buttonRef.current;
         if (!buttonEl) return;
@@ -74,7 +79,7 @@ const ActionMenu = ({
         };
     }, [handleTouchStart]);
 
-    // Handle clicks/touches outside to close menu
+    // Close the menu when clicking outside
     useEffect(() => {
         const handleTouchOutside = e => {
             if (containerRef.current && !containerRef.current.contains(e.target)) {
