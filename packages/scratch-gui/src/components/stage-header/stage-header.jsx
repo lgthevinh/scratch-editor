@@ -4,6 +4,11 @@ import React, {useCallback, useRef} from 'react';
 import {connect} from 'react-redux';
 import VM from '@scratch/scratch-vm';
 
+import {
+    showAlertWithTimeout,
+    showStandardAlert
+} from '../../reducers/alerts';
+
 import Box from '../box/box.jsx';
 import Button from '../button/button.jsx';
 import ToggleButtons from '../toggle-buttons/toggle-buttons.jsx';
@@ -82,7 +87,10 @@ const StageHeaderComponent = function (props) {
         stageSizeMode,
         vm,
         isInEditor,
-        isProjectLoaded
+        isProjectLoaded,
+        showThumbnailSetting,
+        showThumbnailSuccess,
+        showThumbnailError
     } = props;
     const intl = useIntl();
 
@@ -90,20 +98,26 @@ const StageHeaderComponent = function (props) {
 
     const [isThumbnailPromptOpen, setIsThumbnailPromptOpen] = React.useState(false);
 
+
     const onUpdateThumbnail = useCallback(
         throttle(
             () => {
-                if (!onUpdateProjectThumbnail) {
-                    return;
-                }
+                if (!onUpdateProjectThumbnail) return;
+
+                showThumbnailSetting();
 
                 storeProjectThumbnail(vm, dataURI => {
-                    onUpdateProjectThumbnail(projectId, dataURItoBlob(dataURI));
+                    try {
+                        onUpdateProjectThumbnail(projectId, dataURItoBlob(dataURI)).then();
+                        showThumbnailSuccess();
+                    } catch (e) {
+                        showThumbnailError();
+                    }
                 });
             },
             3000
         ),
-        [projectId, onUpdateProjectThumbnail]
+        [onUpdateProjectThumbnail, projectId, showThumbnailSetting, showThumbnailSuccess, showThumbnailError, vm]
     );
 
     const onThumbnailPromptOpen = useCallback(() => {
@@ -201,6 +215,7 @@ const StageHeaderComponent = function (props) {
                                 title={intl.formatMessage(messages.setThumbnail)}
                                 className={styles.stageButton}
                                 onClick={onThumbnailPromptOpen}
+                                // disabled={isUpdatingThumbnail}
                                 componentRef={thumbnailButtonRef}
                             >
                                 <img
@@ -255,6 +270,12 @@ const mapStateToProps = state => {
     };
 };
 
+const mapDispatchToProps = dispatch => ({
+    showThumbnailSetting: () => dispatch(showStandardAlert('settingThumbnail')),
+    showThumbnailSuccess: () => dispatch(showStandardAlert('thumbnailSuccess')),
+    showThumbnailError: () => dispatch(showStandardAlert('thumbnailError'))
+});
+
 StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
@@ -270,7 +291,10 @@ StageHeaderComponent.propTypes = {
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     vm: PropTypes.instanceOf(VM).isRequired,
     isInEditor: PropTypes.bool,
-    isProjectLoaded: PropTypes.bool
+    isProjectLoaded: PropTypes.bool,
+    showThumbnailSetting: PropTypes.func,
+    showThumbnailSuccess: PropTypes.func,
+    showThumbnailError: PropTypes.func
 };
 
 StageHeaderComponent.defaultProps = {
@@ -278,4 +302,4 @@ StageHeaderComponent.defaultProps = {
     isInEditor: false
 };
 
-export default connect(mapStateToProps)(StageHeaderComponent);
+export default connect(mapStateToProps, mapDispatchToProps)(StageHeaderComponent);

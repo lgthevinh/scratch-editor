@@ -5,6 +5,7 @@
 body .alert {
     width: 100%;
     display: flex;
+    box-sizing: border-box;
     flex-direction: row;
     overflow: hidden;
     justify-content: flex-start;
@@ -28,6 +29,11 @@ body .alert {
     background: $extensions-light;
     border: 1px solid $extensions-tertiary;
     box-shadow: 0px 0px 0px 2px $extensions-light;
+}
+
+.alert.blue {
+    border: 1px solid #4C97FF;
+    background: #E4F0FF;
 }
 
 .alert-spinner {
