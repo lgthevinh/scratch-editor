@@ -11,8 +11,6 @@
     background-color: #4C97FF;
     opacity: 1 !important;
 
-    --tooltip-arrow-color: #4C97FF;
-
     /* Basic Shadows/2dp */
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.06), 0 4px 16px 0 rgba(0, 0, 0, 0.12);
 }
@@ -36,4 +34,8 @@
     font-style: normal;
     font-weight: 400;
     line-height: 20px;
-}  
+}
+
+.tooltip-arrow {
+    background-color: transparent;
+}

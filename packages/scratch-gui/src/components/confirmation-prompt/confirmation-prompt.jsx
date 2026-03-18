@@ -148,14 +148,14 @@ const ConfirmationPrompt = ({
                             onClick={onCancel}
                             className={styles.cancelButton}
                         >
-                            {cancelLabel ?? intl.formatMessage(messages.defaultCancelLabel)}
+                            {cancelLabel ?? <FormattedMessage {...messages.defaultCancelLabel} />}
                         </button>
 
                         <button
                             onClick={onConfirm}
                             className={styles.confirmButton}
                         >
-                            {confirmLabel ?? intl.formatMessage(messages.defaultConfirmLabel)}
+                            {confirmLabel ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
                         </button>
                     </Box>
                 </Box>

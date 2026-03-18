@@ -284,7 +284,7 @@ const StageHeaderComponent = function (props) {
                         <ConfirmationPrompt
                             isOpen={isThumbnailPromptOpen}
                             title={messages.setThumbnail}
-                            message={<FormattedMessage {...messages.setThumbnailMessage} />}
+                            message={intl.formatMessage(messages.setThumbnailMessage)}
                             onConfirm={onUpdateThumbnailAndClose}
                             onCancel={onThumbnailPromptClose}
                             relativeElementRef={thumbnailButtonRef}

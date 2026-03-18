@@ -77,9 +77,11 @@ const Tooltip = ({
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        // The Blockly workspace suppresses compat events like `mouseup`.
+        // Listen for `pointerup` instead.
+        document.addEventListener('pointerup', handleClickOutside);
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('pointerup', handleClickOutside);
         };
     }, [isOpen, onRequestClose, targetRef]);
 
