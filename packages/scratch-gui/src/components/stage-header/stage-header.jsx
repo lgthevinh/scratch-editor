@@ -1,13 +1,10 @@
-import {defineMessages, useIntl} from 'react-intl';
+import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import PropTypes from 'prop-types';
-import React, {useCallback, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {connect} from 'react-redux';
 import VM from '@scratch/scratch-vm';
 
-import {
-    showAlertWithTimeout,
-    showStandardAlert
-} from '../../reducers/alerts';
+import {showAlertWithTimeout, showStandardAlert} from '../../reducers/alerts';
 
 import Box from '../box/box.jsx';
 import Button from '../button/button.jsx';
@@ -32,6 +29,8 @@ import {
     getIsUpdating
 } from '../../reducers/project-state.js';
 import ConfirmationPrompt from '../confirmation-prompt/confirmation-prompt.jsx';
+import Tooltip from '../tooltip/tooltip.jsx';
+import classNames from 'classnames';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -63,6 +62,17 @@ const messages = defineMessages({
         defaultMessage: 'Are you sure you want to set your thumbnail?',
         description: 'Confirmation message for manually saving project thumbnail',
         id: 'gui.stageHeader.saveThumbnailMessage'
+    },
+    thumbnailTooltipTitle: {
+        defaultMessage: 'Hey there! 👋',
+        description: 'Title for the thumbnail tooltip',
+        id: 'gui.stageHeader.thumbnailTooltipTitle'
+    },
+    thumbnailTooltipBody: {
+        defaultMessage: 'The “{boldText}” has a new spot. The way it works is by ' +
+            'taking a snapshot of your canvas and setting it as your project thumbnail.',
+        description: 'Body text for the thumbnail tooltip',
+        id: 'gui.stageHeader.thumbnailTooltipBody'
     },
     fullscreenControl: {
         defaultMessage: 'Full Screen Control',
@@ -97,13 +107,27 @@ const StageHeaderComponent = function (props) {
 
     let header = null;
 
-    const [isThumbnailPromptOpen, setIsThumbnailPromptOpen] = React.useState(false);
+    const thumbnailTooltipId = 'thumbnail-tooltip';
+    const thumbnailButtonRef = useRef(null);
+
+    const [isThumbnailPromptOpen, setIsThumbnailPromptOpen] = useState(false);
+    const [isThumbnailTooltipOpen, setIsThumbnailTooltipOpen] = useState(false);
+    const [isUpdatingThumbnail, setIsUpdatingThumbnail] = useState(false);
+
+    // To remove - new feature awareness tooltip
+    useEffect(() => {
+        if (manuallySaveThumbnails && isInEditor && isProjectLoaded &&
+            userOwnsProject && thumbnailButtonRef.current) {
+            setIsThumbnailTooltipOpen(true);
+        }
+    }, [manuallySaveThumbnails, isInEditor, isProjectLoaded, userOwnsProject]);
 
     const onUpdateThumbnail = useCallback(
         throttle(
             () => {
                 if (!onUpdateProjectThumbnail) return;
 
+                setIsUpdatingThumbnail(true);
                 showThumbnailSetting();
 
                 storeProjectThumbnail(vm, dataURI => {
@@ -112,6 +136,8 @@ const StageHeaderComponent = function (props) {
                         showThumbnailSuccess();
                     } catch (e) {
                         showThumbnailError();
+                    } finally {
+                        setIsUpdatingThumbnail(false);
                     }
                 });
             },
@@ -133,7 +159,13 @@ const StageHeaderComponent = function (props) {
         onThumbnailPromptClose();
     }, [onUpdateThumbnail]);
 
-    const thumbnailButtonRef = useRef(null);
+    const onOpenTooltip = useCallback(() => {
+        setIsThumbnailTooltipOpen(true);
+    }, []);
+
+    const onCloseTooltip = useCallback(() => {
+        setIsThumbnailTooltipOpen(false);
+    }, []);
 
     if (isFullScreen) {
         const stageDimensions = getStageDimensions(null, true);
@@ -209,14 +241,38 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls vm={vm} />
                     <div className={styles.stageSizeRow}>
+                        {/* To remove - new feature awareness tooltip */}
+                        <Tooltip
+                            isOpen={isThumbnailTooltipOpen}
+                            onRequestOpen={onOpenTooltip}
+                            onRequestClose={onCloseTooltip}
+                            targetRef={thumbnailButtonRef}
+                            primaryPosition="left"
+                            secondaryPosition="down"
+                            width={336}
+                            title={intl.formatMessage(messages.thumbnailTooltipTitle)}
+                            body={
+                                <FormattedMessage
+                                    {...messages.thumbnailTooltipBody}
+                                    values={{
+                                        boldText: <b>{intl.formatMessage(messages.setThumbnail)}</b>
+                                    }}
+                                />
+                            }
+                        />
                         {manuallySaveThumbnails && isInEditor && isProjectLoaded && userOwnsProject && (
                             <Button
                                 aria-label={intl.formatMessage(messages.setThumbnail)}
                                 title={intl.formatMessage(messages.setThumbnail)}
-                                className={styles.stageButton}
+                                className={classNames(
+                                    styles.stageButton,
+                                    {[styles.stageButtonHighlighted]: isThumbnailTooltipOpen}
+                                )}
                                 onClick={onThumbnailPromptOpen}
-                                // disabled={isUpdatingThumbnail}
+                                disabled={isUpdatingThumbnail}
                                 componentRef={thumbnailButtonRef}
+                                data-tip={intl.formatMessage(messages.setThumbnail)}
+                                data-for={thumbnailTooltipId}
                             >
                                 <img
                                     src={thumbnailIcon}
@@ -228,11 +284,12 @@ const StageHeaderComponent = function (props) {
                         <ConfirmationPrompt
                             isOpen={isThumbnailPromptOpen}
                             title={messages.setThumbnail}
-                            message={messages.setThumbnailMessage}
+                            message={<FormattedMessage {...messages.setThumbnailMessage} />}
                             onConfirm={onUpdateThumbnailAndClose}
                             onCancel={onThumbnailPromptClose}
-                            relativeElemRef={thumbnailButtonRef}
-                            modalPosition="down left"
+                            relativeElementRef={thumbnailButtonRef}
+                            primaryPosition="down"
+                            secondaryPosition="left"
                         />
                         {stageControls}
                         <div className={styles.rightSection}>
@@ -272,8 +329,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => ({
     showThumbnailSetting: () => dispatch(showStandardAlert('settingThumbnail')),
-    showThumbnailSuccess: () => dispatch(showStandardAlert('thumbnailSuccess')),
-    showThumbnailError: () => dispatch(showStandardAlert('thumbnailError'))
+    showThumbnailSuccess: () => showAlertWithTimeout(dispatch, 'thumbnailSuccess'),
+    showThumbnailError: () => showAlertWithTimeout(dispatch, 'thumbnailError')
 });
 
 StageHeaderComponent.propTypes = {

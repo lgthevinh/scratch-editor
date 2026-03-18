@@ -259,8 +259,7 @@ const alerts = [
         ),
         iconURL: successImage,
         level: AlertLevels.SUCCESS,
-        maxDisplaySecs: 3,
-        closeButton: true
+        maxDisplaySecs: 3
     },
     {
         alertId: 'thumbnailError',
@@ -275,8 +274,7 @@ const alerts = [
         ),
         iconURL: failImage,
         level: AlertLevels.WARN,
-        maxDisplaySecs: 3,
-        closeButton: true
+        maxDisplaySecs: 3
     }
 ];
 

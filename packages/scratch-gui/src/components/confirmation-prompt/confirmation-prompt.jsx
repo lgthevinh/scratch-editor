@@ -12,6 +12,7 @@ import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
 
 import styles from './confirmation-prompt.css';
+import useCalculatePopupPosition from '../../hooks/calculatePopupPosition.js';
 
 const messages = defineMessages({
     defaultConfirmLabel: {
@@ -32,90 +33,6 @@ const arrowOffsetFromEnd = 7;
 const arrowLongSide = 29;
 const arrowShortSide = 13;
 
-const calculateModalPosition = (relativeElemRef, modalRef, modalPosition) => {
-    const arrowHeight = (modalPosition === 'left' || modalPosition === 'right') ?
-        arrowLongSide : arrowShortSide;
-    const arrowWidth = (modalPosition === 'left' || modalPosition === 'right') ?
-        arrowShortSide : arrowLongSide;
-
-    const el = relativeElemRef?.current;
-    const modalEl = modalRef?.current;
-    if (!el || !modalEl) {
-        return {};
-    }
-
-    const buttonRect = el.getBoundingClientRect();
-    const modalRect = modalEl.getBoundingClientRect();
-    const modalHeight = modalRect.height;
-    
-    let top = 0;
-    let left = 0;
-    let arrowIcon = null;
-    let arrowTop = 0;
-    let arrowLeft = 0;
-
-    switch (modalPosition) {
-    case 'left':
-        top = buttonRect.top - (modalHeight / 2) + (buttonRect.height / 2);
-        left = buttonRect.left - modalWidth - spaceForArrow;
-        arrowIcon = arrowRightIcon;
-        arrowTop = buttonRect.top + (buttonRect.height / 2) - (arrowHeight / 2);
-        arrowLeft = left + modalWidth;
-        break;
-    case 'right':
-        top = buttonRect.top - (modalHeight / 2) + (buttonRect.height / 2);
-        left = buttonRect.right + spaceForArrow;
-        arrowIcon = arrowLeftIcon;
-        arrowTop = buttonRect.top + (buttonRect.height / 2) - (arrowHeight / 2);
-        arrowLeft = left - arrowWidth;
-        break;
-    case 'up':
-        top = buttonRect.top - modalHeight - spaceForArrow;
-        left = buttonRect.left - ((modalWidth - buttonRect.width) / 2);
-        arrowIcon = arrowDownIcon;
-        arrowTop = top + modalHeight;
-        arrowLeft = buttonRect.left + (buttonRect.width / 2) - (arrowWidth / 2);
-        break;
-    case 'down':
-        top = buttonRect.bottom + spaceForArrow;
-        left = buttonRect.left - ((modalWidth - buttonRect.width) / 2);
-        arrowIcon = arrowUpIcon;
-        arrowTop = top - arrowHeight;
-        arrowLeft = buttonRect.left + (buttonRect.width / 2) - (arrowWidth / 2);
-        break;
-    case 'down left':
-        top = buttonRect.bottom + spaceForArrow;
-        left = buttonRect.left - modalWidth + buttonRect.width + arrowOffsetFromEnd;
-        arrowIcon = arrowUpIcon;
-        arrowTop = top - arrowHeight;
-        arrowLeft = buttonRect.left + (buttonRect.width / 2) - (arrowWidth / 2);
-        break;
-    case 'down right':
-        top = buttonRect.bottom + spaceForArrow;
-        left = buttonRect.left - arrowOffsetFromEnd;
-        arrowIcon = arrowUpIcon;
-        arrowTop = top - arrowHeight;
-        arrowLeft = buttonRect.left + (buttonRect.width / 2) - (arrowWidth / 2);
-        break;
-    case 'up left':
-        top = buttonRect.top - modalHeight - spaceForArrow;
-        left = buttonRect.left - modalWidth + buttonRect.width + arrowOffsetFromEnd;
-        arrowIcon = arrowDownIcon;
-        arrowTop = top + modalHeight;
-        arrowLeft = buttonRect.left + (buttonRect.width / 2) - (arrowWidth / 2);
-        break;
-    case 'up right':
-        top = buttonRect.top - modalHeight - spaceForArrow;
-        left = buttonRect.left - arrowOffsetFromEnd;
-        arrowIcon = arrowDownIcon;
-        arrowTop = top + modalHeight;
-        arrowLeft = buttonRect.left + (buttonRect.width / 2) - (arrowWidth / 2);
-        break;
-    }
-    
-    return {top, left, arrowIcon, arrowTop, arrowLeft};
-};
-
 const ConfirmationPrompt = ({
     title,
     message,
@@ -124,8 +41,9 @@ const ConfirmationPrompt = ({
     onConfirm,
     onCancel,
     isOpen,
-    relativeElemRef,
-    modalPosition
+    relativeElementRef,
+    primaryPosition,
+    secondaryPosition
 }) => {
     const intl = useIntl();
 
@@ -133,11 +51,25 @@ const ConfirmationPrompt = ({
     const [modalPositionValues, setModalPositionValues] = React.useState({});
 
     const updatePosition = useCallback(() => {
-        if (relativeElemRef.current && modalRef.current) {
-            const pos = calculateModalPosition(relativeElemRef, modalRef, modalPosition);
+        if (relativeElementRef.current && modalRef.current) {
+            const pos = useCalculatePopupPosition({
+                relativeElementRef,
+                popupRef: modalRef,
+                primaryPosition,
+                secondaryPosition,
+                popupWidth: modalWidth,
+                arrowLeftIcon,
+                arrowRightIcon,
+                arrowUpIcon,
+                arrowDownIcon,
+                spaceForArrow,
+                arrowOffsetFromEnd,
+                arrowShortSide,
+                arrowLongSide
+            });
             setModalPositionValues(pos);
         }
-    }, [relativeElemRef, modalPosition]);
+    }, [relativeElementRef, primaryPosition, secondaryPosition]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -148,14 +80,14 @@ const ConfirmationPrompt = ({
 
         window.addEventListener('resize', debouncedUpdate);
         return () => window.removeEventListener('resize', debouncedUpdate);
-    }, [isOpen, relativeElemRef, modalPosition]);
+    }, [isOpen, relativeElementRef, primaryPosition, secondaryPosition]);
 
     const onModalMount = useCallback(el => {
         if (!el || !isOpen) return;
         modalRef.current = el;
 
         updatePosition();
-    }, [isOpen, relativeElemRef, modalPosition]);
+    }, [isOpen, relativeElementRef, primaryPosition, secondaryPosition]);
 
     return (
         isOpen && (
@@ -195,9 +127,9 @@ const ConfirmationPrompt = ({
                             position: 'fixed',
                             top: modalPositionValues.arrowTop,
                             left: modalPositionValues.arrowLeft,
-                            width: (modalPosition === 'left' || modalPosition === 'right') ?
+                            width: (primaryPosition === 'left' || primaryPosition === 'right') ?
                                 arrowShortSide : arrowLongSide,
-                            height: (modalPosition === 'left' || modalPosition === 'right') ?
+                            height: (primaryPosition === 'left' || primaryPosition === 'right') ?
                                 arrowLongSide : arrowShortSide,
                             zIndex: 1001
                         }}
@@ -208,7 +140,7 @@ const ConfirmationPrompt = ({
                     componentRef={onModalMount}
                 >
                     <Box className={styles.label}>
-                        <FormattedMessage {...message} />
+                        {message}
                     </Box>
 
                     <Box className={styles.buttonRow}>
@@ -216,14 +148,14 @@ const ConfirmationPrompt = ({
                             onClick={onCancel}
                             className={styles.cancelButton}
                         >
-                            <FormattedMessage {...(cancelLabel ?? messages.defaultCancelLabel)} />
+                            {cancelLabel ?? intl.formatMessage(messages.defaultCancelLabel)}
                         </button>
 
                         <button
                             onClick={onConfirm}
                             className={styles.confirmButton}
                         >
-                            <FormattedMessage {...(confirmLabel ?? messages.defaultConfirmLabel)} />
+                            {confirmLabel ?? intl.formatMessage(messages.defaultConfirmLabel)}
                         </button>
                     </Box>
                 </Box>
@@ -235,22 +167,24 @@ const ConfirmationPrompt = ({
 ConfirmationPrompt.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     title: PropTypes.string.isRequired,
-    message: PropTypes.string.isRequired,
-    confirmLabel: PropTypes.string,
-    cancelLabel: PropTypes.string,
+    message: PropTypes.node.isRequired,
+    confirmLabel: PropTypes.node,
+    cancelLabel: PropTypes.node,
     onConfirm: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
-    relativeElemRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
-    modalPosition: PropTypes.oneOf([
+    relativeElementRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    primaryPosition: PropTypes.oneOf([
         'left',
         'right',
         'up',
-        'down',
-        'down left',
-        'down right',
-        'up left',
-        'up right'
-    ]).isRequired
+        'down'
+    ]).isRequired,
+    secondaryPosition: PropTypes.oneOf([
+        'left',
+        'right',
+        'up',
+        'down'
+    ])
 };
 
 export default ConfirmationPrompt;

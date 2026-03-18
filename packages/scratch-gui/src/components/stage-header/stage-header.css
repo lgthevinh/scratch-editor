@@ -68,26 +68,19 @@
     height: 100%;
 }
 
+.stage-button-highlighted {
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px #4C97FF;
+}
+
 [dir="rtl"] .stage-button-icon {
     transform: scaleX(-1);
 }
 
-.rightSection {
+.right-section {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 0.5rem;
     background-color: transparent;
-
-    .setThumbnailButton {
-        padding: 0.625rem 0.75rem;
-        font-size: 0.75rem;
-        line-height: 0.875rem;
-        color: $ui-white;
-        background-color: $motion-primary;
-    }
-
-    .setThumbnailButton:active {
-        filter: brightness(90%);
-    }
 }

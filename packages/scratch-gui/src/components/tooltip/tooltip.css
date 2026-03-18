@@ -1,0 +1,39 @@
+.tooltip {
+    display: flex;
+    flex-direction: column;
+    width: 336px;
+    padding: 16px;
+    align-items: flex-start;
+    gap: -1px;
+
+    border-radius: 8px;
+    border: 1px solid #4C97FF;
+    background-color: #4C97FF;
+    opacity: 1 !important;
+
+    --tooltip-arrow-color: #4C97FF;
+
+    /* Basic Shadows/2dp */
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.06), 0 4px 16px 0 rgba(0, 0, 0, 0.12);
+}
+
+.tooltip-title {
+    align-self: stretch;
+    color: var(--White-White, #FFF);
+    font-family: "Helvetica Neue";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 24px;
+}
+
+.tooltip-body {
+    align-self: stretch;
+
+    color: var(--White-White, #FFF);
+    font-family: "Helvetica Neue";
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px;
+}  
