@@ -1,10 +1,7 @@
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {connect} from 'react-redux';
 import VM from '@scratch/scratch-vm';
-
-import {showAlertWithTimeout, showStandardAlert} from '../../reducers/alerts';
 
 import Box from '../box/box.jsx';
 import Button from '../button/button.jsx';
@@ -24,10 +21,6 @@ import {storeProjectThumbnail} from '../../lib/store-project-thumbnail.js';
 import dataURItoBlob from '../../lib/data-uri-to-blob.js';
 import throttle from 'lodash.throttle';
 import thumbnailIcon from './icon--thumbnail.svg';
-import {
-    getIsShowingWithId,
-    getIsUpdating
-} from '../../reducers/project-state.js';
 import ConfirmationPrompt from '../confirmation-prompt/confirmation-prompt.jsx';
 import Tooltip from '../tooltip/tooltip.jsx';
 import classNames from 'classnames';
@@ -123,22 +116,27 @@ const StageHeaderComponent = function (props) {
 
     const onUpdateThumbnail = useCallback(
         throttle(
-            () => {
+            async () => {
                 if (!onUpdateProjectThumbnail) return;
 
                 setIsUpdatingThumbnail(true);
                 onShowSettingThumbnail();
 
-                storeProjectThumbnail(vm, async dataURI => {
-                    try {
-                        await onUpdateProjectThumbnail(projectId, dataURItoBlob(dataURI));
-                        onShowThumbnailSuccess();
-                    } catch (e) {
-                        onShowThumbnailError();
-                    } finally {
-                        setIsUpdatingThumbnail(false);
-                    }
-                });
+                try {
+                    await storeProjectThumbnail(vm, dataURI => new Promise((resolve, reject) => {
+                        onUpdateProjectThumbnail(
+                            projectId,
+                            dataURItoBlob(dataURI),
+                            resolve,
+                            reject
+                        );
+                    }));
+                    onShowThumbnailSuccess();
+                } catch (e) {
+                    onShowThumbnailError();
+                } finally {
+                    setIsUpdatingThumbnail(false);
+                }
             },
             3000
         ),
@@ -160,8 +158,8 @@ const StageHeaderComponent = function (props) {
     }, []);
 
     const onUpdateThumbnailAndClose = useCallback(() => {
-        onUpdateThumbnail();
         onThumbnailPromptClose();
+        onUpdateThumbnail();
     }, [onUpdateThumbnail]);
 
     const onOpenTooltip = useCallback(() => {
@@ -252,8 +250,8 @@ const StageHeaderComponent = function (props) {
                             onRequestOpen={onOpenTooltip}
                             onRequestClose={onCloseTooltip}
                             targetRef={thumbnailButtonRef}
-                            primaryPosition="left"
-                            secondaryPosition="down"
+                            side="left"
+                            align="down"
                             width={336}
                             title={intl.formatMessage(messages.thumbnailTooltipTitle)}
                             body={
@@ -292,8 +290,8 @@ const StageHeaderComponent = function (props) {
                             onConfirm={onUpdateThumbnailAndClose}
                             onCancel={onThumbnailPromptClose}
                             relativeElementRef={thumbnailButtonRef}
-                            primaryPosition="down"
-                            secondaryPosition="left"
+                            side="down"
+                            align="left"
                         />
                         {stageControls}
                         <div className={styles.rightSection}>

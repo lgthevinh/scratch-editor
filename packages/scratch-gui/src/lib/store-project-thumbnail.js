@@ -1,20 +1,26 @@
 import log from './log';
 
-export const storeProjectThumbnail = (vm, callback) => {
+export const storeProjectThumbnail = async (vm, callback) => {
     try {
-        getProjectThumbnail(vm, callback);
+        await getProjectThumbnail(vm, callback);
     } catch (e) {
         log.error('Project thumbnail save error', e);
-        // This is intentionally fire/forget because a failure
-        // to save the thumbnail is not vitally important to the user.
+        throw e;
     }
 };
 
-export const getProjectThumbnail = (vm, callback) => {
+export const getProjectThumbnail = (vm, callback) => new Promise((resolve, reject) => {
     vm.postIOData('video', {forceTransparentPreview: true});
     vm.renderer.requestSnapshot(dataURI => {
         vm.postIOData('video', {forceTransparentPreview: false});
-        callback(dataURI);
+        const result = callback(dataURI);
+        result
+            .then(() => {
+                resolve();
+            })
+            .catch(e => {
+                reject(e instanceof Error ? e : new Error(String(e)));
+            });
     });
     vm.renderer.draw();
-};
+});

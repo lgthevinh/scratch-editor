@@ -12,7 +12,7 @@ import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
 
 import styles from './confirmation-prompt.css';
-import useCalculatePopupPosition from '../../hooks/calculatePopupPosition.js';
+import useCalculatePopupPosition, {PopupAlign, PopupSide} from '../../hooks/calculatePopupPosition.js';
 
 const messages = defineMessages({
     defaultConfirmLabel: {
@@ -27,11 +27,20 @@ const messages = defineMessages({
     }
 });
 
-const defaultModalWidth = 200;
-const defaultSpaceForArrow = 16;
-const defaultCounterOffset = 7;
-const defaultArrowLongSide = 29;
-const defaultArrowShortSide = 13;
+const defaultConfig = {
+    modalWidth: 200,
+    spaceForArrow: 16,
+    counterOffset: 7,
+    arrowLongSide: 29,
+    arrowShortSide: 13
+};
+
+const SIDE_TO_ARROW_ICON = {
+    [PopupSide.UP]: arrowDownIcon,
+    [PopupSide.DOWN]: arrowUpIcon,
+    [PopupSide.LEFT]: arrowRightIcon,
+    [PopupSide.RIGHT]: arrowLeftIcon
+};
 
 const ConfirmationPrompt = ({
     title,
@@ -42,26 +51,32 @@ const ConfirmationPrompt = ({
     onCancel,
     isOpen,
     relativeElementRef,
-    primaryPosition,
-    secondaryPosition,
-    modalWidth = defaultModalWidth,
-    spaceForArrow = defaultSpaceForArrow,
-    counterOffset = defaultCounterOffset,
-    arrowLongSide = defaultArrowLongSide,
-    arrowShortSide = defaultArrowShortSide
+    side,
+    align,
+    config
 }) => {
     const intl = useIntl();
+    const {
+        modalWidth,
+        spaceForArrow,
+        counterOffset,
+        arrowLongSide,
+        arrowShortSide
+    } = {...defaultConfig, ...config};
+    const arrowIcon = SIDE_TO_ARROW_ICON[side];
 
     const modalRef = useRef(null);
     const [modalPositionValues, setModalPositionValues] = React.useState({});
+    const [arrowHeight, arrowWidth] = (side === PopupSide.LEFT || side === PopupSide.RIGHT) ?
+        [arrowLongSide, arrowShortSide] : [arrowShortSide, arrowLongSide];
 
     const updatePosition = useCallback(() => {
         if (relativeElementRef.current && modalRef.current) {
             const pos = useCalculatePopupPosition({
                 relativeElementRef,
                 popupRef: modalRef,
-                primaryPosition,
-                secondaryPosition,
+                side,
+                align,
                 popupWidth: modalWidth,
                 arrowLeftIcon,
                 arrowRightIcon,
@@ -74,7 +89,16 @@ const ConfirmationPrompt = ({
             });
             setModalPositionValues(pos);
         }
-    }, [relativeElementRef, primaryPosition, secondaryPosition]);
+    }, [
+        relativeElementRef,
+        side,
+        align,
+        modalWidth,
+        spaceForArrow,
+        counterOffset,
+        arrowShortSide,
+        arrowLongSide
+    ]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -128,19 +152,17 @@ const ConfirmationPrompt = ({
                     }
                 }}
             >
-                {modalPositionValues.arrowIcon && (
+                {arrowIcon && (
                     <img
-                        src={modalPositionValues.arrowIcon}
+                        src={arrowIcon}
                         alt=""
                         aria-hidden="true"
                         style={{
                             position: 'fixed',
                             top: modalPositionValues.arrowTop,
                             left: modalPositionValues.arrowLeft,
-                            width: (primaryPosition === 'left' || primaryPosition === 'right') ?
-                                arrowShortSide : arrowLongSide,
-                            height: (primaryPosition === 'left' || primaryPosition === 'right') ?
-                                arrowLongSide : arrowShortSide,
+                            width: arrowWidth,
+                            height: arrowHeight,
                             zIndex: 1001
                         }}
                     />
@@ -183,23 +205,15 @@ ConfirmationPrompt.propTypes = {
     onConfirm: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
     relativeElementRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
-    primaryPosition: PropTypes.oneOf([
-        'left',
-        'right',
-        'up',
-        'down'
-    ]).isRequired,
-    secondaryPosition: PropTypes.oneOf([
-        'left',
-        'right',
-        'up',
-        'down'
-    ]),
-    modalWidth: PropTypes.number,
-    spaceForArrow: PropTypes.number,
-    counterOffset: PropTypes.number,
-    arrowLongSide: PropTypes.number,
-    arrowShortSide: PropTypes.number
+    side: PropTypes.oneOf(Object.values(PopupSide)).isRequired,
+    align: PropTypes.oneOf(Object.values(PopupAlign)),
+    config: PropTypes.shape({
+        modalWidth: PropTypes.number,
+        spaceForArrow: PropTypes.number,
+        counterOffset: PropTypes.number,
+        arrowLongSide: PropTypes.number,
+        arrowShortSide: PropTypes.number
+    })
 };
 
 export default ConfirmationPrompt;

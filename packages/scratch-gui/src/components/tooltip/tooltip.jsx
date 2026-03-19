@@ -1,7 +1,7 @@
 import React, {useRef, useEffect, useState, useCallback} from 'react';
 import PropTypes from 'prop-types';
 import styles from './tooltip.css';
-import useCalculatePopupPosition from '../../hooks/calculatePopupPosition';
+import useCalculatePopupPosition, {PopupAlign, PopupSide} from '../../hooks/calculatePopupPosition';
 
 import arrowLeftIcon from './icon--arrow-left.svg';
 import arrowRightIcon from './icon--arrow-right.svg';
@@ -9,12 +9,21 @@ import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
 import Box from '../box/box';
 
-const defaultArrowWidth = 28;
-const defaultArrowHeight = 8;
-const defaultCounterOffset = 2;
-const defaultArrowOffsetFromBottom = 2;
-const defaultSpaceForArrow = 12;
-const defaultTooltipWidth = 336;
+const defaultConfig = {
+    width: 336,
+    spaceForArrow: 12,
+    arrowOffsetFromBottom: 2,
+    counterOffset: 2,
+    arrowLongSide: 28,
+    arrowShortSide: 8
+};
+
+const SIDE_TO_ARROW_ICON = {
+    [PopupSide.UP]: arrowDownIcon,
+    [PopupSide.DOWN]: arrowUpIcon,
+    [PopupSide.LEFT]: arrowRightIcon,
+    [PopupSide.RIGHT]: arrowLeftIcon
+};
 
 const Tooltip = ({
     isOpen,
@@ -22,27 +31,34 @@ const Tooltip = ({
     onRequestOpen,
     isManualOnly = true,
     targetRef,
-    primaryPosition,
-    secondaryPosition,
+    side,
+    align,
     title,
     body,
-    width = defaultTooltipWidth,
-    spaceForArrow = defaultSpaceForArrow,
-    arrowOffsetFromBottom = defaultArrowOffsetFromBottom,
-    counterOffset = defaultCounterOffset,
-    arrowHeight = defaultArrowHeight,
-    arrowWidth = defaultArrowWidth
+    config
 }) => {
     const tooltipRef = useRef(null);
-    const [pos, setPos] = useState({top: 0, left: 0, arrowTop: 0, arrowLeft: 0, arrowIcon: null});
+    const [pos, setPos] = useState({top: 0, left: 0, arrowTop: 0, arrowLeft: 0});
+
+    const arrowIcon = SIDE_TO_ARROW_ICON[side];
+    const {
+        width,
+        spaceForArrow,
+        counterOffset,
+        arrowOffsetFromBottom,
+        arrowLongSide,
+        arrowShortSide
+    } = {...defaultConfig, ...config};
+    const [arrowHeight, arrowWidth] = (side === PopupSide.LEFT || side === PopupSide.RIGHT) ?
+        [arrowLongSide, arrowShortSide] : [arrowShortSide, arrowLongSide];
 
     const updatePosition = useCallback(() => {
         if (!targetRef?.current || !tooltipRef.current) return;
         const newPos = useCalculatePopupPosition({
             relativeElementRef: targetRef,
             popupRef: tooltipRef,
-            primaryPosition,
-            secondaryPosition,
+            side,
+            align,
             popupWidth: width,
             arrowLeftIcon,
             arrowRightIcon,
@@ -51,11 +67,21 @@ const Tooltip = ({
             spaceForArrow,
             counterOffset,
             arrowOffsetFromBottom,
-            arrowShortSide: arrowHeight,
-            arrowLongSide: arrowWidth
+            arrowShortSide,
+            arrowLongSide
         });
         setPos(newPos);
-    }, [targetRef, primaryPosition, secondaryPosition, width]);
+    }, [
+        targetRef,
+        side,
+        align,
+        width,
+        spaceForArrow,
+        counterOffset,
+        arrowOffsetFromBottom,
+        arrowLongSide,
+        arrowShortSide
+    ]);
 
     // Resize/scroll listeners
     useEffect(() => {
@@ -163,17 +189,15 @@ const Tooltip = ({
                     {body}
                 </Box>
             </Box>
-            {pos.arrowIcon && (
+            {arrowIcon && (
                 <img
-                    src={pos.arrowIcon}
+                    src={arrowIcon}
                     className={styles.tooltipArrow}
                     style={{
                         top: pos.arrowTop,
                         left: pos.arrowLeft,
-                        width: (primaryPosition === 'left' || primaryPosition === 'right') ?
-                            arrowHeight : arrowWidth,
-                        height: (primaryPosition === 'left' || primaryPosition === 'right') ?
-                            arrowWidth : arrowHeight,
+                        width: arrowWidth,
+                        height: arrowHeight,
                         zIndex: 510,
                         position: 'fixed'
                     }}
@@ -189,16 +213,18 @@ Tooltip.propTypes = {
     onRequestOpen: PropTypes.func,
     isManualOnly: PropTypes.bool,
     targetRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}).isRequired,
-    primaryPosition: PropTypes.oneOf(['up', 'down', 'left', 'right']).isRequired,
-    secondaryPosition: PropTypes.oneOf(['up', 'down', 'left', 'right']),
+    side: PropTypes.oneOf(Object.values(PopupSide)).isRequired,
+    align: PropTypes.oneOf(Object.values(PopupAlign)),
     title: PropTypes.node,
     body: PropTypes.node.isRequired,
-    width: PropTypes.number,
-    spaceForArrow: PropTypes.number,
-    arrowOffsetFromBottom: PropTypes.number,
-    counterOffset: PropTypes.number,
-    arrowHeight: PropTypes.number,
-    arrowWidth: PropTypes.number
+    config: PropTypes.shape({
+        width: PropTypes.number,
+        spaceForArrow: PropTypes.number,
+        arrowOffsetFromBottom: PropTypes.number,
+        counterOffset: PropTypes.number,
+        arrowShortSide: PropTypes.number,
+        arrowLongSide: PropTypes.number
+    })
 };
 
 export default Tooltip;
