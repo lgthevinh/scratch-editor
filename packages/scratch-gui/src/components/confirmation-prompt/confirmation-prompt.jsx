@@ -126,7 +126,7 @@ const ConfirmationPrompt = ({
             <ReactModal
                 isOpen
                 onRequestClose={onCancel}
-                contentLabel={intl.formatMessage(title)}
+                contentLabel={title}
                 style={{
                     content: {
                         top: modalPositionValues.top,
@@ -198,7 +198,7 @@ const ConfirmationPrompt = ({
 
 ConfirmationPrompt.propTypes = {
     isOpen: PropTypes.bool.isRequired,
-    title: PropTypes.string.isRequired,
+    title: PropTypes.string,
     message: PropTypes.node.isRequired,
     confirmLabel: PropTypes.node,
     cancelLabel: PropTypes.node,

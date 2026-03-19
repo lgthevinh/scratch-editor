@@ -9,7 +9,7 @@ import {setFullScreen} from '../reducers/mode';
 import {connect} from 'react-redux';
 
 import StageHeaderComponent from '../components/stage-header/stage-header.jsx';
-import {getIsProjectLoadedWithId, getIsShowingWithId, getIsUpdating} from '../reducers/project-state.js';
+import {getIsProjectLoadedWithId} from '../reducers/project-state.js';
 import {showAlertWithTimeout, showStandardAlert} from '../reducers/alerts.js';
 
 const ALERT_ID = {

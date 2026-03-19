@@ -35,7 +35,6 @@ SpinnerComponent.defaultProps = {
     className: '',
     large: false,
     level: 'info',
-    small: false,
-    color: 'white'
+    small: false
 };
 export default SpinnerComponent;

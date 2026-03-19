@@ -252,7 +252,7 @@ const StageHeaderComponent = function (props) {
                             targetRef={thumbnailButtonRef}
                             side="left"
                             align="down"
-                            width={336}
+                            config={{width: 336}}
                             title={intl.formatMessage(messages.thumbnailTooltipTitle)}
                             body={
                                 <FormattedMessage
@@ -285,7 +285,7 @@ const StageHeaderComponent = function (props) {
                         )}
                         <ConfirmationPrompt
                             isOpen={isThumbnailPromptOpen}
-                            title={messages.setThumbnail}
+                            title={intl.formatMessage(messages.setThumbnail)}
                             message={intl.formatMessage(messages.setThumbnailMessage)}
                             onConfirm={onUpdateThumbnailAndClose}
                             onCancel={onThumbnailPromptClose}
@@ -333,9 +333,9 @@ StageHeaderComponent.propTypes = {
     vm: PropTypes.instanceOf(VM).isRequired,
     isProjectLoaded: PropTypes.bool,
     userOwnsProject: PropTypes.bool,
-    showThumbnailSetting: PropTypes.func,
-    showThumbnailSuccess: PropTypes.func,
-    showThumbnailError: PropTypes.func
+    onShowSettingThumbnail: PropTypes.func,
+    onShowThumbnailError: PropTypes.func,
+    onShowThumbnailSuccess: PropTypes.func
 };
 
 StageHeaderComponent.defaultProps = {

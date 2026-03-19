@@ -264,7 +264,7 @@ const alerts = [
     {
         alertId: 'thumbnailError',
         alertType: AlertTypes.STANDARD,
-        clearList: ['settingThumbnail', 'thumbnailSuccess'],
+        clearList: ['settingThumbnail', 'thumbnailError', 'thumbnailSuccess'],
         content: (
             <FormattedMessage
                 defaultMessage="Couldn’t set thumbnail. Please try again later."

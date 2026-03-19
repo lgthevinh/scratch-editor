@@ -181,6 +181,7 @@ const Tooltip = ({
                     position: 'fixed'
                 }}
                 tabIndex={0}
+                role="tooltip"
             >
                 <Box className={styles.tooltipTitle}>
                     {title}
@@ -201,6 +202,8 @@ const Tooltip = ({
                         zIndex: 510,
                         position: 'fixed'
                     }}
+                    alt=""
+                    aria-hidden="true"
                 />
             )}
         </>
