@@ -16,10 +16,12 @@ export * from './exported-reducers';
 
 export * from 'scratch-storage';
 
+export * from './lib/legacy-backpack-storage';
+
 export {default as buildDefaultProject} from './lib/default-project';
 
 // TODO: Better typing once ScratchGUI has types
- 
+
 export type GUIProps = any; // ComponentPropsWithoutRef<typeof ScratchGUI>;
 
 export type HigherOrderComponent = (component: ReactComponentLike) => ReactComponentLike;

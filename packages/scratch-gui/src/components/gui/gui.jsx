@@ -123,6 +123,7 @@ const GUIComponent = props => {
         authorAvatarBadge,
         basePath,
         backdropLibraryVisible,
+        backpackConfigured,
         backpackHost,
         backpackVisible,
         blocksId,
@@ -522,7 +523,7 @@ const GUIComponent = props => {
                                         /> : null}
                                 </TabPanel>
                             </Tabs>
-                            {backpackVisible ? (
+                            {backpackVisible && backpackConfigured ? (
                                 <Backpack
                                     host={backpackHost}
                                     ariaRole="region"
@@ -576,6 +577,7 @@ GUIComponent.propTypes = {
     authorUsername: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
     authorAvatarBadge: PropTypes.number,
     backdropLibraryVisible: PropTypes.bool,
+    backpackConfigured: PropTypes.bool,
     backpackHost: PropTypes.string,
     backpackVisible: PropTypes.bool,
     basePath: PropTypes.string,
@@ -690,7 +692,8 @@ const mapStateToProps = state => ({
     blocksId: state.scratchGui.timeTravel.year.toString(),
     stageSizeMode: state.scratchGui.stageSize.stageSize,
     colorMode: state.scratchGui.settings.colorMode,
-    theme: state.scratchGui.settings.theme
+    theme: state.scratchGui.settings.theme,
+    backpackConfigured: !!state.scratchGui.config.storage?.backpackStorage
 });
 
 const mapDispatchToProps = dispatch => ({

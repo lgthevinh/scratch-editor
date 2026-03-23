@@ -2,6 +2,7 @@ import {ScratchStorage, Asset} from 'scratch-storage';
 
 import defaultProject from './default-project';
 import {GUIStorage, TranslatorFunction} from '../gui-config';
+import {LegacyBackpackStorage} from './legacy-backpack-storage';
 
 import saveProjectToServer from '../lib/save-project-to-server';
 
@@ -9,10 +10,22 @@ export class LegacyStorage implements GUIStorage {
     private projectHost?: string;
     private projectToken?: string;
     private assetHost?: string;
-    private backpackHost?: string;
     private translator?: TranslatorFunction;
 
     readonly scratchStorage = new ScratchStorage();
+    readonly backpackStorage = new LegacyBackpackStorage({
+        readAuth (session) {
+            if (!session) {
+                return Promise.reject(new Error('missing session'));
+            }
+
+            return Promise.resolve({
+                username: session.username,
+                authType: 'x-token',
+                authToken: session.token
+            });
+        }
+    });
 
     constructor () {
         this.cacheDefaultProject(this.scratchStorage);
@@ -46,22 +59,11 @@ export class LegacyStorage implements GUIStorage {
     setTranslatorFunction (translator: TranslatorFunction): void {
         this.translator = translator;
 
-        // TODO: Verify that this is correct
         this.cacheDefaultProject(this.scratchStorage);
     }
 
     setBackpackHost (host: string): void {
-        const shouldAddSource = !this.backpackHost;
-        if (shouldAddSource) {
-            const AssetType = this.scratchStorage.AssetType;
-
-            this.scratchStorage.addWebStore(
-                [AssetType.ImageVector, AssetType.ImageBitmap, AssetType.Sound],
-                this.getBackpackAssetURL.bind(this)
-            );
-        }
-
-        this.backpackHost = host;
+        this.backpackStorage.setHostAndRegisterWebStore(host, this.scratchStorage);
     }
 
     saveProject (
@@ -146,9 +148,5 @@ export class LegacyStorage implements GUIStorage {
             url: `${this.assetHost}/${asset.assetId}.${asset.dataFormat}`,
             withCredentials: true
         };
-    }
-
-    private getBackpackAssetURL (asset) {
-        return `${this.backpackHost}/${asset.assetId}.${asset.dataFormat}`;
     }
 }

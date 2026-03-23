@@ -849,6 +849,36 @@ const deserializeBlocks = function (blocks) {
             block.comment = `${block.id}_comment`;
         }
     }
+    // Second pass: strip argument reporter children from procedures_prototype blocks.
+    // These blocks are managed by Blockly's `domToMutation` and should not be loaded
+    // from the SB3 JSON, as loading them would cause duplicates when Blockly's
+    // `domToMutation` creates them again during workspace initialization.
+    // Also set `shadow: false` for old-format prototypes (which were saved as shadow blocks).
+    for (const blockId in blocks) {
+        if (!Object.prototype.hasOwnProperty.call(blocks, blockId)) continue;
+        const block = blocks[blockId];
+        if (Array.isArray(block)) continue;
+        if (block.opcode !== 'procedures_prototype') continue;
+
+        // Convert from shadow (old format) to non-shadow, and clear the stale
+        // shadow reference in the parent definition block's custom_block input.
+        block.shadow = false;
+        const parentBlock = blocks[block.parent];
+        if (parentBlock && parentBlock.inputs && parentBlock.inputs.custom_block) {
+            parentBlock.inputs.custom_block.shadow = null;
+        }
+
+        // Delete the argument reporter children from the blocks map.
+        // They will be recreated by Blockly's domToMutation.
+        for (const inputName in block.inputs) {
+            if (!Object.prototype.hasOwnProperty.call(block.inputs, inputName)) continue;
+            const inputInfo = block.inputs[inputName];
+            if (inputInfo.block) delete blocks[inputInfo.block];
+            if (inputInfo.shadow && inputInfo.shadow !== inputInfo.block) delete blocks[inputInfo.shadow];
+        }
+        block.inputs = {};
+    }
+
     return blocks;
 };
 

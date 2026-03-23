@@ -1,6 +1,6 @@
 {
   "name": "@scratch/scratch-gui",
-  "version": "13.0.2",
+  "version": "13.3.0",
   "description": "Graphical User Interface for creating and running Scratch 3.0 projects",
   "keywords": [],
   "homepage": "https://github.com/scratchfoundation/scratch-gui#readme",
@@ -102,7 +102,21 @@
           "tsconfig": "<rootDir>/tsconfig.test.json"
         }
       ],
-      "^.+\\.jsx?$": "babel-jest"
+      "^.+\\.jsx?$": "babel-jest",
+      "^.+\\.mjs$": [
+        "babel-jest",
+        {
+          "configFile": false,
+          "presets": [
+            [
+              "@babel/preset-env",
+              {
+                "modules": "commonjs"
+              }
+            ]
+          ]
+        }
+      ]
     },
     "transformIgnorePatterns": [
       "/node_modules/(?!intl-messageformat|intl-messageformat-parser).+\\.js$"
@@ -112,9 +126,9 @@
     "@mediapipe/face_detection": "0.4.1646425229",
     "@microbit/microbit-universal-hex": "0.2.2",
     "@radix-ui/react-context-menu": "2.2.16",
-    "@scratch/scratch-render": "13.0.2",
-    "@scratch/scratch-svg-renderer": "13.0.2",
-    "@scratch/scratch-vm": "13.0.2",
+    "@scratch/scratch-render": "13.3.0",
+    "@scratch/scratch-svg-renderer": "13.3.0",
+    "@scratch/scratch-vm": "13.3.0",
     "@tensorflow-models/face-detection": "1.0.3",
     "@tensorflow/tfjs": "4.22.0",
     "@testing-library/user-event": "14.6.1",
@@ -166,11 +180,11 @@
     "react-visibility-sensor": "5.1.1",
     "redux-throttle": "0.1.1",
     "scratch-audio": "2.0.268",
-    "scratch-blocks": "2.0.8",
+    "scratch-blocks": "2.1.4",
     "scratch-l10n": "6.1.60",
     "scratch-paint": "4.1.50",
     "scratch-render-fonts": "1.0.252",
-    "scratch-storage": "6.1.11",
+    "scratch-storage": "6.2.0",
     "startaudiocontext": "1.2.1",
     "style-loader": "4.0.0",
     "text-encoding": "0.7.0",
@@ -182,7 +196,7 @@
   "devDependencies": {
     "@babel/cli": "7.28.6",
     "@babel/core": "7.29.0",
-    "@babel/preset-env": "7.29.0",
+    "@babel/preset-env": "7.29.2",
     "@babel/preset-react": "7.28.5",
     "@reduxjs/toolkit": "^2.11.2",
     "@testing-library/jest-dom": "5.17.0",
@@ -197,9 +211,9 @@
     "cheerio": "1.2.0",
     "cross-env": "7.0.3",
     "eslint": "9.39.4",
-    "eslint-config-scratch": "14.0.4",
+    "eslint-config-scratch": "14.0.12",
     "eslint-import-resolver-typescript": "4.4.4",
-    "eslint-plugin-import-x": "4.16.1",
+    "eslint-plugin-import-x": "4.16.2",
     "eslint-plugin-react": "7.37.5",
     "file-loader": "6.2.0",
     "gh-pages": "3.2.3",
@@ -224,7 +238,7 @@
     "webpack": "5.105.4",
     "webpack-cli": "5.1.4",
     "webpack-dev-server": "5.2.3",
-    "yauzl": "3.2.0"
+    "yauzl": "3.2.1"
   },
   "peerDependencies": {
     "react": "^18.0.0",

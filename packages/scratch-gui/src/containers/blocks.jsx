@@ -240,6 +240,20 @@ class Blocks extends React.Component {
     }
     componentWillUnmount () {
         this.detachVM();
+        // Hide any open field editor and move Blockly focus to the workspace
+        // root before disposing. Without this, BlockSvg.dispose() detects the
+        // focused element is inside a block and schedules a stale
+        // setTimeout(() => focusTree(workspace)), which fires after the
+        // workspace is unregistered and throws
+        // "Attempted to focus unregistered tree" (scratch-blocks#3460).
+        //
+        // focusNode(workspace) — not focusTree(workspace) — is used here
+        // because focusTree would restore focus to whatever was previously
+        // focused in this workspace (likely the same block about to be
+        // disposed). focusNode pins focus to the workspace root directly,
+        // ensuring no block is focused when dispose() runs.
+        this.ScratchBlocks.WidgetDiv.hide();
+        this.ScratchBlocks.getFocusManager().focusNode(this.workspace);
         this.workspace.dispose();
         clearTimeout(this.toolboxUpdateTimeout);
 
@@ -436,11 +450,15 @@ class Blocks extends React.Component {
             this.onWorkspaceMetricsChange();
         }
 
-        // Remove and reattach the workspace listener (but allow flyout events)
-        this.workspace.removeChangeListener(this.props.vm.blockListener);
+        // Disable Blockly events during workspace reload. In Blockly v2, Events.fire()
+        // enqueues events for async dispatch (after rendering), so the old pattern of
+        // removing and re-adding the blockListener no longer prevents spurious events
+        // from reaching the VM — the queued events fire after the listener is re-added.
+        // Disabling events entirely during the load ensures nothing is queued.
         this.workspace.removeChangeListener(this.toolboxUpdateChangeListener);
-        const dom = this.ScratchBlocks.utils.xml.textToDom(data.xml);
         try {
+            this.ScratchBlocks.Events.disable();
+            const dom = this.ScratchBlocks.utils.xml.textToDom(data.xml);
             this.ScratchBlocks.clearWorkspaceAndLoadFromXml(dom, this.workspace);
         } catch (error) {
             // The workspace is likely incomplete. What did update should be
@@ -456,8 +474,9 @@ class Blocks extends React.Component {
                 error.message = `Workspace Update Error: ${error.message}`;
             }
             log.error(error);
+        } finally {
+            this.ScratchBlocks.Events.enable();
         }
-        this.workspace.addChangeListener(this.props.vm.blockListener);
 
         if (this.props.vm.editingTarget && this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id]) {
             const {scrollX, scrollY, scale} = this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id];
@@ -822,6 +841,7 @@ const mapDispatchToProps = dispatch => ({
     }
 });
 
+export {Blocks};
 export default errorBoundaryHOC('Blocks')(
     connect(
         mapStateToProps,
