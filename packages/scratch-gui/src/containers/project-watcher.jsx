@@ -14,6 +14,10 @@ import {
  * ProjectWatcher passes a waitForUpdate function to its children, which they can call
  * to set ProjectWatcher to request that it call the onDoneUpdating callback when
  * project is no longer updating.
+ *
+ * The waitForUpdate function accepts an object containing:
+ * - isUpdating {boolean} Whether the project is currently updating
+ * - isSharing {boolean} Whether the project is currently being shared
  */
 class ProjectWatcher extends React.Component {
     constructor (props) {
@@ -28,12 +32,14 @@ class ProjectWatcher extends React.Component {
         };
     }
     componentDidUpdate (prevProps) {
-        if (
-            this.state.saving &&
-            (!this.state.sharing || this.props.isShared) &&
-            this.props.isShowingWithId && !prevProps.isShowingWithId
-        ) {
-            this.fulfill();
+        if (this.state.saving) {
+            if (!this.state.sharing && this.props.isShowingWithId && !prevProps.isShowingWithId) {
+                this.fulfill();
+            }
+
+            if (this.state.sharing && this.props.isShared && this.props.isShowingWithId) {
+                this.fulfill();
+            }
         }
     }
     fulfill () {
@@ -44,7 +50,7 @@ class ProjectWatcher extends React.Component {
         });
     }
     waitForUpdate (updates = {isUpdating: false, isSharing: false}) {
-        const {isUpdating, isSharing} = updates;
+        const {isUpdating = false, isSharing = false} = updates;
 
         if (isUpdating || isSharing) {
             this.setState({
