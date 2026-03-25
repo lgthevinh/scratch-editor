@@ -115,34 +115,36 @@ const StageHeaderComponent = function (props) {
     }, [manuallySaveThumbnails, isProjectLoaded, userOwnsProject]);
 
     const onUpdateThumbnail = useCallback(
-        throttle(
-            async () => {
-                if (!onUpdateProjectThumbnail) return;
+        throttle(() => {
+            if (!onUpdateProjectThumbnail) return;
 
-                setIsUpdatingThumbnail(true);
-                onShowSettingThumbnail();
+            setIsUpdatingThumbnail(true);
+            onShowSettingThumbnail();
 
-                try {
-                    await storeProjectThumbnail(vm, dataURI => new Promise((resolve, reject) => {
-                        onUpdateProjectThumbnail(
-                            projectId,
-                            dataURItoBlob(dataURI),
-                            resolve,
-                            reject
-                        );
-                    }));
-                    onShowThumbnailSuccess();
-                } catch (e) {
-                    onShowThumbnailError();
-                } finally {
-                    setIsUpdatingThumbnail(false);
-                }
-            },
-            3000
-        ),
+            try {
+                storeProjectThumbnail(vm, dataURI => {
+                    onUpdateProjectThumbnail(
+                        projectId,
+                        dataURItoBlob(dataURI),
+                        () => {
+                            onShowThumbnailSuccess();
+                            setIsUpdatingThumbnail(false);
+                        },
+                        () => {
+                            onShowThumbnailError();
+                            setIsUpdatingThumbnail(false);
+                        }
+                    );
+                });
+            } catch (e) {
+                onShowThumbnailError();
+                setIsUpdatingThumbnail(false);
+            }
+        }, 3000),
         [
             onUpdateProjectThumbnail,
             projectId,
+            vm,
             onShowSettingThumbnail,
             onShowThumbnailSuccess,
             onShowThumbnailError
