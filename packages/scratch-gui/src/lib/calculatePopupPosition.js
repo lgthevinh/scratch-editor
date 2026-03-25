@@ -88,7 +88,6 @@ const calculatePopupPosition = ({
         break;
     case PopupSide.LEFT:
         arrowTop = buttonRect.top + ((buttonRect.height - arrowHeight) / 2);
-        console.log(buttonRect.left, spaceForArrow, arrowOffsetFromBottom);
         arrowLeft = buttonRect.left - spaceForArrow - arrowOffsetFromBottom;
         break;
     case PopupSide.RIGHT:

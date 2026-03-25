@@ -17,7 +17,6 @@
     align-self: stretch;
     color: $ui-white;
     text-align: center;
-    font-family: "Helvetica Neue";
     font-size: 1rem;
     font-weight: 700;
     line-height: 1.5rem;
@@ -49,7 +48,6 @@
 
 .button-row button span {
     color: $ui-white;
-    font-family: "Helvetica Neue";
     font-size: 0.75rem;
     font-weight: 700;
     line-height: 1rem;

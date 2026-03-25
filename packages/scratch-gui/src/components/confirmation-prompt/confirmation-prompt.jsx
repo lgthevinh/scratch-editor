@@ -1,10 +1,10 @@
-import React, {useRef, useCallback, useEffect} from 'react';
-import debounce from 'lodash.debounce';
+import React from 'react';
 import PropTypes from 'prop-types';
 import ReactModal from 'react-modal';
 import {defineMessages, FormattedMessage} from 'react-intl';
 
 import Box from '../box/box.jsx';
+import PopupWithArrow from '../popup-with-arrow/popup-with-arrow.jsx';
 
 import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
@@ -12,7 +12,7 @@ import arrowLeftIcon from './icon--arrow-left.svg';
 import arrowRightIcon from './icon--arrow-right.svg';
 
 import styles from './confirmation-prompt.css';
-import calculatePopupPosition, {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition.js';
+import {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition.js';
 
 const messages = defineMessages({
     defaultConfirmLabel: {
@@ -31,15 +31,16 @@ const defaultConfig = {
     modalWidth: 200,
     spaceForArrow: 16,
     counterOffset: 7,
+    arrowOffsetFromBottom: 2,
     arrowWidth: 29,
     arrowHeight: 13
 };
 
-const SIDE_TO_ARROW_ICON = {
-    [PopupSide.UP]: arrowDownIcon,
-    [PopupSide.DOWN]: arrowUpIcon,
-    [PopupSide.LEFT]: arrowRightIcon,
-    [PopupSide.RIGHT]: arrowLeftIcon
+const arrowConfig = {
+    arrowDownIcon,
+    arrowUpIcon,
+    arrowLeftIcon,
+    arrowRightIcon
 };
 
 const ConfirmationPrompt = ({
@@ -55,140 +56,80 @@ const ConfirmationPrompt = ({
     align,
     layoutConfig
 }) => {
-    const {
-        modalWidth,
-        spaceForArrow,
-        counterOffset,
-        arrowHeight,
-        arrowWidth
-    } = {...defaultConfig, ...layoutConfig};
+    const {modalWidth, spaceForArrow, counterOffset, arrowOffsetFromBottom, arrowHeight, arrowWidth} =
+        {...defaultConfig, ...layoutConfig};
 
-    const modalRef = useRef(null);
-    const [modalPositionValues, setModalPositionValues] = React.useState({});
-
-    const arrowIcon = SIDE_TO_ARROW_ICON[side];
-    const [rotatedArrowWidth, rotatedArrowHeight] = (side === PopupSide.UP || side === PopupSide.DOWN) ?
-        [arrowWidth, arrowHeight] : [arrowHeight, arrowWidth];
-
-    const updatePosition = useCallback(() => {
-        if (relativeElementRef.current && modalRef.current) {
-            const pos = calculatePopupPosition({
-                relativeElementRef,
-                popupRef: modalRef,
-                side,
-                align,
+    return (
+        <PopupWithArrow
+            isOpen={isOpen}
+            relativeElementRef={relativeElementRef}
+            side={side}
+            align={align}
+            layoutConfig={{
                 popupWidth: modalWidth,
                 spaceForArrow,
                 counterOffset,
-                arrowHeight: rotatedArrowHeight,
-                arrowWidth: rotatedArrowWidth
-            });
-            setModalPositionValues(pos);
-        }
-    }, [
-        relativeElementRef,
-        side,
-        align,
-        modalWidth,
-        spaceForArrow,
-        counterOffset,
-        rotatedArrowHeight,
-        rotatedArrowWidth
-    ]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const debouncedUpdate = debounce(updatePosition, 50, {leading: true});
-
-        debouncedUpdate();
-
-        window.addEventListener('resize', debouncedUpdate);
-        return () => {
-            window.removeEventListener('resize', debouncedUpdate);
-            debouncedUpdate.cancel();
-        };
-    }, [isOpen, updatePosition]);
-
-    const onModalMount = useCallback(el => {
-        if (!el || !isOpen) return;
-        modalRef.current = el;
-
-        updatePosition();
-    }, [isOpen, updatePosition]);
-
-    return (
-        isOpen && (
-            <ReactModal
-                isOpen
-                onRequestClose={onCancel}
-                contentLabel={title}
-                style={{
-                    content: {
-                        top: modalPositionValues.top,
-                        left: modalPositionValues.left,
-                        width: modalWidth,
-                        border: 'none',
-                        height: 'fit-content',
-                        backgroundColor: 'transparent',
-                        padding: 0,
-                        margin: 0,
-                        position: 'fixed',
-                        overflowX: 'hidden',
-                        zIndex: 1000
-                    },
-                    overlay: {
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 510,
-                        backgroundColor: 'transparent'
-                    }
-                }}
-            >
-                {arrowIcon && (
-                    <img
-                        src={arrowIcon}
-                        alt=""
-                        aria-hidden="true"
-                        style={{
+                arrowOffsetFromBottom,
+                arrowHeight,
+                arrowWidth
+            }}
+            arrowConfig={arrowConfig}
+        >
+            {({popupRef, pos}) => (
+                <ReactModal
+                    isOpen
+                    onRequestClose={onCancel}
+                    contentLabel={title}
+                    style={{
+                        content: {
+                            top: pos.top,
+                            left: pos.left,
+                            width: modalWidth,
+                            border: 'none',
+                            height: 'fit-content',
+                            backgroundColor: 'transparent',
+                            padding: 0,
+                            margin: 0,
                             position: 'fixed',
-                            top: modalPositionValues.arrowTop,
-                            left: modalPositionValues.arrowLeft,
-                            width: arrowWidth,
-                            height: arrowHeight,
-                            zIndex: 1001
-                        }}
-                    />
-                )}
-                <Box
-                    className={styles.modalContainer}
-                    componentRef={onModalMount}
+                            overflowX: 'hidden',
+                            zIndex: 1000
+                        },
+                        overlay: {
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            zIndex: 510,
+                            backgroundColor: 'transparent'
+                        }
+                    }}
                 >
-                    <Box className={styles.label}>
-                        {message}
+                    <Box
+                        className={styles.modalContainer}
+                        componentRef={popupRef}
+                    >
+                        <Box className={styles.label}>
+                            {message}
+                        </Box>
+                        <Box className={styles.buttonRow}>
+                            <button
+                                onClick={onCancel}
+                                className={styles.cancelButton}
+                            >
+                                {cancelLabel ?? <FormattedMessage {...messages.defaultCancelLabel} />}
+                            </button>
+                            <button
+                                onClick={onConfirm}
+                                className={styles.confirmButton}
+                            >
+                                {confirmLabel ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
+                            </button>
+                        </Box>
                     </Box>
-
-                    <Box className={styles.buttonRow}>
-                        <button
-                            onClick={onCancel}
-                            className={styles.cancelButton}
-                        >
-                            {cancelLabel ?? <FormattedMessage {...messages.defaultCancelLabel} />}
-                        </button>
-
-                        <button
-                            onClick={onConfirm}
-                            className={styles.confirmButton}
-                        >
-                            {confirmLabel ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
-                        </button>
-                    </Box>
-                </Box>
-            </ReactModal>
-        )
+                </ReactModal>
+            )}
+        </PopupWithArrow>
     );
 };
 
@@ -206,6 +147,7 @@ ConfirmationPrompt.propTypes = {
     layoutConfig: PropTypes.shape({
         modalWidth: PropTypes.number,
         spaceForArrow: PropTypes.number,
+        arrowOffsetFromBottom: PropTypes.number,
         counterOffset: PropTypes.number,
         arrowHeight: PropTypes.number,
         arrowWidth: PropTypes.number

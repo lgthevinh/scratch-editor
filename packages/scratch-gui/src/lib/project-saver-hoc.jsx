@@ -61,7 +61,15 @@ const ProjectSaverHOC = function (WrappedComponent) {
             // Allow the GUI consumer to pass in a function to receive a trigger
             // for triggering thumbnail or whole project saves.
             // These functions are called with null on unmount to prevent stale references.
-            this.props.onSetProjectThumbnailer(callback => getProjectThumbnail(this.props.vm, callback));
+            this.props.onSetProjectThumbnailer(async () => {
+                try {
+                    const dataURI = await getProjectThumbnail(this.props.vm);
+                    return dataURI;
+                } catch (e) {
+                    log.error('Failed to get project thumbnail', e);
+                    throw e;
+                }
+            });
             this.props.onSetProjectSaver(this.tryToAutoSave);
         }
         componentDidUpdate (prevProps) {
@@ -79,14 +87,17 @@ const ProjectSaverHOC = function (WrappedComponent) {
                 this.props.isShowingWithId &&
                 !prevProps.isShowingWithId
             ) {
-                setTimeout(() =>
-                    storeProjectThumbnail(this.props.vm, dataURI => {
+                setTimeout(async () => {
+                    try {
+                        const dataURI = await storeProjectThumbnail(this.props.vm);
                         this.props.onUpdateProjectThumbnail(
                             this.props.reduxProjectId,
                             dataURItoBlob(dataURI)
                         );
-                    })
-                );
+                    } catch (e) {
+                        log.error('Failed to store project thumbnail', e);
+                    }
+                });
             }
 
             if (this.props.projectChanged && !prevProps.projectChanged) {

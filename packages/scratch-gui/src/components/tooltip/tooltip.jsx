@@ -1,7 +1,7 @@
-import React, {useRef, useEffect, useState, useCallback} from 'react';
+import React, {useEffect} from 'react';
 import PropTypes from 'prop-types';
 import styles from './tooltip.css';
-import calculatePopupPosition, {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition';
+import {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition';
 
 import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
@@ -9,6 +9,7 @@ import arrowLeftIcon from './icon--arrow-left.svg';
 import arrowRightIcon from './icon--arrow-right.svg';
 
 import Box from '../box/box';
+import PopupWithArrow from '../popup-with-arrow/popup-with-arrow.jsx';
 
 const defaultConfig = {
     width: 336,
@@ -19,11 +20,11 @@ const defaultConfig = {
     arrowHeight: 8
 };
 
-const SIDE_TO_ARROW_ICON = {
-    [PopupSide.UP]: arrowDownIcon,
-    [PopupSide.DOWN]: arrowUpIcon,
-    [PopupSide.LEFT]: arrowRightIcon,
-    [PopupSide.RIGHT]: arrowLeftIcon
+const arrowConfig = {
+    arrowDownIcon,
+    arrowUpIcon,
+    arrowLeftIcon,
+    arrowRightIcon
 };
 
 const Tooltip = ({
@@ -38,9 +39,6 @@ const Tooltip = ({
     body,
     layoutConfig
 }) => {
-    const tooltipRef = useRef(null);
-    const [pos, setPos] = useState({top: 0, left: 0, arrowTop: 0, arrowLeft: 0});
-
     const {
         width,
         spaceForArrow,
@@ -50,92 +48,17 @@ const Tooltip = ({
         arrowWidth
     } = {...defaultConfig, ...layoutConfig};
 
-    const arrowIcon = SIDE_TO_ARROW_ICON[side];
-    const [rotatedArrowWidth, rotatedArrowHeight] = (side === PopupSide.UP || side === PopupSide.DOWN) ?
-        [arrowWidth, arrowHeight] : [arrowHeight, arrowWidth];
-
-    const updatePosition = useCallback(() => {
-        if (!targetRef?.current || !tooltipRef.current) return;
-        const newPos = calculatePopupPosition({
-            relativeElementRef: targetRef,
-            popupRef: tooltipRef,
-            side,
-            align,
-            popupWidth: width,
-            spaceForArrow,
-            counterOffset,
-            arrowOffsetFromBottom,
-            arrowHeight: rotatedArrowHeight,
-            arrowWidth: rotatedArrowWidth
-        });
-        setPos(newPos);
-    }, [
-        targetRef,
-        side,
-        align,
-        width,
-        spaceForArrow,
-        counterOffset,
-        arrowOffsetFromBottom,
-        rotatedArrowHeight,
-        rotatedArrowWidth
-    ]);
-    
-    // Resize/scroll listeners
-    useEffect(() => {
-        if (!isOpen) return;
-
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
-        return () => {
-            window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
-        };
-    }, [isOpen, updatePosition]);
-
-    // Click outside to close
-    useEffect(() => {
-        if (!isOpen || !onRequestClose) return;
-
-        const handleClickOutside = event => {
-            const isOutsideTooltip = tooltipRef.current &&
-                !tooltipRef.current.contains(event.target);
-            
-            if (isOutsideTooltip) {
-                onRequestClose();
-            }
-        };
-
-        // The Blockly workspace suppresses compat events like `mouseup`.
-        // Listen for `pointerup` instead.
-        document.addEventListener('pointerup', handleClickOutside);
-        return () => {
-            document.removeEventListener('pointerup', handleClickOutside);
-        };
-    }, [isOpen, onRequestClose, targetRef]);
-
     // Simulate hover and focus (normal) tooltip behavior
     useEffect(() => {
         if (isManualOnly) return;
-        
+
         const target = targetRef?.current;
         if (!target) return;
 
-        const handleMouseEnter = () => {
-            onRequestOpen?.();
-        };
-
-        const handleMouseLeave = () => {
-            if (onRequestClose) onRequestClose();
-        };
-
-        const handleFocus = () => {
-            if (onRequestOpen) onRequestOpen();
-        };
-
-        const handleBlur = () => {
-            if (onRequestClose) onRequestClose();
-        };
+        const handleMouseEnter = () => onRequestOpen?.();
+        const handleMouseLeave = () => onRequestClose?.();
+        const handleFocus = () => onRequestOpen?.();
+        const handleBlur = () => onRequestClose?.();
 
         target.addEventListener('mouseenter', handleMouseEnter);
         target.addEventListener('mouseleave', handleMouseLeave);
@@ -150,61 +73,46 @@ const Tooltip = ({
         };
     }, [isManualOnly, onRequestOpen, onRequestClose, targetRef?.current]);
 
-    // Update position when isOpen changes
-    useEffect(() => {
-        if (isOpen && tooltipRef.current && targetRef?.current) {
-            updatePosition();
-        }
-    }, [isOpen, targetRef, updatePosition]);
-
-    const onTooltipMount = useCallback(el => {
-        if (!el || !isOpen) return;
-        tooltipRef.current = el;
-
-        updatePosition();
-    }, [isOpen, updatePosition]);
-
-    if (!isOpen) return null;
-
     return (
-        <>
-            <Box
-                componentRef={onTooltipMount}
-                className={styles.tooltip}
-                style={{
-                    top: pos.top,
-                    left: pos.left,
-                    width,
-                    zIndex: 1000,
-                    position: 'fixed'
-                }}
-                tabIndex={0}
-                role="tooltip"
-            >
-                <Box className={styles.tooltipTitle}>
-                    {title}
-                </Box>
-                <Box className={styles.tooltipBody}>
-                    {body}
-                </Box>
-            </Box>
-            {arrowIcon && (
-                <img
-                    src={arrowIcon}
-                    className={styles.tooltipArrow}
+        <PopupWithArrow
+            isOpen={isOpen}
+            onRequestClose={onRequestClose}
+            relativeElementRef={targetRef}
+            side={side}
+            align={align}
+            layoutConfig={{
+                popupWidth: width,
+                spaceForArrow,
+                counterOffset,
+                arrowOffsetFromBottom,
+                arrowHeight,
+                arrowWidth
+            }}
+            arrowConfig={arrowConfig}
+        >
+            {({popupRef, pos}) => (
+                <Box
+                    componentRef={popupRef}
+                    className={styles.tooltip}
                     style={{
-                        top: pos.arrowTop,
-                        left: pos.arrowLeft,
-                        width: rotatedArrowWidth,
-                        height: rotatedArrowHeight,
-                        zIndex: 510,
+                        top: pos.top,
+                        left: pos.left,
+                        width,
+                        zIndex: 1000,
                         position: 'fixed'
                     }}
-                    alt=""
-                    aria-hidden="true"
-                />
+                    tabIndex={0}
+                    role="tooltip"
+                >
+                    <Box className={styles.tooltipTitle}>
+                        {title}
+                    </Box>
+                    <Box className={styles.tooltipBody}>
+                        {body}
+                    </Box>
+                </Box>
             )}
-        </>
+        </PopupWithArrow>
     );
 };
 

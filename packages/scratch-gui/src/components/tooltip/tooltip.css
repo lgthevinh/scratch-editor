@@ -20,7 +20,6 @@
 .tooltip-title {
     align-self: stretch;
     color: $ui-white;
-    font-family: "Helvetica Neue";
     font-size: 1rem;
     font-style: normal;
     font-weight: 700;
@@ -30,7 +29,6 @@
 .tooltip-body {
     align-self: stretch;
     color: $ui-white;
-    font-family: "Helvetica Neue";
     font-size: 0.875rem;
     font-style: normal;
     font-weight: 400;
