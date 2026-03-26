@@ -487,6 +487,42 @@ const _parseUrl = (value, windowRef) => {
     return res;
 };
 
+const _createClipPath = function (clipPathId, svgTag, matrix) {
+    const oldClipPath = svgTag.getElementById(clipPathId);
+    if (!oldClipPath) return null;
+
+    // Build unique ID from matrix, same pattern as _createGradient
+    let matrixString = Matrix.toString(matrix);
+    matrixString = matrixString.substring(8, matrixString.length - 1);
+    const newClipPathId = `${clipPathId}-${matrixString}`;
+
+    // Already transformed, reuse it
+    if (svgTag.getElementById(newClipPathId)) {
+        return `url(#${newClipPathId})`;
+    }
+
+    let defs = svgTag.getElementsByTagName('defs');
+    if (defs.length === 0) {
+        defs = SvgElement.create('defs');
+        svgTag.appendChild(defs);
+    } else {
+        defs = defs[0];
+    }
+
+    // Clone and give new ID
+    const newClipPath = oldClipPath.cloneNode(true);
+    newClipPath.setAttribute('id', newClipPathId);
+
+    // Compose with any existing transform on the clipPath rather than replacing it
+    const existingMatrix = _parseTransform(oldClipPath);
+    const composedMatrix = Matrix.compose(matrix, existingMatrix);
+    newClipPath.setAttribute('transform', Matrix.toString(composedMatrix));
+
+    defs.appendChild(newClipPath);
+
+    return `url(#${newClipPathId})`;
+};
+
 /**
  * Scratch 2.0 displays stroke widths in a "normalized" way, that is,
  * if a shape with a stroke width has a transform applied, it will be
@@ -512,15 +548,16 @@ const _parseUrl = (value, windowRef) => {
 const transformStrokeWidths = function (svgTag, windowRef, bboxForTesting) {
     const inherited = Matrix.identity();
 
-    // pass down transforms to leaf level
     const _applyTransformToClipPath = function (element, matrix) {
         const clipPathAttr = element.attributes && element.attributes['clip-path'];
         if (!clipPathAttr) return;
         const clipPathId = _parseUrl(clipPathAttr.value, windowRef);
         if (!clipPathId) return;
-        const clipPathEl = svgTag.getElementById(clipPathId);
-        if (!clipPathEl) return;
-        clipPathEl.setAttribute('transform', Matrix.toString(matrix));
+
+        const newClipPathRef = _createClipPath(clipPathId, svgTag, matrix);
+        if (newClipPathRef) {
+            element.setAttribute('clip-path', newClipPathRef);
+        }
     };
 
     const applyTransforms = (element, matrix, strokeWidth, fill, stroke) => {
