@@ -74,19 +74,23 @@ const DeleteConfirmationPrompt = ({
             isOpen
             title={intl.formatMessage(messages.confirmDeletionHeading)}
             message={<FormattedMessage {...getMessage(entityType)} />}
-            onConfirm={onOk}
-            onCancel={onCancel}
             relativeElementRef={relativeElementRef}
             side={side}
             align={PopupAlign.CENTER}
             layoutConfig={layoutConfig}
-            confirmIcon={deleteIcon}
-            cancelIcon={undoIcon}
             buttonOrder={BUTTON_ORDER.CONFIRM_FIRST}
             containerClassName={styles.body}
             messageClassName={styles.label}
-            confirmButtonClassName={styles.buttonRowButton}
-            cancelButtonClassName={styles.buttonRowButton}
+            confirmButtonConfig={{
+                icon: deleteIcon,
+                className: styles.buttonRowButton,
+                onClick: onOk
+            }}
+            cancelButtonConfig={{
+                icon: undoIcon,
+                className: styles.buttonRowButton,
+                onClick: onCancel
+            }}
         />
     );
 };

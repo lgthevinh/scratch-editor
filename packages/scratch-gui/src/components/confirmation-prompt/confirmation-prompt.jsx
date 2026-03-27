@@ -48,16 +48,17 @@ const BUTTON_ORDER = {
     CONFIRM_FIRST: 'confirmFirst'
 };
 
+const buttonConfigShape = PropTypes.shape({
+    label: PropTypes.node,
+    icon: PropTypes.string,
+    className: PropTypes.string,
+    onClick: PropTypes.func.isRequired
+});
+
 const ConfirmationPrompt = ({
     title,
     message,
-    confirmLabel,
-    cancelLabel,
-    confirmIcon,
-    cancelIcon,
     buttonOrder = BUTTON_ORDER.CANCEL_FIRST,
-    onConfirm,
-    onCancel,
     isOpen,
     relativeElementRef,
     side,
@@ -65,8 +66,8 @@ const ConfirmationPrompt = ({
     layoutConfig,
     containerClassName,
     messageClassName,
-    confirmButtonClassName,
-    cancelButtonClassName
+    confirmButtonConfig,
+    cancelButtonConfig
 }) => {
     const {
         modalWidth,
@@ -92,37 +93,45 @@ const ConfirmationPrompt = ({
         arrowWidth
     ]);
 
+    const handleCancel = React.useCallback(() => {
+        cancelButtonConfig.onClick();
+    }, [cancelButtonConfig]);
+
+    const handleConfirm = React.useCallback(() => {
+        confirmButtonConfig.onClick();
+    }, [confirmButtonConfig]);
+
     const cancelButton = (
         <button
-            onClick={onCancel}
-            className={classNames(styles.cancelButton, cancelButtonClassName)}
+            onClick={handleCancel}
+            className={classNames(styles.cancelButton, cancelButtonConfig.className ?? '')}
         >
-            {cancelIcon && (
+            {cancelButtonConfig.icon && (
                 <img
                     className={styles.buttonIcon}
-                    src={cancelIcon}
+                    src={cancelButtonConfig.icon}
                     aria-hidden="true"
                     alt=""
                 />
             )}
-            {cancelLabel ?? <FormattedMessage {...messages.defaultCancelLabel} />}
+            {cancelButtonConfig.label ?? <FormattedMessage {...messages.defaultCancelLabel} />}
         </button>
     );
 
     const confirmButton = (
         <button
-            onClick={onConfirm}
-            className={classNames(styles.confirmButton, confirmButtonClassName)}
+            onClick={handleConfirm}
+            className={classNames(styles.confirmButton, confirmButtonConfig.className ?? '')}
         >
-            {confirmIcon && (
+            {confirmButtonConfig.icon && (
                 <img
                     className={styles.buttonIcon}
-                    src={confirmIcon}
+                    src={confirmButtonConfig.icon}
                     aria-hidden="true"
                     alt=""
                 />
             )}
-            {confirmLabel ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
+            {confirmButtonConfig.label ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
         </button>
     );
 
@@ -133,7 +142,7 @@ const ConfirmationPrompt = ({
         <ModalWithArrow
             isOpen={isOpen}
             relativeElementRef={relativeElementRef}
-            onRequestClose={onCancel}
+            onRequestClose={handleCancel}
             side={side}
             align={align}
             layoutConfig={memoizedLayoutConfig}
@@ -158,11 +167,7 @@ ConfirmationPrompt.propTypes = {
     message: PropTypes.node.isRequired,
     confirmLabel: PropTypes.node,
     cancelLabel: PropTypes.node,
-    confirmIcon: PropTypes.string,
-    cancelIcon: PropTypes.string,
     buttonOrder: PropTypes.oneOf(Object.values(BUTTON_ORDER)),
-    onConfirm: PropTypes.func.isRequired,
-    onCancel: PropTypes.func.isRequired,
     relativeElementRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     side: PropTypes.oneOf(Object.values(PopupSide)).isRequired,
     align: PropTypes.oneOf(Object.values(PopupAlign)),
@@ -176,8 +181,9 @@ ConfirmationPrompt.propTypes = {
     }),
     containerClassName: PropTypes.string,
     messageClassName: PropTypes.string,
-    confirmButtonClassName: PropTypes.string,
-    cancelButtonClassName: PropTypes.string
+    confirmButtonConfig: buttonConfigShape.isRequired,
+    cancelButtonConfig: buttonConfigShape.isRequired
+
 };
 
 export {BUTTON_ORDER};
