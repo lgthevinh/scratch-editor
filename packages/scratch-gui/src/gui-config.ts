@@ -11,6 +11,7 @@ export interface GUIConfig {
 export interface GUIStorage {
     scratchStorage: ScratchStorage;
     backpackStorage?: GUIBackpackStorage;
+    cloudVariables?: GUICloudVariableConfig;
 
     // Called multiple times (as changes happen)
     setProjectHost?(host: string): void;
@@ -127,6 +128,61 @@ export interface MessageObject {
     id: string;
     description: string;
     defaultMessage: string;
+}
+
+export type VirtualMachine = unknown;
+
+export interface GUICloudVariableConfig {
+    /**
+     * Creates a cloud variable provider for the given user and project.
+     * On create, the provider should try to connect to the server.
+     *
+     * @param cloudHost The base URL of the cloud provider server
+     * @param vm The Scratch VM instance
+     * @param username The username
+     * @param projectId The project id
+     */
+    createProvider(cloudHost: string, vm: VirtualMachine, username: string, projectId: string): GUICloudVariableProvider;
+}
+
+export interface GUICloudVariableProvider {
+    /**
+     * Is currently connected to the server?
+     */
+    isConnected(): boolean;
+
+    /**
+     * Create a new cloud variable on the server.
+     * @param name The name of the variable to create
+     * @param value The value of the new cloud variable
+     */
+    createVariable(name: string, value: string | number): void;
+
+    /**
+     * Update a cloud variable on the server.
+     * @param name The name of the variable to update
+     * @param value The new value for the variable
+     */
+    updateVariable(name: string, value: string | number): void;
+
+    /**
+     * Rename a cloud variable on the server.
+     * @param oldName The old name of the variable to rename
+     * @param newName The new name for the cloud variable
+     */
+    renameVariable(oldName: string, newName: string): void;
+
+    /**
+     * Delete a cloud variable on the server.
+     * @param name The name of the variable to delete
+     */
+    deleteVariable(name: string): void;
+
+    /**
+     * Close the connection to the cloud data server and clear
+     * all provider state.
+     */
+    requestCloseConnection(): void;
 }
 
 export const GUIBackpackStoragePropType = PropTypes.shape({

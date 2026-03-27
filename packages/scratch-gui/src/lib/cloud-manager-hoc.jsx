@@ -13,6 +13,7 @@ import {
 import {
     showAlertWithTimeout
 } from '../reducers/alerts';
+import { GUIStoragePropType } from '../gui-config';
 
 /*
  * Higher Order Component to manage the connection to the cloud server.
@@ -42,7 +43,15 @@ const cloudManagerHOC = function (WrappedComponent) {
             // when loading a new project e.g. via file upload
             // (and eventually move it out of the vm.clear function)
 
-            if (this.shouldConnect(this.props) && !this.shouldConnect(prevProps)) {
+            const shouldReconnect = this.shouldConnect(this.props) && (
+                !this.shouldConnect(prevProps) ||
+
+                // Make sure we reconnect if the project or username changes
+                this.props.projectId !== prevProps.projectId ||
+                this.props.username !== prevProps.username
+            );
+
+            if (shouldReconnect) {
                 this.connectToCloud();
             }
 
@@ -54,7 +63,7 @@ const cloudManagerHOC = function (WrappedComponent) {
             this.disconnectFromCloud();
         }
         canUseCloud (props) {
-            return !!(props.cloudHost && props.username && props.vm && props.projectId && props.hasCloudPermission);
+            return !!(props.storage.cloudVariables && props.cloudHost && props.username && props.vm && props.projectId && props.hasCloudPermission);
         }
         shouldConnect (props) {
             return !this.isConnected() && this.canUseCloud(props) &&
@@ -66,21 +75,28 @@ const cloudManagerHOC = function (WrappedComponent) {
                 ( // Can no longer use cloud or cloud provider info is now stale
                     !this.canUseCloud(props) ||
                     !props.vm.runtime.hasCloudData() ||
-                    (props.projectId !== prevProps.projectId) ||
-                    (props.username !== prevProps.username) ||
                     // Editing someone else's project
                     !props.canModifyCloudData
                 );
         }
         isConnected () {
-            return this.cloudProvider && !!this.cloudProvider.connection;
+            return this.cloudProvider && this.cloudProvider.isConnected();
         }
         connectToCloud () {
-            this.cloudProvider = new CloudProvider(
+            // Clean up old connection if there was one
+            this.disconnectFromCloud();
+
+            if (!this.props.storage.cloudVariables) {
+                return;
+            }
+
+            this.cloudProvider = this.props.storage.cloudVariables.createProvider(
                 this.props.cloudHost,
                 this.props.vm,
                 this.props.username,
-                this.props.projectId);
+                this.props.projectId
+            );
+
             this.props.vm.setCloudProvider(this.cloudProvider);
         }
         disconnectFromCloud () {
@@ -138,6 +154,7 @@ const cloudManagerHOC = function (WrappedComponent) {
     }
 
     CloudManager.propTypes = {
+        storage: GUIStoragePropType,
         canModifyCloudData: PropTypes.bool.isRequired,
         cloudHost: PropTypes.string,
         hasCloudPermission: PropTypes.bool,
@@ -158,6 +175,8 @@ const cloudManagerHOC = function (WrappedComponent) {
     const mapStateToProps = (state, ownProps) => {
         const loadingState = state.scratchGui.projectState.loadingState;
         return {
+            storage: state.scratchGui.config.storage,
+
             isShowingWithId: getIsShowingWithId(loadingState),
             projectId: state.scratchGui.projectState.projectId,
             // if you're editing someone else's project, you can't modify cloud data

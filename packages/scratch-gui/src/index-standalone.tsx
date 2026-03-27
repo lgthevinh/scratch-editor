@@ -17,6 +17,7 @@ export * from './exported-reducers';
 export * from 'scratch-storage';
 
 export * from './lib/legacy-backpack-storage';
+export {default as LegacyCloudProvider} from './lib/cloud-provider';
 
 export {default as buildDefaultProject} from './lib/default-project';
 

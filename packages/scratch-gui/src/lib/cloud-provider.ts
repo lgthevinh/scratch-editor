@@ -1,8 +1,20 @@
 import log from './log.js';
 import throttle from 'lodash.throttle';
 
-
 class CloudProvider {
+    private vm: any;
+    private username: string | null = null;
+    private projectId: string | null = null;
+    private cloudHost: string;
+    private readAuth: () => Promise<string | null | undefined>;
+
+    private connection: WebSocket | null = null;
+    private connectionAttempts: number;
+    private queuedData: string[];
+    private _connectionTimeout: number | null = null;
+
+    private sendCloudData: (data: string) => void;
+
     /**
      * A cloud data provider which creates and manages a web socket connection
      * to the Scratch cloud data server. This provider is responsible for
@@ -11,13 +23,14 @@ class CloudProvider {
      * @param {VirtualMachine} vm The Scratch virtual machine to interface with
      * @param {string} username The username to associate cloud data updates with
      * @param {string} projectId The id associated with the project containing
-     * cloud data.
+     * @param {() => Promise<string | null | undefined>} readAuth A function to get an auth token
      */
-    constructor (cloudHost, vm, username, projectId) {
+    constructor (cloudHost, vm, username, projectId, readAuth = () => Promise.resolve(null)) {
         this.vm = vm;
         this.username = username;
         this.projectId = projectId;
         this.cloudHost = cloudHost;
+        this.readAuth = readAuth;
 
         this.connectionAttempts = 0;
 
@@ -32,6 +45,10 @@ class CloudProvider {
         this.sendCloudData = throttle(this._sendCloudData, 100);
     }
 
+    isConnected () {
+        return !!this.connection;
+    }
+
     /**
      * Open a new websocket connection to the clouddata server.
      * @param {string} cloudHost The cloud data server to connect to.
@@ -39,18 +56,24 @@ class CloudProvider {
     openConnection () {
         this.connectionAttempts += 1;
 
-        try {
-            this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost);
-        } catch (e) {
-            log.warn('Websocket support is not available in this browser', e);
-            this.connection = null;
-            return;
-        }
+        const authPromise = this.readAuth ? this.readAuth() : Promise.resolve(null);
+        authPromise.then(token => {
+            try {
+                // See https://stackoverflow.com/questions/4361173/http-headers-in-websockets-client-api
+                const protocols = token ? [`bearer=${token}`] : [];
 
-        this.connection.onerror = this.onError.bind(this);
-        this.connection.onmessage = this.onMessage.bind(this);
-        this.connection.onopen = this.onOpen.bind(this);
-        this.connection.onclose = this.onClose.bind(this);
+                this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost, protocols);
+            } catch (e) {
+                log.warn('Websocket support is not available in this browser', e);
+                this.connection = null;
+                return;
+            }
+
+            this.connection.onerror = this.onError.bind(this);
+            this.connection.onmessage = this.onMessage.bind(this);
+            this.connection.onopen = this.onOpen.bind(this);
+            this.connection.onclose = this.onClose.bind(this);
+        }).catch(error => log.error('Could not read auth for clouddata', error));
     }
 
     onError (event) {
@@ -112,7 +135,7 @@ class CloudProvider {
     }
 
     parseMessage (message) {
-        const varData = {};
+        const varData: any = {};
         switch (message.method) {
         case 'set': {
             varData.varUpdate = {
@@ -132,8 +155,8 @@ class CloudProvider {
      * @param {string | number} dataValue The value to set the cloud variable to
      * @param {string} dataNewName The new name for the cloud variable (if renaming)
      */
-    writeToServer (methodName, dataName, dataValue, dataNewName) {
-        const msg = {};
+    writeToServer (methodName, dataName?, dataValue?, dataNewName?) {
+        const msg: any = {};
         msg.method = methodName;
         msg.user = this.username;
         msg.project_id = this.projectId;
@@ -161,7 +184,7 @@ class CloudProvider {
      * @param {string} data The formatted message to send.
      */
     _sendCloudData (data) {
-        this.connection.send(`${data}\n`);
+        this.connection!.send(`${data}\n`);
     }
 
     /**
