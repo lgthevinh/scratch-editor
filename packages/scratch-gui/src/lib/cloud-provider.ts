@@ -8,6 +8,7 @@ class CloudProvider {
     private cloudHost: string;
     private readAuth?: () => Promise<string | null | undefined>;
 
+    private isTryingToConnect = false;
     private connection: WebSocket | null = null;
     private connectionAttempts: number;
     private queuedData: string[];
@@ -44,6 +45,7 @@ class CloudProvider {
         // connection was ready
         this.queuedData = [];
 
+        this.isTryingToConnect = true;
         this.openConnection();
 
         // Send a message to the cloud server at a rate of no more
@@ -51,8 +53,9 @@ class CloudProvider {
         this.sendCloudData = throttle(this._sendCloudData, 100);
     }
 
-    isConnected () {
-        return !!this.connection;
+    isConnectedOrConnecting () {
+        // There is a brief moment in time between when we start connecting and when the connection object is set
+        return this.isTryingToConnect || !!this.connection;
     }
 
     /**
@@ -81,6 +84,7 @@ class CloudProvider {
             this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost, protocols);
         } catch (e) {
             log.warn('Websocket support is not available in this browser', e);
+            this.isTryingToConnect = false;
             this.connection = null;
             return;
         }
@@ -268,6 +272,7 @@ class CloudProvider {
      * and current state.
      */
     clear () {
+        this.isTryingToConnect = false;
         this.connection = null;
         this.vm = null;
         this.username = null;

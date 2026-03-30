@@ -152,9 +152,9 @@ export interface GUICloudVariableConfig {
 
 export interface GUICloudVariableProvider {
     /**
-     * Is currently connected to the server?
+     * Is currently connected to the server or in the process of connecting?
      */
-    isConnected(): boolean;
+    isConnectedOrConnecting(): boolean;
 
     /**
      * Create a new cloud variable on the server.

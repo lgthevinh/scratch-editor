@@ -10,7 +10,9 @@ import {legacyConfig} from '../../../src/legacy-config';
 
 const mockCloudProviderInstance = {
     connection: true,
-    isConnected: () => !!this.connection,
+    isConnectedOrConnecting () {
+        return !!this.connection;
+    },
     requestCloseConnection: jest.fn()
 };
 jest.mock('../../../src/lib/cloud-provider', () =>

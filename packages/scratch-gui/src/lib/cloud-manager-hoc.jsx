@@ -23,6 +23,7 @@ const cloudManagerHOC = function (WrappedComponent) {
     class CloudManager extends React.Component {
         constructor (props) {
             super(props);
+
             this.cloudProvider = null;
             bindAll(this, [
                 'handleCloudDataUpdate',
@@ -42,15 +43,7 @@ const cloudManagerHOC = function (WrappedComponent) {
             // when loading a new project e.g. via file upload
             // (and eventually move it out of the vm.clear function)
 
-            const shouldReconnect = this.shouldConnect(this.props) && (
-                !this.shouldConnect(prevProps) ||
-
-                // Make sure we reconnect if the project or username changes
-                this.props.projectId !== prevProps.projectId ||
-                this.props.username !== prevProps.username
-            );
-
-            if (shouldReconnect) {
+            if (this.shouldConnect(this.props) && !this.shouldConnect(prevProps)) {
                 this.connectToCloud();
             }
 
@@ -59,6 +52,10 @@ const cloudManagerHOC = function (WrappedComponent) {
             }
         }
         componentWillUnmount () {
+            // Make sure to clean up old handlers as otherwise we end up with multiple connections at the same time
+            this.props.vm.off('HAS_CLOUD_DATA_UPDATE', this.handleCloudDataUpdate);
+            this.props.vm.off('EXTENSION_ADDED', this.handleExtensionAdded);
+
             this.disconnectFromCloud();
         }
         canUseCloud (props) {
@@ -81,12 +78,14 @@ const cloudManagerHOC = function (WrappedComponent) {
                 ( // Can no longer use cloud or cloud provider info is now stale
                     !this.canUseCloud(props) ||
                     !props.vm.runtime.hasCloudData() ||
+                    (props.projectId !== prevProps.projectId) ||
+                    (props.username !== prevProps.username) ||
                     // Editing someone else's project
                     !props.canModifyCloudData
                 );
         }
         isConnected () {
-            return this.cloudProvider && this.cloudProvider.isConnected();
+            return this.cloudProvider && this.cloudProvider.isConnectedOrConnecting();
         }
         connectToCloud () {
             // Clean up old connection if there was one
