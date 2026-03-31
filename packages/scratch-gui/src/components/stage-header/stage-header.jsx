@@ -1,6 +1,6 @@
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import PropTypes from 'prop-types';
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import VM from '@scratch/scratch-vm';
 
 import Box from '../box/box.jsx';
@@ -25,6 +25,9 @@ import ConfirmationPrompt from '../confirmation-prompt/confirmation-prompt.jsx';
 import FeatureCalloutPopover from '../feature-callout-popover/feature-callout-popover.jsx';
 import classNames from 'classnames';
 import {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition.js';
+import {getLocalStorageValue, setLocalStorageValue} from '../../lib/local-storage.js';
+
+const LOCAL_STORAGE_KEY = 'introducedEditorManualSetThumbnail';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -92,6 +95,7 @@ const StageHeaderComponent = function (props) {
         vm,
         isProjectLoaded,
         userOwnsProject,
+        username,
         onShowSettingThumbnail,
         onShowThumbnailSuccess,
         onShowThumbnailError
@@ -105,6 +109,18 @@ const StageHeaderComponent = function (props) {
     const [isThumbnailPromptOpen, setIsThumbnailPromptOpen] = useState(false);
     const [isThumbnailTooltipOpen, setIsThumbnailTooltipOpen] = useState(false);
     const [isUpdatingThumbnail, setIsUpdatingThumbnail] = useState(false);
+
+    // TODO: Remove this callout after 60 days of manual thumbnail update release.
+    const shouldShowCallout = manuallySaveThumbnails && isProjectLoaded && userOwnsProject &&
+        getLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '') !== true;
+
+    useEffect(() => {
+        if (shouldShowCallout) {
+            setIsThumbnailTooltipOpen(true);
+        } else {
+            setIsThumbnailTooltipOpen(false);
+        }
+    }, [shouldShowCallout]);
 
     const onUpdateThumbnail = useCallback(
         throttle(() => {
@@ -140,7 +156,9 @@ const StageHeaderComponent = function (props) {
 
     const onThumbnailPromptOpen = useCallback(() => {
         setIsThumbnailPromptOpen(true);
-    }, []);
+        setLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '', true);
+        setIsThumbnailTooltipOpen(false);
+    }, [username]);
 
     const onThumbnailPromptClose = useCallback(() => {
         setIsThumbnailPromptOpen(false);
@@ -150,10 +168,6 @@ const StageHeaderComponent = function (props) {
         onThumbnailPromptClose();
         onUpdateThumbnail();
     }, [onUpdateThumbnail]);
-
-    const onOpenTooltip = useCallback(() => {
-        setIsThumbnailTooltipOpen(true);
-    }, []);
 
     const onCloseTooltip = useCallback(() => {
         setIsThumbnailTooltipOpen(false);
@@ -231,13 +245,13 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls vm={vm} />
                     <div className={styles.stageSizeRow}>
-                        {/* To remove - new feature awareness tooltip */}
                         <FeatureCalloutPopover
                             isOpen={isThumbnailTooltipOpen}
                             onRequestClose={onCloseTooltip}
                             targetRef={thumbnailButtonRef}
                             side={PopupSide.LEFT}
                             align={PopupAlign.DOWN}
+                            nonBlocking
                             title={intl.formatMessage(messages.thumbnailTooltipTitle)}
                             body={
                                 <FormattedMessage
@@ -316,6 +330,7 @@ StageHeaderComponent.propTypes = {
     vm: PropTypes.instanceOf(VM).isRequired,
     isProjectLoaded: PropTypes.bool,
     userOwnsProject: PropTypes.bool,
+    username: PropTypes.string,
     onShowSettingThumbnail: PropTypes.func,
     onShowThumbnailError: PropTypes.func,
     onShowThumbnailSuccess: PropTypes.func

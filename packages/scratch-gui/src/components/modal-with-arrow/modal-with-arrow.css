@@ -10,6 +10,14 @@
     z-index: 1000;
 }
 
+.modal-content:focus {
+    outline: none;
+}
+
+.modal-content:focus-visible {
+    outline: revert;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -18,4 +26,10 @@
     bottom: 0;
     z-index: 510;
     background-color: transparent;
+}
+
+.root .arrow {
+    position: fixed;
+    z-index: 501;
+    border: none;
 }

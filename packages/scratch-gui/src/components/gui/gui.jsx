@@ -543,6 +543,7 @@ const GUIComponent = props => {
                                 ariaLabel={intl.formatMessage(ariaMessages.stage)}
                                 manuallySaveThumbnails={manuallySaveThumbnails}
                                 userOwnsProject={userOwnsProject}
+                                username={username}
                                 onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                             />
                             <Box

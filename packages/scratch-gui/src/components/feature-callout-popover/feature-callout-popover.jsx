@@ -55,6 +55,7 @@ const FeatureCalloutPopover = ({
     align,
     title,
     body,
+    nonBlocking,
     layoutConfig
 }) => {
     const {
@@ -91,6 +92,10 @@ const FeatureCalloutPopover = ({
             align={align}
             layoutConfig={memoizedLayoutConfig}
             arrowConfig={arrowConfig}
+            {...(nonBlocking ? {
+                modalOverlayStyle: styles.nonBlockingOverlay,
+                modalContentStyle: styles.nonBlockingContent
+            } : {})}
         >
             <FeatureCalloutContent
                 title={title}
@@ -108,6 +113,7 @@ FeatureCalloutPopover.propTypes = {
     align: PropTypes.oneOf(Object.values(PopupAlign)),
     title: PropTypes.node,
     body: PropTypes.node.isRequired,
+    nonBlocking: PropTypes.bool,
     layoutConfig: PropTypes.shape({
         width: PropTypes.number,
         spaceForArrow: PropTypes.number,

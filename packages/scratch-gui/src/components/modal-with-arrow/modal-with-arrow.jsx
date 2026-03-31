@@ -88,7 +88,7 @@ const ModalWithArrow = ({
     if (!isOpen) return null;
 
     return (
-        <>
+        <div className={styles.root}>
             <ReactModal
                 isOpen
                 onRequestClose={onRequestClose}
@@ -112,19 +112,16 @@ const ModalWithArrow = ({
                     src={arrowIcon}
                     alt=""
                     aria-hidden="true"
+                    className={styles.arrow}
                     style={{
-                        position: 'fixed',
                         top: pos.arrowTop,
                         left: pos.arrowLeft,
                         width: rotatedArrowWidth,
-                        height: rotatedArrowHeight,
-                        zIndex: 1001,
-                        border: 'none',
-                        backgroundColor: 'transparent'
+                        height: rotatedArrowHeight
                     }}
                 />
             )}
-        </>
+        </div>
     );
 };
 
