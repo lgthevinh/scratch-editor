@@ -234,12 +234,10 @@ const StageHeaderComponent = function (props) {
                         {/* To remove - new feature awareness tooltip */}
                         <FeatureCalloutPopover
                             isOpen={isThumbnailTooltipOpen}
-                            onRequestOpen={onOpenTooltip}
                             onRequestClose={onCloseTooltip}
                             targetRef={thumbnailButtonRef}
                             side={PopupSide.LEFT}
                             align={PopupAlign.DOWN}
-                            layoutConfig={{width: 336}}
                             title={intl.formatMessage(messages.thumbnailTooltipTitle)}
                             body={
                                 <FormattedMessage

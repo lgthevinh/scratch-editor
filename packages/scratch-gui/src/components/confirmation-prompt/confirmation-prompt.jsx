@@ -163,8 +163,6 @@ ConfirmationPrompt.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     title: PropTypes.string,
     message: PropTypes.node.isRequired,
-    confirmLabel: PropTypes.node,
-    cancelLabel: PropTypes.node,
     buttonOrder: PropTypes.oneOf(Object.values(BUTTON_ORDER)),
     relativeElementRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     side: PropTypes.oneOf(Object.values(PopupSide)).isRequired,

@@ -148,7 +148,7 @@ ModalWithArrow.propTypes = {
         arrowLeftIcon: PropTypes.string,
         arrowRightIcon: PropTypes.string
     }).isRequired,
-    children: PropTypes.func.isRequired,
+    children: PropTypes.node.isRequired,
     modalContentStyle: PropTypes.string,
     modalOverlayStyle: PropTypes.string,
     title: PropTypes.string

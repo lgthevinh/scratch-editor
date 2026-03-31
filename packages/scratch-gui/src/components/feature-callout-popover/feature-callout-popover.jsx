@@ -12,7 +12,7 @@ import Box from '../box/box.jsx';
 import ModalWithArrow from '../modal-with-arrow/modal-with-arrow.jsx';
 
 const defaultConfig = {
-    modalWidth: 336,
+    width: 336,
     spaceForArrow: 12,
     arrowOffsetFromBottom: 2,
     counterOffset: 2,
@@ -58,7 +58,7 @@ const FeatureCalloutPopover = ({
     layoutConfig
 }) => {
     const {
-        modalWidth,
+        width: modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
