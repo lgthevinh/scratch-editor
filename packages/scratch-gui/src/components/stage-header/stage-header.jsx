@@ -27,7 +27,7 @@ import classNames from 'classnames';
 import {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition.js';
 import {getLocalStorageValue, setLocalStorageValue} from '../../lib/local-storage.js';
 
-const LOCAL_STORAGE_KEY = 'introducedEditorManualSetThumbnail';
+const LOCAL_STORAGE_KEY = 'hasIntroducedEditorManualSetThumbnail';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -156,7 +156,12 @@ const StageHeaderComponent = function (props) {
 
     const onThumbnailPromptOpen = useCallback(() => {
         setIsThumbnailPromptOpen(true);
-        setLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '', true);
+        try {
+            setLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '', true);
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn('Unable to set thumbnail tooltip local storage value. Check if local storage is enabled.', e);
+        }
         setIsThumbnailTooltipOpen(false);
     }, [username]);
 

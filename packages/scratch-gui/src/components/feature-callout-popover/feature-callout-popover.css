@@ -1,4 +1,5 @@
 @import "../../css/colors.css";
+@import "../../css/z-index.css";
 
 .popover {
     display: flex;
@@ -40,7 +41,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 510;
+    z-index: $z-index-modal-overlay;
     background-color: transparent;
     pointer-events: none;
 }
@@ -54,7 +55,13 @@
     padding: 0;
     margin: 0;
     position: fixed;
-    z-index: 1000;
+    z-index: $z-index-modal;
     pointer-events: auto;
-    outline: none;
 }
+
+/* When opened on first render, the popover will have `focus-visible`, which applies the outline.
+   Ideally, we'd only want to show an outline after the user has interacted with it via keyboard */
+.non-blocking-content:focus-visible {
+    outline: none; 
+}
+

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import calculatePopupPosition, {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition';
 import ReactModal from 'react-modal';
 import ReactDOM from 'react-dom';
+import classNames from 'classnames';
 import styles from './modal-with-arrow.css';
 
 const ModalWithArrow = ({
@@ -94,8 +95,8 @@ const ModalWithArrow = ({
                 isOpen
                 onRequestClose={onRequestClose}
                 contentLabel={title}
-                className={modalContentStyle}
-                overlayClassName={modalOverlayStyle}
+                className={classNames(styles.modalContent, modalContentStyle)}
+                overlayClassName={classNames(styles.modalOverlay, modalOverlayStyle)}
                 onAfterOpen={updatePosition}
                 contentRef={onPopupMount}
                 style={{
@@ -155,9 +156,7 @@ ModalWithArrow.propTypes = {
 
 ModalWithArrow.defaultProps = {
     align: PopupAlign.CENTER,
-    onRequestClose: null,
-    modalContentStyle: styles.modalContent,
-    modalOverlayStyle: styles.modalOverlay
+    onRequestClose: null
 };
 
 export default ModalWithArrow;

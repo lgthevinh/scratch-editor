@@ -147,7 +147,9 @@ const ConfirmationPrompt = ({
             arrowConfig={arrowConfig}
             title={title}
         >
-            <Box className={classNames(styles.modalContainer, containerClassName)}>
+            <Box
+                className={classNames(styles.modalContainer, containerClassName)}
+            >
                 <Box className={classNames(styles.label, messageClassName)}>
                     {message}
                 </Box>
