@@ -2,6 +2,7 @@ import React, {useRef, useState, useCallback, useEffect} from 'react';
 import PropTypes from 'prop-types';
 import calculatePopupPosition, {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition';
 import ReactModal from 'react-modal';
+import ReactDOM from 'react-dom';
 import styles from './modal-with-arrow.css';
 
 const ModalWithArrow = ({
@@ -87,7 +88,7 @@ const ModalWithArrow = ({
     
     if (!isOpen) return null;
 
-    return (
+    return ReactDOM.createPortal(
         <div className={styles.root}>
             <ReactModal
                 isOpen
@@ -121,7 +122,8 @@ const ModalWithArrow = ({
                     }}
                 />
             )}
-        </div>
+        </div>,
+        document.body
     );
 };
 
