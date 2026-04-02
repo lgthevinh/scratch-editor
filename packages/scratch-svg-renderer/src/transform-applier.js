@@ -487,6 +487,20 @@ const _parseUrl = (value, windowRef) => {
     return res;
 };
 
+// Fixes an issue where clip paths didn’t follow transforms.
+//
+// In SVG, elements can have transforms (scale, rotate, translate, etc.)
+// applied via a transform matrix. In this file, we apply those transforms
+// into the actual geometry (e.g. path data) instead of keeping them as
+// separate transform attributes.
+//
+// However, clip paths are defined separately and are referenced by elements.
+// When we applied transforms to the element’s geometry, the clip path itself
+// remained unchanged, so it no longer lined up with the transformed shape.
+//
+// This function clones the original clip path and applies the same transform
+// matrix to it, ensuring the clipping region stays correctly aligned with
+// the transformed element.
 const _createClipPath = function (clipPathId, svgTag, matrix) {
     const oldClipPath = svgTag.getElementById(clipPathId);
     if (!oldClipPath) return null;
