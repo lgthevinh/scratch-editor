@@ -8,11 +8,13 @@ const DOMPurify = require('isomorphic-dompurify');
 
 const sanitizeSvg = {};
 
-const isInternalRef = ref => ref.startsWith('#') || ref.startsWith('data:');
+const isInternalRef = ref => ref.startsWith('#') || ref.toLowerCase().startsWith('data:');
 
 /**
  * Decode CSS escape sequences in a string.
  * CSS escapes: \HHHHHH (1-6 hex digits, optionally followed by one whitespace) or \C (any non-hex char).
+ * This is the first step of canonicalization: neither jsdom nor css-tree decodes these,
+ * but real browsers do, so we must decode before parsing.
  * @param {string} str - String to decode
  * @returns {string} Decoded string
  */
@@ -20,6 +22,50 @@ const decodeCssEscapes = str => str.replace(
     /\\([0-9a-fA-F]{1,6})\s?|\\(.)/g,
     (match, hex, char) => (hex ? String.fromCodePoint(parseInt(hex, 16)) : char)
 );
+
+/**
+ * Walk a css-tree AST and return true if any Url node references an external resource.
+ * @param {import('css-tree').CssNode} ast - The CSS tree or subtree to walk
+ * @returns {boolean} True if an external url() reference was found
+ */
+const astHasExternalUrls = ast => {
+    let found = false;
+    walk(ast, node => {
+        if (node.type === 'Url') {
+            const urlValue = (node.value.value || '').trim().replace(/['"]/g, '');
+            if (!isInternalRef(urlValue)) {
+                found = true;
+            }
+        }
+    });
+    return found;
+};
+
+/**
+ * Canonicalize a CSS string and check it for external url() references.
+ * Canonicalization: decode CSS escapes, then parse through css-tree so that all syntax
+ * variations (quoting, whitespace, comments, escapes) are normalized into AST nodes.
+ * @param {string} cssText - raw CSS text
+ * @param {string} parseContext - css-tree parse context: 'value' for a single CSS value
+ *   (presentation attributes like fill, stroke), or 'declarationList' for style attributes.
+ * @returns {boolean} true if an external url() reference was found
+ */
+const cssHasExternalUrls = (cssText, parseContext) => {
+    const decoded = decodeCssEscapes(cssText);
+    try {
+        return astHasExternalUrls(parse(decoded, {context: parseContext}));
+    } catch {
+        // If css-tree can't parse it, conservatively check the decoded text.
+        // This handles edge cases where creative syntax breaks the parser but
+        // a browser might still interpret a url() call.
+        const normalized = decoded.toLowerCase().replace(/\s/g, '');
+        for (const m of normalized.matchAll(/url\((.+?)\)/g)) {
+            const ref = m[1].replace(/['"]/g, '');
+            if (!isInternalRef(ref)) return true;
+        }
+        return false;
+    }
+};
 
 DOMPurify.addHook(
     'beforeSanitizeAttributes',
@@ -41,22 +87,17 @@ DOMPurify.addHook(
             }
         }
 
-        // Remove url(...) usages with external references
+        // Remove attributes containing url(...) with external references.
+        // Uses css-tree to parse attribute values, which handles quoting,
+        // whitespace, comments, and other CSS syntax that regex would miss.
         if (currentNode && currentNode.attributes) {
             for (let i = currentNode.attributes.length - 1; i >= 0; i--) {
                 const attr = currentNode.attributes[i];
-                const rawValue = attr.value || '';
-                // Decode CSS escapes so that sequences like \75\72\6c are resolved to "url"
-                const value = decodeCssEscapes(rawValue)
-                    .toLowerCase()
-                    .replace(/\s/g, '');
+                if (!attr.value) continue;
 
-                for (const urlMatch of value.matchAll(/url\((.+?)\)/g)) {
-                    const ref = urlMatch[1].replace(/['"]/g, '');
-                    if (!isInternalRef(ref)) {
-                        currentNode.removeAttribute(attr.name);
-                        break;
-                    }
+                const context = attr.name === 'style' ? 'declarationList' : 'value';
+                if (cssHasExternalUrls(attr.value, context)) {
+                    currentNode.removeAttribute(attr.name);
                 }
             }
         }
@@ -69,8 +110,8 @@ DOMPurify.addHook(
     'uponSanitizeElement',
     (node, data) => {
         if (data.tagName === 'style') {
-            // Decode CSS escape sequences before parsing so that css-tree
-            // correctly recognizes obfuscated tokens like \75\72\6c → url
+            // Canonicalize: decode CSS escapes then parse, so css-tree sees
+            // normalized tokens (e.g. \75\72\6c becomes url).
             const decodedCss = decodeCssEscapes(node.textContent);
             const ast = parse(decodedCss);
             let isModified = decodedCss !== node.textContent;
@@ -82,23 +123,10 @@ DOMPurify.addHook(
                     isModified = true;
                 }
 
-                // Elements using url(...) for external resources
-                if (astNode.type === 'Declaration' && astNode.value) {
-                    let shouldRemove = false;
-                    walk(astNode.value, valueNode => {
-                        if (valueNode.type === 'Url') {
-                            const urlValue = (valueNode.value.value || '').trim().replace(/['"]/g, '');
-
-                            if (!isInternalRef(urlValue)) {
-                                shouldRemove = true;
-                            }
-                        }
-                    });
-
-                    if (shouldRemove) {
-                        list.remove(item);
-                        isModified = true;
-                    }
+                // Declarations using url(...) for external resources
+                if (astNode.type === 'Declaration' && astNode.value && astHasExternalUrls(astNode.value)) {
+                    list.remove(item);
+                    isModified = true;
                 }
             });
 
