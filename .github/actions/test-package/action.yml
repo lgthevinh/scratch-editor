@@ -11,11 +11,9 @@ runs:
   using: composite
   steps:
     - name: Install Playwright
+      if: ${{ inputs.package_name == 'scratch-render' }}
       shell: bash
-      run: |
-        if [[ ${{ inputs.package_name }} == "scratch-render" ]]; then
-          npx playwright install --with-deps chromium
-        fi
+      run: npx playwright install --with-deps chromium
     - name: Test
       working-directory: ./packages/${{ inputs.package_name }}
       shell: bash
