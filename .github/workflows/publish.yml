@@ -215,14 +215,6 @@ jobs:
             echo "Not pushing to develop because the tag we're operating on is behind"
           fi
 
-      - name: Comment on Resolved Issues and Merged PRs
-        if: ${{ !github.event.release.prerelease }}
-        uses: apexskier/github-release-commenter@e7813a9625eabd79a875b4bc4046cfcae377ab34 # v1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          comment-template: |
-            :tada: This is included in release {release_link}.
-
       # See https://stackoverflow.com/a/24849501
       - name: Change Connected Commit on Release
         shell: bash
@@ -231,3 +223,13 @@ jobs:
         run: |
           git tag -f "$TAG_NAME" HEAD
           git push -f origin "refs/tags/$TAG_NAME"
+
+      - name: Comment on Resolved Issues and Merged PRs
+        if: ${{ !github.event.release.prerelease }}
+        continue-on-error: true
+        uses: apexskier/github-release-commenter@e7813a9625eabd79a875b4bc4046cfcae377ab34 # v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          skip-label: dependencies
+          comment-template: |
+            :tada: This is included in release {release_link}.
