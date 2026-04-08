@@ -46,7 +46,7 @@ jobs:
       - name: List Packages
         id: list-packages
         run: |
-          PACKAGES=$(ls -1d packages/*/ | xargs -n1 basename | jq -Rcn '[inputs]')
+          PACKAGES=$(npm query '.workspace' | jq -cr '[.[].location | sub("^packages/"; "")]')
           echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
 
       - name: Store Build Artifacts
