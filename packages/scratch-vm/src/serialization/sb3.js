@@ -201,7 +201,7 @@ const serializeBlock = function (block) {
     obj.inputs = serializeInputs(block.inputs);
     obj.fields = serializeFields(block.fields);
     obj.shadow = block.shadow;
-    if (block.topLevel) {
+    if (block.topLevel && !block.shadow) {
         obj.topLevel = true;
         obj.x = block.x ? Math.round(block.x) : 0;
         obj.y = block.y ? Math.round(block.y) : 0;
@@ -840,6 +840,12 @@ const deserializeBlocks = function (blocks) {
         block.id = blockId; // add id back to block since it wasn't serialized
         block.inputs = deserializeInputs(block.inputs, blockId, blocks);
         block.fields = deserializeFields(block.fields);
+        // Obscured shadow blocks can be serialized as top-level by
+        // production Scratch. Upstream Blockly throws if a shadow
+        // appears at the top level of the workspace XML.
+        if (block.shadow && block.topLevel) {
+            block.topLevel = false;
+        }
 
         if (block.comment) {
             // Pre-Blockly v12 Scratch used arbitrary IDs for block comments.

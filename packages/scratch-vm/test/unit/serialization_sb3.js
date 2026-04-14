@@ -255,6 +255,70 @@ test('serializeBlocks serializes x and y for topLevel blocks with x,y of 0,0', t
         });
 });
 
+test('serializeBlock does not serialize shadow blocks as top-level', t => {
+    const blocks = {
+        hatBlock: {
+            id: 'hatBlock',
+            opcode: 'event_whenflagclicked',
+            next: 'costumeBlock',
+            parent: null,
+            inputs: {},
+            fields: {},
+            shadow: false,
+            topLevel: true,
+            x: 0,
+            y: 0
+        },
+        costumeBlock: {
+            id: 'costumeBlock',
+            opcode: 'looks_switchcostumeto',
+            next: null,
+            parent: 'hatBlock',
+            inputs: {
+                COSTUME: {
+                    name: 'COSTUME',
+                    block: 'varReporter',
+                    shadow: 'costumeShadow'
+                }
+            },
+            fields: {},
+            shadow: false,
+            topLevel: false
+        },
+        varReporter: {
+            id: 'varReporter',
+            opcode: 'data_variable',
+            next: null,
+            parent: 'costumeBlock',
+            inputs: {},
+            fields: {VARIABLE: {name: 'VARIABLE', value: 'my variable', id: 'var1'}},
+            shadow: false,
+            topLevel: false
+        },
+        costumeShadow: {
+            id: 'costumeShadow',
+            opcode: 'looks_costume',
+            next: null,
+            parent: null,
+            inputs: {},
+            fields: {COSTUME: {name: 'COSTUME', value: 'costume1'}},
+            shadow: true,
+            topLevel: true // bug: should not be serialized as top-level
+        }
+    };
+
+    const result = sb3.serializeBlocks(blocks);
+    const serialized = result[0];
+
+    t.equal(serialized.costumeShadow.topLevel, false,
+        'shadow block should not be serialized as top-level');
+    t.notOk(serialized.costumeShadow.x,
+        'shadow block should not have x coordinate');
+    t.notOk(serialized.costumeShadow.y,
+        'shadow block should not have y coordinate');
+    t.end();
+});
+
 test('deserializeBlocks', t => {
     const vm = new VirtualMachine();
     vm.loadProject(readFileToBuffer(commentsSB3ProjectPath))
@@ -278,6 +342,45 @@ test('deserializeBlocks on already deserialized input', t => {
             t.same(deserialized, deserializedAgain, 'no change from second pass of deserialize');
             t.end();
         });
+});
+
+test('deserializeBlocks clears topLevel on shadow blocks', t => {
+    // Production Scratch can serialize obscured shadow blocks as top-level
+    // (e.g. when a variable reporter covers a dropdown's shadow). Upstream
+    // Blockly throws "Shadow block cannot be a top-level block" if these
+    // survive into the XML, so deserialization must clear the flag.
+    const blocks = {
+        parentBlock: {
+            opcode: 'looks_switchcostumeto',
+            next: null,
+            parent: null,
+            inputs: {
+                COSTUME: [3, [12, 'my variable', 'var_id'], 'shadowBlock']
+            },
+            fields: {},
+            shadow: false,
+            topLevel: true,
+            x: 0,
+            y: 0
+        },
+        shadowBlock: {
+            opcode: 'looks_costume',
+            next: null,
+            parent: null,
+            inputs: {},
+            fields: {COSTUME: ['costume1', null]},
+            shadow: true,
+            topLevel: true,
+            x: 100,
+            y: 100
+        }
+    };
+
+    sb3.deserializeBlocks(blocks);
+
+    t.equal(blocks.shadowBlock.topLevel, false,
+        'shadow block should not be top-level after deserialization');
+    t.end();
 });
 
 test('getExtensionIdForOpcode', t => {
