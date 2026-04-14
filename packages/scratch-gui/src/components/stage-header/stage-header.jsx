@@ -68,8 +68,8 @@ const messages = defineMessages({
         id: 'gui.stageHeader.thumbnailTooltipTitle'
     },
     thumbnailTooltipBody: {
-        defaultMessage: 'The <b>"Set Thumbnail"</b> has a new spot. The way it works is by ' +
-            'taking a snapshot of your canvas and setting it as your project thumbnail.',
+        defaultMessage: '<b>"Set Thumbnail"</b> has a new spot. It works by ' +
+            'taking a snapshot of your stage and setting it as your project thumbnail.',
         description: 'Body text for the thumbnail tooltip',
         id: 'gui.stageHeader.thumbnailTooltipBody'
     },
@@ -85,6 +85,8 @@ const StageHeaderComponent = function (props) {
         isFullScreen,
         isPlayerOnly,
         manuallySaveThumbnails,
+        onSetManualThumbnail,
+        onSetManualThumbnailButtonClick,
         loadingOrCreating,
         onKeyPress,
         onSetStageLarge,
@@ -147,6 +149,7 @@ const StageHeaderComponent = function (props) {
 
             setIsUpdatingThumbnail(true);
             onShowSettingThumbnail();
+            onSetManualThumbnail?.(projectId);
 
             storeProjectThumbnail(vm, dataURI => {
                 onUpdateProjectThumbnail(
@@ -169,12 +172,16 @@ const StageHeaderComponent = function (props) {
             vm,
             onShowSettingThumbnail,
             onShowThumbnailSuccess,
-            onShowThumbnailError
+            onShowThumbnailError,
+            onSetManualThumbnail
         ]
     );
 
     const onThumbnailPromptOpen = useCallback(() => {
         setIsThumbnailPromptOpen(true);
+        
+        onSetManualThumbnailButtonClick?.(projectId);
+        
         try {
             setLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '', true);
         } catch (e) {
@@ -182,7 +189,7 @@ const StageHeaderComponent = function (props) {
             console.warn('Unable to set thumbnail tooltip local storage value. Check if local storage is enabled.', e);
         }
         setIsThumbnailTooltipOpen(false);
-    }, [username]);
+    }, [username, onSetManualThumbnailButtonClick, projectId]);
 
     const onThumbnailPromptClose = useCallback(() => {
         setIsThumbnailPromptOpen(false);
@@ -353,6 +360,8 @@ StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
     manuallySaveThumbnails: PropTypes.bool,
+    onSetManualThumbnail: PropTypes.func,
+    onSetManualThumbnailButtonClick: PropTypes.func,
     loadingOrCreating: PropTypes.bool,
     onKeyPress: PropTypes.func.isRequired,
     onSetStageFull: PropTypes.func.isRequired,

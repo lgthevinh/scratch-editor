@@ -1,6 +1,6 @@
 {
   "name": "@scratch/scratch-svg-renderer",
-  "version": "13.6.2",
+  "version": "13.6.4",
   "description": "SVG renderer for Scratch",
   "keywords": [],
   "homepage": "https://github.com/scratchfoundation/scratch-svg-renderer#readme",
@@ -64,7 +64,7 @@
     "babel-loader": "9.2.1",
     "copy-webpack-plugin": "6.4.1",
     "eslint": "9.39.4",
-    "eslint-config-scratch": "14.1.4",
+    "eslint-config-scratch": "14.1.6",
     "globals": "16.5.0",
     "jsdom": "13.2.0",
     "mkdirp": "2.1.6",
@@ -74,7 +74,7 @@
     "scratch-webpack-configuration": "3.1.2",
     "semantic-release": "25.0.3",
     "tap": "21.6.3",
-    "webpack": "5.105.4",
+    "webpack": "5.106.1",
     "webpack-cli": "5.1.4",
     "webpack-dev-server": "5.2.3"
   },
