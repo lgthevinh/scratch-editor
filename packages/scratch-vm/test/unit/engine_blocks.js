@@ -538,6 +538,47 @@ test('change', t => {
     t.end();
 });
 
+test('block_field_intermediate_change updates field value', t => {
+    const rt = new Runtime();
+    rt.addTarget({
+        id: 'target1',
+        isStage: true,
+        blocks: new Blocks(rt, true),
+        variables: {},
+        comments: {}
+    });
+    const b = new Blocks(rt);
+    b.createBlock({
+        id: 'foo',
+        opcode: 'TEST_BLOCK',
+        next: null,
+        fields: {
+            TEXT: {
+                name: 'TEXT',
+                value: 'Hello!'
+            }
+        },
+        inputs: {},
+        topLevel: true
+    });
+
+    t.equal(b._blocks.foo.fields.TEXT.value, 'Hello!');
+
+    // Simulate an intermediate field change (keystroke during editing)
+    b.blocklyListen({
+        type: 'block_field_intermediate_change',
+        blockId: 'foo',
+        name: 'TEXT',
+        oldValue: 'Hello!',
+        newValue: 'Hello world'
+    });
+
+    t.equal(b._blocks.foo.fields.TEXT.value, 'Hello world',
+        'field value should update on intermediate change');
+
+    t.end();
+});
+
 test('delete', t => {
     const b = new Blocks(new Runtime());
     b.createBlock({

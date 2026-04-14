@@ -305,6 +305,20 @@ class Blocks {
             typeof e.commentId !== 'string') {
             return;
         }
+        // Intermediate field changes fire on every keystroke while editing
+        // a text input. Update the field value so running scripts see the
+        // change, but skip project-changed and other side effects. Handle
+        // this before the stage/editingTarget lookups to avoid per-keystroke
+        // overhead from getTargetForStage's linear scan.
+        if (e.type === 'block_field_intermediate_change') {
+            const block = this._blocks[e.blockId];
+            if (block && block.fields && block.fields[e.name]) {
+                block.fields[e.name].value = e.newValue;
+                this._cache._executeCached = {};
+            }
+            return;
+        }
+
         const stage = this.runtime.getTargetForStage();
         const editingTarget = this.runtime.getEditingTarget();
 
