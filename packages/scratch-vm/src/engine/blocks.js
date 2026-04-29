@@ -598,7 +598,7 @@ class Blocks {
         // Push block id to scripts array.
         // Blocks are added as a top-level stack if they are marked as a top-block
         // (if they were top-level XML in the event).
-        if (block.topLevel) {
+        if (block.topLevel && !block.shadow) {
             this._addScript(block.id);
         }
 

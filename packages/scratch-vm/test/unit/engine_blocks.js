@@ -1195,3 +1195,28 @@ test('moveBlock tolerates missing shadow block', t => {
 
     t.end();
 });
+
+// Regression test: when Blockly respawns a shadow block (e.g. after
+// uncovering a duplicated input), the create event arrives with
+// topLevel:true because appendInternal creates the block before
+// connecting it. Shadow blocks must never be added to _scripts —
+// a top-level shadow in _scripts causes "Workspace Update Error"
+// on sprite switch because toXML serializes it as a root <shadow>
+// element that Blockly cannot load.
+test('createBlock does not add shadow blocks to _scripts', t => {
+    const b = new Blocks(new Runtime());
+    b.createBlock({
+        id: 'shadow_1',
+        opcode: 'math_number',
+        next: null,
+        fields: {NUM: {name: 'NUM', value: '0'}},
+        inputs: {},
+        topLevel: true,
+        shadow: true
+    });
+    t.equal(b._scripts.indexOf('shadow_1'), -1,
+        'shadow block should not be in _scripts even with topLevel:true');
+    t.ok(Object.prototype.hasOwnProperty.call(b._blocks, 'shadow_1'),
+        'shadow block should still be in _blocks');
+    t.end();
+});
