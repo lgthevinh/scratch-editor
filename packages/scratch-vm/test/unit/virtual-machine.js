@@ -1128,6 +1128,89 @@ test('installTargets creates a stage broadcast for a sprite import that referenc
     });
 });
 
+test('installTargets repairs dangling variable references on whole-project load', t => {
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+
+    const stageSprite = new Sprite(null, runtime);
+    const stage = stageSprite.createClone();
+    stage.isStage = true;
+    stage.getName = () => 'Stage';
+
+    const spriteSprite = new Sprite(null, runtime);
+    const sprite = spriteSprite.createClone();
+    sprite.isStage = false;
+    sprite.getName = () => 'Sprite';
+    // Block with a variable field referencing an id that's not defined anywhere — the
+    // shape produced when a project saved during the missing-definitions bug is loaded.
+    sprite.blocks.createBlock(adapter(events.mockVariableBlock)[0]);
+    adapter(events.mockBroadcastBlock).forEach(block => sprite.blocks.createBlock(block));
+
+    t.equal(Object.keys(stage.variables).length, 0);
+    t.equal(Object.keys(sprite.variables).length, 0);
+
+    const extensions = {extensionIDs: new Set(), extensionURLs: new Map()};
+    vm.installTargets([stage, sprite], extensions, true).then(() => {
+        t.equal(Object.keys(stage.variables).length, 2, 'variable and broadcast created on stage');
+        t.ok(stage.variables['mock var id'], 'dangling variable reference reconciled');
+        t.ok(stage.variables['mock broadcast message id'], 'dangling broadcast reference reconciled');
+        t.equal(Object.keys(sprite.variables).length, 0, 'no spurious sprite-local variables');
+
+        t.end();
+    });
+});
+
+test('installTargets does NOT rename clean local-vs-global name collisions on whole-project load', t => {
+    // Regression guard: a project saved with a sprite-local variable that name-collides with
+    // a stage global must load unchanged. The fixUpVariableReferences rename behavior is
+    // for sprite import; project load uses the repair-only helper.
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+
+    const stageSprite = new Sprite(null, runtime);
+    const stage = stageSprite.createClone();
+    stage.isStage = true;
+    stage.getName = () => 'Stage';
+    stage.createVariable('global score id', 'score', Variable.SCALAR_TYPE);
+
+    const spriteSprite = new Sprite(null, runtime);
+    const sprite = spriteSprite.createClone();
+    sprite.isStage = false;
+    sprite.getName = () => 'Sprite';
+    sprite.createVariable('local score id', 'score', Variable.SCALAR_TYPE);
+    // Block referencing the sprite-local variable with the same name as the global.
+    sprite.blocks.createBlock({
+        id: 'a block',
+        opcode: 'data_variable',
+        inputs: {},
+        fields: {
+            VARIABLE: {
+                name: 'VARIABLE',
+                id: 'local score id',
+                value: 'score',
+                variableType: Variable.SCALAR_TYPE
+            }
+        },
+        next: null,
+        topLevel: true,
+        parent: null,
+        shadow: false,
+        x: 0,
+        y: 0
+    });
+
+    const extensions = {extensionIDs: new Set(), extensionURLs: new Map()};
+    vm.installTargets([stage, sprite], extensions, true).then(() => {
+        t.equal(sprite.variables['local score id'].name, 'score',
+            'sprite local variable name unchanged after whole-project load');
+        t.equal(sprite.blocks.getBlock('a block').fields.VARIABLE.id, 'local score id',
+            'block field id unchanged');
+        t.equal(Object.keys(stage.variables).length, 1, 'no new stage variables created');
+
+        t.end();
+    });
+});
+
 test('Setting turbo mode emits events', t => {
     let turboMode = null;
 

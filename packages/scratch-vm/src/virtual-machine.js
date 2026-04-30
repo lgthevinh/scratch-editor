@@ -560,7 +560,13 @@ class VirtualMachine extends EventEmitter {
                 this.editingTarget = targets[0];
             }
 
-            if (!wholeProject) {
+            if (wholeProject) {
+                // A loaded project may carry dangling variable, list, or broadcast
+                // references baked in by historical bugs. Reconcile each target so
+                // those references resolve cleanly without renaming any legitimate
+                // local-vs-global name collisions.
+                targets.forEach(target => target.reconcileVariableReferences());
+            } else {
                 this.editingTarget.fixUpVariableReferences();
             }
 

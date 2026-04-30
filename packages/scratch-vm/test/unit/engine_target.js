@@ -3,6 +3,7 @@ const Target = require('../../src/engine/target');
 const Variable = require('../../src/engine/variable');
 const adapter = require('../../src/engine/adapter');
 const Runtime = require('../../src/engine/runtime');
+const log = require('../../src/util/log');
 const events = require('../fixtures/events.json');
 
 test('spec', t => {
@@ -962,6 +963,252 @@ test('fixUpVariableReferences on the stage creates broadcasts for undefined refe
     t.ok(broadcast, 'broadcast created on stage');
     t.equal(broadcast.name, 'my message');
     t.equal(broadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+
+    t.end();
+});
+
+test('reconcileVariableReferences creates a stage variable for an undefined variable reference', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    target.blocks.createBlock(adapter(events.mockVariableBlock)[0]);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+    t.equal(Object.keys(target.variables).length, 0);
+
+    target.reconcileVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1, 'variable created on stage');
+    const newVar = stage.variables['mock var id'];
+    t.ok(newVar, 'variable preserves the original id');
+    t.equal(newVar.name, 'a mock variable');
+    t.equal(newVar.type, Variable.SCALAR_TYPE);
+    t.equal(Object.keys(target.variables).length, 0, 'no variable on the sprite');
+    t.equal(target.blocks.getBlock('a block').fields.VARIABLE.id, 'mock var id');
+
+    t.end();
+});
+
+test('reconcileVariableReferences creates a stage broadcast for an undefined broadcast reference', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    addBroadcastBlocksTo(target);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+
+    target.reconcileVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1);
+    const broadcast = stage.variables['mock broadcast message id'];
+    t.ok(broadcast, 'broadcast created on stage');
+    t.equal(broadcast.name, 'my message');
+    t.equal(broadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, 'mock broadcast message id');
+
+    t.end();
+});
+
+test('reconcileVariableReferences remaps to an existing same-name stage variable', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    stage.createVariable('pre-existing global var id', 'a mock variable', Variable.SCALAR_TYPE);
+    target.blocks.createBlock(adapter(events.mockVariableBlock)[0]);
+
+    target.reconcileVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1, 'no duplicate created');
+    t.ok(stage.variables['pre-existing global var id'], 'existing variable preserved');
+    t.equal(target.blocks.getBlock('a block').fields.VARIABLE.id, 'pre-existing global var id',
+        'block field id remapped to existing variable');
+
+    t.end();
+});
+
+test('reconcileVariableReferences is idempotent', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    addBroadcastBlocksTo(target);
+
+    target.reconcileVariableReferences();
+    const stageVarsAfterFirst = Object.keys(stage.variables).slice();
+    const fieldIdAfterFirst = target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id;
+
+    target.reconcileVariableReferences();
+
+    t.same(Object.keys(stage.variables), stageVarsAfterFirst, 'no new stage variables on second call');
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, fieldIdAfterFirst,
+        'field id unchanged on second call');
+
+    t.end();
+});
+
+test('reconcileVariableReferences does NOT rename a sprite local that name-collides with a stage global', t => {
+    // This is the critical regression test that distinguishes reconcileVariableReferences from
+    // fixUpVariableReferences. Project load runs only the repair-only helper on every target;
+    // legitimate local-vs-global name collisions (a Scratch configuration that has always been
+    // valid) must not be touched.
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    stage.createVariable('global var id', 'a mock variable', Variable.SCALAR_TYPE);
+    target.createVariable('mock var id', 'a mock variable', Variable.SCALAR_TYPE);
+    target.blocks.createBlock(adapter(events.mockVariableBlock)[0]);
+
+    target.reconcileVariableReferences();
+
+    t.equal(target.variables['mock var id'].name, 'a mock variable',
+        'sprite local variable not renamed by reconcile');
+    t.equal(target.blocks.getBlock('a block').fields.VARIABLE.id, 'mock var id',
+        'block field id unchanged');
+    t.equal(Object.keys(stage.variables).length, 1, 'no new stage variables created');
+
+    t.end();
+});
+
+test('reconcileVariableReferences on the stage creates broadcasts for undefined references', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+    stage.getName = () => 'Stage';
+
+    runtime.targets = [stage];
+
+    addBroadcastBlocksTo(stage);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+
+    stage.reconcileVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1);
+    const broadcast = stage.variables['mock broadcast message id'];
+    t.ok(broadcast);
+    t.equal(broadcast.name, 'my message');
+    t.equal(broadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+
+    t.end();
+});
+
+const captureLogWarn = (fn) => {
+    const original = log.warn;
+    const messages = [];
+    log.warn = (...args) => messages.push(args.join(' '));
+    try {
+        fn();
+    } finally {
+        log.warn = original;
+    }
+    return messages;
+};
+
+test('reconcileVariableReferences emits log.warn when it creates a stage definition', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    addBroadcastBlocksTo(target);
+
+    const messages = captureLogWarn(() => target.reconcileVariableReferences());
+
+    t.equal(messages.length, 1, 'one log.warn fired');
+    t.match(messages[0], /Reconciled.*'Target'.*created.*'mock broadcast message id'/,
+        'log message names the target and the created definition');
+
+    t.end();
+});
+
+test('reconcileVariableReferences emits log.warn when it remaps a reference', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    stage.createVariable('pre-existing global var id', 'a mock variable', Variable.SCALAR_TYPE);
+    target.blocks.createBlock(adapter(events.mockVariableBlock)[0]);
+
+    const messages = captureLogWarn(() => target.reconcileVariableReferences());
+
+    t.equal(messages.length, 1, 'one log.warn fired');
+    t.match(messages[0], /Reconciled.*remapped.*'mock var id'.*'pre-existing global var id'/,
+        'log message names the remap');
+
+    t.end();
+});
+
+test('reconcileVariableReferences does not log on clean references', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    stage.createVariable('mock var id', 'a mock variable', Variable.SCALAR_TYPE);
+    target.blocks.createBlock(adapter(events.mockVariableBlock)[0]);
+
+    const messages = captureLogWarn(() => target.reconcileVariableReferences());
+
+    t.equal(messages.length, 0, 'no log.warn fired on a clean reference');
 
     t.end();
 });
