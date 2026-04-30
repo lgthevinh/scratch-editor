@@ -1191,6 +1191,90 @@ test('reconcileVariableReferences emits log.warn when it remaps a reference', t 
     t.end();
 });
 
+test('reconcileVariableReferences coalesces same-original-name dangling refs to one stage variable', t => {
+    // Regression for an issue caught in review: when two dangling refs share an
+    // original name+type and the name has to be bumped (because some other target
+    // already uses it), the second ref must coalesce with the first rather than
+    // create a second stage variable. A Scratcher who pasted two scripts referencing
+    // what they called "score" almost certainly meant one variable, not two.
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    // Another sprite owns a local variable with the same name, forcing unusedName to bump.
+    const otherSprite = new Target(runtime);
+    otherSprite.isStage = false;
+    otherSprite.getName = () => 'Other';
+    otherSprite.createVariable('other local id', 'shared name', Variable.SCALAR_TYPE);
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, otherSprite, target];
+
+    // Two dangling refs with the same original name+type, distinct ids.
+    target.blocks.createBlock({
+        id: 'block A',
+        opcode: 'data_variable',
+        inputs: {},
+        fields: {
+            VARIABLE: {
+                name: 'VARIABLE',
+                id: 'dangling A',
+                value: 'shared name',
+                variableType: Variable.SCALAR_TYPE
+            }
+        },
+        next: null,
+        topLevel: true,
+        parent: null,
+        shadow: false,
+        x: 0,
+        y: 0
+    });
+    target.blocks.createBlock({
+        id: 'block B',
+        opcode: 'data_variable',
+        inputs: {},
+        fields: {
+            VARIABLE: {
+                name: 'VARIABLE',
+                id: 'dangling B',
+                value: 'shared name',
+                variableType: Variable.SCALAR_TYPE
+            }
+        },
+        next: null,
+        topLevel: true,
+        parent: null,
+        shadow: false,
+        x: 0,
+        y: 0
+    });
+
+    target.reconcileVariableReferences();
+
+    const stageVars = Object.values(stage.variables);
+    t.equal(stageVars.length, 1, 'exactly one new stage variable was created');
+    const created = stageVars[0];
+    t.equal(created.type, Variable.SCALAR_TYPE);
+    t.not(created.name, 'shared name', 'name was bumped to avoid the existing local');
+
+    // Both block fields should now point to the same created stage variable
+    // and display the same (bumped) name, otherwise users see one block named
+    // "shared name" and another named "shared name2" pointing at the same variable.
+    const fieldA = target.blocks.getBlock('block A').fields.VARIABLE;
+    const fieldB = target.blocks.getBlock('block B').fields.VARIABLE;
+    t.equal(fieldA.id, created.id, 'first dangling ref points at the created stage variable');
+    t.equal(fieldB.id, created.id, 'second dangling ref coalesces to the same stage variable');
+    t.equal(fieldA.value, created.name, 'first field displays the bumped name');
+    t.equal(fieldB.value, created.name, 'second field displays the same bumped name');
+
+    t.end();
+});
+
 test('reconcileVariableReferences does not log on clean references', t => {
     const runtime = new Runtime();
 

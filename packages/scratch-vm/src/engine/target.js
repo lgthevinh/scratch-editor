@@ -679,6 +679,13 @@ class Target extends EventEmitter {
         const allReferences = this.blocks.getAllVariableAndListReferences(null, true);
         const conflictIdsToReplace = Object.create(null);
         const conflictNamesToReplace = Object.create(null);
+        // When a dangling reference triggers creation of a new stage variable, remember
+        // the original (pre-bump) name so subsequent dangling references with the same
+        // original name and type coalesce to the same stage variable instead of creating
+        // a second one. Scratchers who pasted scripts referencing what they called
+        // "score" twice almost certainly meant one variable, not two.
+        const createdForOriginalName = Object.create(null);
+        const originalNameKey = (name, type) => `${type}\u0000${name}`;
 
         // Cache the list of all variable names by type so that we don't need to
         // re-calculate this in every iteration of the following loop.
@@ -709,15 +716,38 @@ class Target extends EventEmitter {
                     );
                 }
             } else {
-                const allNames = allVarNames(varType);
-                const freshName = StringUtil.unusedName(varName, allNames);
-                stage.createVariable(varId, freshName, varType);
-                if (!conflictNamesToReplace[varId]) {
-                    conflictNamesToReplace[varId] = freshName;
-                    log.warn(
-                        `Reconciled dangling reference on '${this.getName()}': created stage variable ` +
-                        `'${varId}' (name '${freshName}', type '${varType}').`
-                    );
+                const coalesceKey = originalNameKey(varName, varType);
+                const earlierCreated = createdForOriginalName[coalesceKey];
+                if (earlierCreated) {
+                    // An earlier dangling reference in this pass already triggered creation
+                    // for this original name and type. Coalesce to that stage variable, and
+                    // update this reference's displayed name to match the bumped name so the
+                    // two blocks display consistently.
+                    if (!conflictIdsToReplace[varId]) {
+                        conflictIdsToReplace[varId] = earlierCreated.id;
+                        conflictNamesToReplace[varId] = earlierCreated.freshName;
+                        log.warn(
+                            `Reconciled dangling reference on '${this.getName()}': coalesced id '${varId}' ` +
+                            `(name '${varName}', type '${varType}') with earlier-created stage variable ` +
+                            `'${earlierCreated.id}' (name '${earlierCreated.freshName}').`
+                        );
+                    }
+                } else {
+                    const allNames = allVarNames(varType);
+                    const freshName = StringUtil.unusedName(varName, allNames);
+                    stage.createVariable(varId, freshName, varType);
+                    // Track the new name so unusedName accounts for it on subsequent calls,
+                    // and remember which stage variable served this original name so
+                    // future same-name dangling references coalesce instead of duplicating.
+                    allNames.push(freshName);
+                    createdForOriginalName[coalesceKey] = {id: varId, freshName};
+                    if (!conflictNamesToReplace[varId]) {
+                        conflictNamesToReplace[varId] = freshName;
+                        log.warn(
+                            `Reconciled dangling reference on '${this.getName()}': created stage variable ` +
+                            `'${varId}' (name '${freshName}', type '${varType}').`
+                        );
+                    }
                 }
             }
         }
