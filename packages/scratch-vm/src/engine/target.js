@@ -654,27 +654,35 @@ class Target extends EventEmitter {
     }
 
     /**
-     * Fixes up variable references in this target avoiding conflicts with
-     * pre-existing variables in the same scope.
-     * This is used when uploading this target as a new sprite into an existing
-     * project, where the new sprite may contain references
-     * to variable names that already exist as global variables in the project
-     * (and thus are in scope for variable references in the given sprite).
+     * Reconciles variable, list, and broadcast references on this target with the
+     * variables actually defined in the project, creating any missing definitions
+     * and resolving conflicts.
      *
-     * If this target has a block that references an existing global variable and that
-     * variable *does not* exist in this target (e.g. it was a global variable in the
-     * project the sprite was originally exported from), merge the variables. This entails
-     * fixing the variable references in this sprite to reference the id of the pre-existing global variable.
+     * For each variable, list, or broadcast referenced by a block on this target:
+     * - If the referenced id exists locally on this sprite and the stage already
+     *   has a variable with the same name and type, the local variable is renamed
+     *   to distinguish it from the pre-existing global, and references are
+     *   updated to use the new name.
+     * - If the referenced id exists on the stage as a global, the reference is
+     *   already correct and nothing is done.
+     * - If the referenced id is not defined anywhere, look for a variable with
+     *   the same name and type on the stage. If one exists, the reference is
+     *   remapped to the existing global. Otherwise, a new global is created on
+     *   the stage and the reference is updated to use the unused name.
      *
-     * If this target has a block that references an existing global variable and that
-     * variable does exist in the target itself (e.g. it's a local variable in the sprite being uploaded),
-     * then the local variable is renamed to distinguish itself from the pre-existing variable.
-     * All blocks that reference the local variable will be updated to use the new name.
+     * Also renames any local variables on this sprite whose name and type
+     * collide with a stage global, even if they aren't referenced by any block.
+     *
+     * Used when importing a sprite into an existing project (where the new
+     * sprite may reference variables that already exist on the stage) and when
+     * pasting blocks from the backpack (where the pasted blocks reference ids
+     * that don't yet exist anywhere in the project). When called on the stage,
+     * only the missing-definition path runs; renames are skipped because the
+     * stage's variables are the global scope.
      */
     // TODO (#1360) This function is too long, add some helpers for the different chunks and cases...
     fixUpVariableReferences () {
         if (!this.runtime) return; // There's no runtime context to conflict with
-        if (this.isStage) return; // Stage can't have variable conflicts with itself (and also can't be uploaded)
         const stage = this.runtime.getTargetForStage();
         if (!stage || !stage.variables) return;
 
@@ -690,7 +698,7 @@ class Target extends EventEmitter {
             return null;
         };
 
-        const allReferences = this.blocks.getAllVariableAndListReferences();
+        const allReferences = this.blocks.getAllVariableAndListReferences(null, true);
         const unreferencedLocalVarIds = [];
         if (Object.keys(this.variables).length > 0) {
             for (const localVarId in this.variables) {
@@ -719,10 +727,11 @@ class Target extends EventEmitter {
             if (this.lookupVariableById(varId)) {
                 // Found a variable with the id in either the target or the stage,
                 // figure out which one.
-                if (Object.prototype.hasOwnProperty.call(this.variables, varId)) {
-                    // If the target has the variable, then check whether the stage
+                if (!this.isStage && Object.prototype.hasOwnProperty.call(this.variables, varId)) {
+                    // If a sprite has the variable, then check whether the stage
                     // has one with the same name and type. If it does, then rename
-                    // this target specific variable so that there is a distinction.
+                    // this sprite-specific variable so that there is a distinction.
+                    // On the stage itself, the variable is the global, so skip this.
                     const newVarName = renameConflictingLocalVar(varId, varName, varType);
 
                     if (newVarName) {
@@ -760,12 +769,15 @@ class Target extends EventEmitter {
             }
         }
         // Rename any local variables that were missed above because they aren't
-        // referenced by any blocks
-        for (const id in unreferencedLocalVarIds) {
-            const varId = unreferencedLocalVarIds[id];
-            const name = this.variables[varId].name;
-            const type = this.variables[varId].type;
-            renameConflictingLocalVar(varId, name, type);
+        // referenced by any blocks. Skip on the stage, where variables are the
+        // global scope and have no name conflict with themselves.
+        if (!this.isStage) {
+            for (const id in unreferencedLocalVarIds) {
+                const varId = unreferencedLocalVarIds[id];
+                const name = this.variables[varId].name;
+                const type = this.variables[varId].type;
+                renameConflictingLocalVar(varId, name, type);
+            }
         }
         // Handle global var conflicts with existing global vars (e.g. a sprite is uploaded, and has
         // blocks referencing some variable that the sprite does not own, and this

@@ -1280,6 +1280,12 @@ class VirtualMachine extends EventEmitter {
                 target.blocks.createBlock(block);
             });
             target.blocks.updateTargetSpecificBlocks(target.isStage);
+            if (!optFromTargetId) {
+                // No source target means the blocks come from outside the project (e.g. the
+                // backpack). Reconcile any variable, list, or broadcast references against
+                // what's defined in the project, creating missing definitions on the stage.
+                target.fixUpVariableReferences();
+            }
         });
     }
 

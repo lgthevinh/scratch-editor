@@ -811,3 +811,157 @@ test('fixUpVariableReferences does not change variable name if there is no varia
 
     t.end();
 });
+
+const addBroadcastBlocksTo = target => {
+    adapter(events.mockBroadcastBlock).forEach(block => target.blocks.createBlock(block));
+};
+
+test('fixUpVariableReferences creates a stage broadcast for an undefined broadcast reference', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    addBroadcastBlocksTo(target);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, 'mock broadcast message id');
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.value, 'my message');
+
+    target.fixUpVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1);
+    const broadcast = stage.variables['mock broadcast message id'];
+    t.ok(broadcast, 'broadcast created on stage with original id');
+    t.equal(broadcast.name, 'my message');
+    t.equal(broadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, 'mock broadcast message id');
+
+    t.end();
+});
+
+test('fixUpVariableReferences remaps a broadcast reference to an existing same-name stage broadcast', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    stage.createVariable('pre-existing broadcast id', 'my message', Variable.BROADCAST_MESSAGE_TYPE);
+    addBroadcastBlocksTo(target);
+
+    t.equal(Object.keys(stage.variables).length, 1);
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, 'mock broadcast message id');
+
+    target.fixUpVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1, 'no duplicate broadcast created');
+    t.ok(stage.variables['pre-existing broadcast id'], 'existing broadcast preserved');
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, 'pre-existing broadcast id',
+        'block field id remapped to existing broadcast');
+
+    t.end();
+});
+
+test('fixUpVariableReferences is idempotent for broadcast references', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+
+    const target = new Target(runtime);
+    target.isStage = false;
+    target.getName = () => 'Target';
+
+    runtime.targets = [stage, target];
+
+    addBroadcastBlocksTo(target);
+
+    target.fixUpVariableReferences();
+    const stageVarsAfterFirst = Object.keys(stage.variables).slice();
+    const fieldIdAfterFirst = target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id;
+
+    target.fixUpVariableReferences();
+
+    t.same(Object.keys(stage.variables), stageVarsAfterFirst, 'no new stage broadcasts on second call');
+    t.equal(target.blocks.getBlock('boadcast shadow').fields.BROADCAST_OPTION.id, fieldIdAfterFirst,
+        'field id unchanged on second call');
+
+    t.end();
+});
+
+test('fixUpVariableReferences on the stage does not rename existing stage variables', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+    stage.getName = () => 'Stage';
+
+    runtime.targets = [stage];
+
+    stage.createVariable('pre-existing global var id', 'a stage variable', Variable.SCALAR_TYPE);
+    stage.blocks.createBlock({
+        id: 'a stage block',
+        opcode: 'data_variable',
+        inputs: {},
+        fields: {
+            VARIABLE: {
+                name: 'VARIABLE',
+                id: 'pre-existing global var id',
+                value: 'a stage variable',
+                variableType: Variable.SCALAR_TYPE
+            }
+        },
+        next: null,
+        topLevel: true,
+        parent: null,
+        shadow: false,
+        x: 0,
+        y: 0
+    });
+
+    stage.fixUpVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1, 'no duplicate stage variable');
+    t.equal(stage.variables['pre-existing global var id'].name, 'a stage variable',
+        'existing stage variable name not changed');
+    t.equal(stage.blocks.getBlock('a stage block').fields.VARIABLE.id, 'pre-existing global var id',
+        'block field id unchanged');
+
+    t.end();
+});
+
+test('fixUpVariableReferences on the stage creates broadcasts for undefined references', t => {
+    const runtime = new Runtime();
+
+    const stage = new Target(runtime);
+    stage.isStage = true;
+    stage.getName = () => 'Stage';
+
+    runtime.targets = [stage];
+
+    addBroadcastBlocksTo(stage);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+
+    stage.fixUpVariableReferences();
+
+    t.equal(Object.keys(stage.variables).length, 1);
+    const broadcast = stage.variables['mock broadcast message id'];
+    t.ok(broadcast, 'broadcast created on stage');
+    t.equal(broadcast.name, 'my message');
+    t.equal(broadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+
+    t.end();
+});

@@ -948,6 +948,128 @@ test('shareBlocksToTarget chooses a fresh name for a new global variable checkin
     });
 });
 
+test('shareBlocksToTarget without a source target creates a missing variable on the stage', t => {
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+    const spr1 = new Sprite(null, runtime);
+    const stage = spr1.createClone();
+    stage.isStage = true;
+
+    const spr2 = new Sprite(null, runtime);
+    const target = spr2.createClone();
+
+    runtime.targets = [stage, target];
+    vm.editingTarget = target;
+    vm.runtime.setEditingTarget(target);
+
+    const blocksToShare = adapter(events.mockVariableBlock);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+    t.equal(Object.keys(target.variables).length, 0);
+
+    vm.shareBlocksToTarget(blocksToShare, target.id).then(() => {
+        t.equal(Object.keys(stage.variables).length, 1, 'variable created on stage');
+        const newVar = stage.variables['mock var id'];
+        t.ok(newVar, 'variable preserves the original id');
+        t.equal(newVar.name, 'a mock variable');
+        t.equal(newVar.type, Variable.SCALAR_TYPE);
+        t.equal(Object.keys(target.variables).length, 0, 'no variable on the receiving sprite');
+
+        const newBlockId = Object.keys(target.blocks._blocks)[0];
+        t.equal(target.blocks.getBlock(newBlockId).fields.VARIABLE.id, 'mock var id');
+
+        t.end();
+    });
+});
+
+test('shareBlocksToTarget without a source target creates a missing broadcast on the stage', t => {
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+    const spr1 = new Sprite(null, runtime);
+    const stage = spr1.createClone();
+    stage.isStage = true;
+
+    const spr2 = new Sprite(null, runtime);
+    const target = spr2.createClone();
+
+    runtime.targets = [stage, target];
+    vm.editingTarget = target;
+    vm.runtime.setEditingTarget(target);
+
+    const blocksToShare = adapter(events.mockBroadcastBlock);
+
+    t.equal(Object.keys(stage.variables).length, 0);
+
+    vm.shareBlocksToTarget(blocksToShare, target.id).then(() => {
+        t.equal(Object.keys(stage.variables).length, 1, 'broadcast created on stage');
+        const newBroadcast = stage.variables['mock broadcast message id'];
+        t.ok(newBroadcast, 'broadcast preserves the original id');
+        t.equal(newBroadcast.name, 'my message');
+        t.equal(newBroadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+
+        const menuBlockId = Object.keys(target.blocks._blocks)
+            .find(id => target.blocks.getBlock(id).opcode === 'event_broadcast_menu');
+        t.ok(menuBlockId, 'broadcast menu block exists on the target');
+        t.equal(target.blocks.getBlock(menuBlockId).fields.BROADCAST_OPTION.id, 'mock broadcast message id');
+
+        t.end();
+    });
+});
+
+test('shareBlocksToTarget without a source target remaps a variable to an existing same-name global', t => {
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+    const spr1 = new Sprite(null, runtime);
+    const stage = spr1.createClone();
+    stage.isStage = true;
+
+    const spr2 = new Sprite(null, runtime);
+    const target = spr2.createClone();
+
+    runtime.targets = [stage, target];
+    vm.editingTarget = target;
+    vm.runtime.setEditingTarget(target);
+
+    stage.createVariable('pre-existing global var id', 'a mock variable', Variable.SCALAR_TYPE);
+
+    const blocksToShare = adapter(events.mockVariableBlock);
+
+    vm.shareBlocksToTarget(blocksToShare, target.id).then(() => {
+        t.equal(Object.keys(stage.variables).length, 1, 'no duplicate variable created');
+        t.ok(stage.variables['pre-existing global var id'], 'existing variable preserved');
+
+        const newBlockId = Object.keys(target.blocks._blocks)[0];
+        t.equal(target.blocks.getBlock(newBlockId).fields.VARIABLE.id, 'pre-existing global var id',
+            'block field id remapped to existing variable');
+
+        t.end();
+    });
+});
+
+test('shareBlocksToTarget without a source target creates broadcasts when pasted onto the stage', t => {
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+    const spr1 = new Sprite(null, runtime);
+    const stage = spr1.createClone();
+    stage.isStage = true;
+
+    runtime.targets = [stage];
+    vm.editingTarget = stage;
+    vm.runtime.setEditingTarget(stage);
+
+    const blocksToShare = adapter(events.mockBroadcastBlock);
+
+    vm.shareBlocksToTarget(blocksToShare, stage.id).then(() => {
+        t.equal(Object.keys(stage.variables).length, 1, 'broadcast created on stage when stage is the target');
+        const newBroadcast = stage.variables['mock broadcast message id'];
+        t.ok(newBroadcast);
+        t.equal(newBroadcast.name, 'my message');
+        t.equal(newBroadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+
+        t.end();
+    });
+});
+
 test('shareBlocksToTarget loads extensions that have not yet been loaded', t => {
     const vm = new VirtualMachine();
     const runtime = vm.runtime;
@@ -973,6 +1095,35 @@ test('shareBlocksToTarget loads extensions that have not yet been loaded', t => 
     vm.shareBlocksToTarget(fakeBlocks, stage.id).then(() => {
         // Verify that only the not-loaded extension gets loaded
         t.same(loadedIds, ['notloaded']);
+        t.end();
+    });
+});
+
+test('installTargets creates a stage broadcast for a sprite import that references one', t => {
+    const vm = new VirtualMachine();
+    const runtime = vm.runtime;
+
+    const spr1 = new Sprite(null, runtime);
+    const stage = spr1.createClone();
+    stage.isStage = true;
+    runtime.targets = [stage];
+
+    const importedSprite = new Sprite(null, runtime);
+    const importedTarget = importedSprite.createClone();
+    importedTarget.isStage = false;
+    importedTarget.getName = () => 'Imported';
+    adapter(events.mockBroadcastBlock).forEach(block => importedTarget.blocks.createBlock(block));
+
+    t.equal(Object.keys(stage.variables).length, 0);
+
+    const extensions = {extensionIDs: new Set(), extensionURLs: new Map()};
+    vm.installTargets([importedTarget], extensions, false).then(() => {
+        t.equal(Object.keys(stage.variables).length, 1, 'broadcast created on stage during sprite import');
+        const newBroadcast = stage.variables['mock broadcast message id'];
+        t.ok(newBroadcast);
+        t.equal(newBroadcast.name, 'my message');
+        t.equal(newBroadcast.type, Variable.BROADCAST_MESSAGE_TYPE);
+
         t.end();
     });
 });
