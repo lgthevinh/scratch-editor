@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@babel/core": "7.29.0",
-    "@babel/preset-env": "7.29.3",
+    "@babel/preset-env": "7.29.5",
     "babel-loader": "9.2.1",
     "canvas": "3.2.3",
     "copy-webpack-plugin": "6.4.1",
