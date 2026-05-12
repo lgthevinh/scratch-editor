@@ -14,10 +14,7 @@ import useMenuNavigation from '../../hooks/use-menu-navigation';
 
 import sharedMessages from '../../lib/shared-messages';
 
-import {
-    manualUpdateProject,
-    saveProjectAsCopy
-} from '../../reducers/project-state';
+import {saveProjectAsCopy} from '../../reducers/project-state';
 
 const fileMenu = defineMessage({
     id: 'gui.aria.fileMenu',
@@ -189,7 +186,6 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-    onClickSave: () => dispatch(manualUpdateProject()),
     onClickSaveAsCopy: () => dispatch(saveProjectAsCopy())
 });
 

@@ -43,6 +43,7 @@ import {
     getIsUpdating,
     getIsShowingProject,
     requestNewProject,
+    manualUpdateProject,
     remixProject
 } from '../../reducers/project-state';
 import {
@@ -355,7 +356,6 @@ class MenuBar extends React.Component {
                             onClickNew={this.handleClickNew}
                             onClickRemix={this.props.onClickRemix}
                             onClickSave={this.props.onClickSave}
-                            onClickSaveAsCopy={this.props.onClickSaveAsCopy}
                             getSaveToComputerHandler={this.getSaveToComputerHandler}
                             canSave={this.props.canSave}
                             canCreateCopy={this.props.canCreateCopy}
@@ -775,6 +775,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     onOpenDebugModal: () => dispatch(openDebugModal()),
     onClickNew: needSave => dispatch(requestNewProject(needSave)),
     onClickLogin: ownProps.onClickLogin ?? (() => dispatch(openLoginMenu())),
+    onClickSave: () => dispatch(manualUpdateProject()),
     onClickRemix: () => dispatch(remixProject()),
     onRequestCloseLogin: () => dispatch(closeLoginMenu()),
     onSeeCommunity: ownProps.onSeeCommunity ?? (() => dispatch(setPlayer(true))),
