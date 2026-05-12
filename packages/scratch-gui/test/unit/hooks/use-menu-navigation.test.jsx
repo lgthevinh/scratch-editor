@@ -28,7 +28,8 @@ describe('useMenuNavigation', () => {
             closeMenuByRef: jest.fn(),
             closeAllMenus: jest.fn(),
             outermostMenu: {current: document.body},
-            isInnermostMenu: jest.fn(() => false)
+            isInnermostMenu: jest.fn(() => false),
+            isOutermostMenu: jest.fn(() => false)
         };
         menuRef = {current: document.createElement('div')};
         document.body.appendChild(menuRef.current);

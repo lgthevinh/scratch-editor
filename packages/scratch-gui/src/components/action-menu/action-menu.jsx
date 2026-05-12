@@ -88,9 +88,11 @@ const ActionMenu = ({
             }
         };
 
-        document.addEventListener('mousedown', handleTouchOutside);
+        // The Blockly workspace suppresses mousedown/click events,
+        // so listen for pointerup instead.
+        document.addEventListener('pointerup', handleTouchOutside);
         return () => {
-            document.removeEventListener('mousedown', handleTouchOutside);
+            document.removeEventListener('pointerup', handleTouchOutside);
         };
     }, [containerRef, setIsExpanded]);
 
@@ -132,7 +134,14 @@ const ActionMenu = ({
             setIsExpanded(false);
             focusItem(buttonRef.current);
         } else if (e.key === KEY.ESCAPE) {
-            focusItem(buttonRef.current);
+            if (document.activeElement === buttonRef.current) {
+                // If focus is on the main button, close the menu and keep focus on the button
+                setIsExpanded(false);
+                document.activeElement.blur();
+            } else {
+                // Otherwise, move focus back to the main button
+                focusItem(buttonRef.current);
+            }
         }
     }, [handleMove, isExpanded, setIsExpanded]);
 
