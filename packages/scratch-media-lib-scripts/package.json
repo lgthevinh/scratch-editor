@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "eslint": "9.39.4",
-    "eslint-config-scratch": "14.1.17",
-    "jest": "30.3.0",
+    "eslint-config-scratch": "14.1.19",
+    "jest": "30.4.2",
     "jest-junit": "16.0.0",
     "prettier": "3.8.3"
   },
