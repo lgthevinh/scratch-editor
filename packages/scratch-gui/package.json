@@ -198,7 +198,7 @@
     "@babel/core": "7.29.0",
     "@babel/preset-env": "7.29.5",
     "@babel/preset-react": "7.28.5",
-    "@playwright/test": "1.59.1",
+    "@playwright/test": "1.60.0",
     "@testing-library/jest-dom": "5.17.0",
     "@testing-library/react": "14.3.1",
     "@types/jest": "25.2.3",
