@@ -136,6 +136,7 @@ class VideoStep extends React.Component {
                     className={`wistia_embed wistia_async_${this.props.video}`}
                     id="video-div"
                     style={{height: `257px`, width: `466px`}}
+                    ref={this.props.videoRef}
                 >
                     &nbsp;
                 </div>
@@ -146,7 +147,8 @@ class VideoStep extends React.Component {
 
 VideoStep.propTypes = {
     expanded: PropTypes.bool.isRequired,
-    video: PropTypes.string.isRequired
+    video: PropTypes.string.isRequired,
+    videoRef: PropTypes.shape({current: PropTypes.instanceOf(Element)})
 };
 
 const ImageStep = ({title, image}) => (<Fragment>
@@ -354,18 +356,25 @@ const Cards = props => {
 
     if (activeDeckId === null) return;
 
-    const cardRef = useRef(null);
+    const videoRef = useRef(null);
 
     useEffect(() => {
-        // Only focus if there’s an actual tutorial step (image/video)
+        // Only focus in the presence of a video on the card
         const steps = content[activeDeckId]?.steps;
         const isTutorialStep = steps?.[step]?.video;
 
-        if (isTutorialStep && cardRef.current) {
-            // Defer focus to next animation frame for layout stability
-            requestAnimationFrame(() => {
-                cardRef.current.focus();
-            });
+        if (isTutorialStep) {
+            // Need the custom focus delay because of the conflict between this logic
+            // and refocusing the button that opened the library (tutorials in this case)
+            const FOCUS_DELAY = 500;
+
+            const focusVideo = () => {
+                const target = videoRef.current &&
+                    videoRef.current.querySelector('.w-big-play-button');
+                if (target) target.focus();
+            };
+            requestAnimationFrame(focusVideo);
+            setTimeout(focusVideo, FOCUS_DELAY);
         }
     }, [activeDeckId, step, content]);
 
@@ -400,7 +409,6 @@ const Cards = props => {
                 top: `${menuBarHeight}px`,
                 left: `${-cardHorizontalDragOffset}px`
             }}
-            ref={cardRef}
             tabIndex={-1}
         >
             <Draggable
@@ -443,6 +451,7 @@ const Cards = props => {
                                                     dragging={dragging}
                                                     expanded={expanded}
                                                     video={translateVideo(steps[step].video, locale)}
+                                                    videoRef={videoRef}
                                                 />
                                             ) : (
                                                 <ImageStep
