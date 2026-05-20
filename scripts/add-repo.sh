@@ -373,7 +373,25 @@ echo "==> Fixing up ${PACKAGE_DIR}/package.json..."
 rm -rf "${PACKAGE_PATH}/.husky" \
        "${PACKAGE_PATH}/package-lock.json" \
        "${PACKAGE_PATH}/renovate.json" \
-       "${PACKAGE_PATH}/renovate.json5"
+       "${PACKAGE_PATH}/renovate.json5" \
+       "${PACKAGE_PATH}/release.config.js" \
+       "${PACKAGE_PATH}/release.config.cjs" \
+       "${PACKAGE_PATH}/release.config.mjs" \
+       "${PACKAGE_PATH}/release.config.ts" \
+       "${PACKAGE_PATH}/.releaserc" \
+       "${PACKAGE_PATH}/.releaserc.js" \
+       "${PACKAGE_PATH}/.releaserc.json" \
+       "${PACKAGE_PATH}/.releaserc.yaml" \
+       "${PACKAGE_PATH}/.releaserc.yml" \
+       "${PACKAGE_PATH}/commitlint.config.js" \
+       "${PACKAGE_PATH}/commitlint.config.cjs" \
+       "${PACKAGE_PATH}/commitlint.config.mjs" \
+       "${PACKAGE_PATH}/commitlint.config.ts" \
+       "${PACKAGE_PATH}/.commitlintrc" \
+       "${PACKAGE_PATH}/.commitlintrc.js" \
+       "${PACKAGE_PATH}/.commitlintrc.json" \
+       "${PACKAGE_PATH}/.commitlintrc.yaml" \
+       "${PACKAGE_PATH}/.commitlintrc.yml"
 
 MONOREPO_VERSION=$(jq -r '.version' "${MONOREPO_ROOT}/package.json")
 if [ -r "${PACKAGE_PATH}/package.json" ]; then
@@ -390,6 +408,9 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
             '.repository.url |= $MONOREPO_URL' \
             'del(.repository.sha)' \
             'if .scripts.prepare == "husky install" then del(.scripts.prepare) else . end' \
+            'del(.scripts."semantic-release")' \
+            'del(.scripts.commitmsg)' \
+            'del(.scripts.version)' \
             'if (.scripts // {}) == {} then del(.scripts) else . end' \
             'del(.config.commitizen)' \
             'if (.config // {}) == {} then del(.config) else . end' \
@@ -398,6 +419,8 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
             'del(.devDependencies."@commitlint/travis-cli")' \
             'del(.devDependencies."cz-conventional-changelog")' \
             'del(.devDependencies."husky")' \
+            'del(.devDependencies."semantic-release")' \
+            'del(.devDependencies."scratch-semantic-release-config")' \
             'if (.devDependencies // {}) == {} then del(.devDependencies) else . end' \
         ) "${PACKAGE_PATH}/package.json" | sponge "${PACKAGE_PATH}/package.json"
 fi
@@ -557,7 +580,7 @@ if ! git diff --cached --quiet; then
     git commit -m "feat: integrate ${REPO_NAME} into monorepo
 
 - Renamed package to ${NPM_ORGANIZATION}/${REPO_NAME}
-- Removed repo-level config (.husky, renovate, commitlint)
+- Removed repo-level config (.husky, renovate, commitlint, semantic-release)
 - Rewired inter-package dependencies to use workspace versions
 - Added to root workspaces list
 - Regenerated package-lock.json"
