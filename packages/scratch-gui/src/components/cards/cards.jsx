@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, {Fragment, useRef, useEffect} from 'react';
+import React, {Fragment} from 'react';
 import classNames from 'classnames';
 import {FormattedMessage} from 'react-intl';
 import Draggable from 'react-draggable';
@@ -142,9 +142,9 @@ class VideoStep extends React.Component {
         const script2 = document.getElementById('wistia-video-api');
         script2.parentNode.removeChild(script2);
 
-        // Clear the _wq queue to prevent old callbacks from firing
+        // Clean up the _wq queue to prevent old callbacks from firing
         // if the component is unmounted before the video is ready
-        window._wq = [];
+        window._wq = window._wq.filter(video => video.id !== this.props.video);
     }
 
     render () {
