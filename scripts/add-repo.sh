@@ -9,7 +9,6 @@
 #
 # Prerequisites:
 #   - git-filter-repo   (brew install git-filter-repo  | sudo apt install git-filter-repo)
-#   - moreutils         (brew install moreutils        | sudo apt install moreutils)
 #   - jq                (brew install jq               | sudo apt install jq)
 #   - perl              (pre-installed on macOS, NixOS, and most Linux distributions)
 #
@@ -21,12 +20,12 @@
 #   --org <github-org>         GitHub organization (default: scratchfoundation)
 #   --cache-dir <path>         Local cache dir holding clones of source repos (default: ./..)
 #   --no-ci                    Skip CI workflow regeneration at the end
-#   --continue-on-error        If a per-dep package.json rewrite fails during the
-#                              cross-workspace dep rewire step, log the failure to
-#                              add-repo.errors.log and keep going (default: hard-fail
-#                              on the first failure). Does not affect the final
-#                              lockfile install at the end of the script, which
-#                              always hard-fails.
+#   --continue-on-error        If a per-package package.json rewrite fails
+#                              during the cross-workspace dep rewire step, log
+#                              the failure to add-repo.errors.log and keep
+#                              going (default: hard-fail on the first failure).
+#                              Does not affect the final lockfile install at
+#                              the end of the script, which always hard-fails.
 #   --help, -h                 Show this help message
 #
 # Examples:
@@ -166,9 +165,8 @@ if ! git filter-repo -h &> /dev/null; then
     exit 1
 fi
 
-require_command sponge "Try: brew install moreutils   or: sudo apt install moreutils"
-require_command jq     "Try: brew install jq          or: sudo apt install jq"
-require_command perl   "Perl is used for portable in-place file rewrites and should already be present on macOS, NixOS, and Linux."
+require_command jq   "Try: brew install jq          or: sudo apt install jq"
+require_command perl "Perl is used for portable in-place file rewrites and should already be present on macOS, NixOS, and Linux."
 
 if [ -d "$PACKAGE_PATH" ]; then
     echo "Error: ${PACKAGE_DIR} already exists in the monorepo." >&2
@@ -297,8 +295,32 @@ get_existing_packages() {
     jq -r '.workspaces[]' "${MONOREPO_ROOT}/package.json" | sed 's|^packages/||'
 }
 
+# Apply a jq filter to FILE in place, via a sibling tempfile. Forwards all
+# arguments after FILE to jq; the temp file is mv'd into place only on jq
+# exit 0, so a jq failure leaves FILE untouched and propagates a non-zero
+# return up to set -e or to an `if !` caller that wants to react.
+#
+# `cp -p` seeds the tempfile with FILE's content and mode, so the subsequent
+# `>` truncate-and-write leaves the mode alone and the final mv preserves
+# it. Without this, mktemp's default 0600 would silently downgrade FILE
+# from 0644.
+jq_in_place() {
+    local file="$1"
+    shift
+    local tmp
+    tmp=$(mktemp "${file}.XXXXXX") || return 1
+    cp -p "$file" "$tmp" || { rm -f "$tmp"; return 1; }
+    if jq "$@" "$file" > "$tmp"; then
+        mv "$tmp" "$file"
+    else
+        local status=$?
+        rm -f "$tmp"
+        return "$status"
+    fi
+}
+
 # Handle a failed dep replacement. Default: hard-fail. --continue-on-error: log and continue.
-package_replacement_error () {
+package_replacement_error() {
     local package="$1"
     local dep="$2"
     echo "***ERROR*** Could not replace ${dep} in ${package} with the local workspace version." >&2
@@ -399,10 +421,11 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
     # The single-quoted fragments below are jq filter syntax. $PACKAGE_NAME,
     # $MONOREPO_URL and $MONOREPO_VERSION are jq variables (bound via --arg),
     # not shell variables — they must NOT be expanded by the shell.
-    jq -f --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
-          --arg MONOREPO_URL "$MONOREPO_URL" \
-          --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
-        <(join_args ' | ' \
+    jq_in_place "${PACKAGE_PATH}/package.json" \
+        --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
+        --arg MONOREPO_URL "$MONOREPO_URL" \
+        --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
+        -f <(join_args ' | ' \
             '.name |= $PACKAGE_NAME' \
             '.version |= $MONOREPO_VERSION' \
             '.repository.url |= $MONOREPO_URL' \
@@ -422,7 +445,7 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
             'del(.devDependencies."semantic-release")' \
             'del(.devDependencies."scratch-semantic-release-config")' \
             'if (.devDependencies // {}) == {} then del(.devDependencies) else . end' \
-        ) "${PACKAGE_PATH}/package.json" | sponge "${PACKAGE_PATH}/package.json"
+        )
 fi
 
 # Normalize so subsequent diffs are minimal.
@@ -478,8 +501,8 @@ else
         fi
     done
     INSERT_AT=$((INSERT_AFTER_INDEX + 1))
-    jq ".workspaces |= (.[:${INSERT_AT}] + [\"${WORKSPACE_ENTRY}\"] + .[${INSERT_AT}:])" \
-        "${MONOREPO_ROOT}/package.json" | sponge "${MONOREPO_ROOT}/package.json"
+    jq_in_place "${MONOREPO_ROOT}/package.json" \
+        ".workspaces |= (.[:${INSERT_AT}] + [\"${WORKSPACE_ENTRY}\"] + .[${INSERT_AT}:])"
     if [ "$INSERT_AT" = "0" ]; then
         echo "    Prepended '${WORKSPACE_ENTRY}' (no monorepo deps detected)."
     else
@@ -500,49 +523,114 @@ ALL_PACKAGES=$(get_existing_packages)
 # registry version.
 #
 # Two cases are handled:
-#   1. Bare-name deps (e.g. "scratch-vm": "...") — across every package, since an
-#      existing package may reference the newly-added repo by bare name.
-#   2. Already @scratch/-prefixed deps with a stale exact version (e.g.
+#   1. Bare-name keys (e.g. "scratch-vm": "...") — checked in every package,
+#      since an existing package may still reference the newly-added repo by
+#      bare name from before its import.
+#   2. Already @scratch/-prefixed keys with a stale exact version (e.g.
 #      "@scratch/scratch-svg-renderer": "13.7.3") — only inside the newly-added
-#      package, where the source repo may have shipped its cross-deps pre-prefixed
-#      and pinned to whatever was the latest registry release at import time.
+#      package, where the source repo may have shipped its cross-deps pre-
+#      prefixed and pinned to whatever was the latest registry release at
+#      import time.
 #
-# Already-@scratch/-prefixed deps in OTHER packages are left as-is to avoid
+# Already-@scratch/-prefixed keys in OTHER packages are left as-is to avoid
 # opportunistic rewrites of unrelated packages.
+#
+# After rewriting, each affected dep section is sorted alphabetically by key,
+# matching what `npm install --save` produces.
 #
 # npm's workspace: protocol would be the ideal here ("resolve to the workspace,
 # substitute the actual version at publish"), but npm does not actually support
 # it (npm/cli#8845 — EUNSUPPORTEDPROTOCOL at install time), so exact-pin matches
 # the existing scratch-gui / scratch-vm / scratch-render convention.
+
+# Build a JSON array of rewrite rules: [{matchKeys, target, version}, ...].
+# The "new package" variant lists both the bare and the @scratch/-prefixed
+# form in matchKeys so the new package's pre-prefixed-but-stale pins get
+# repinned to the local workspace version too.
+build_rewrites_json() {
+    local include_full="$1"
+    local result='[]'
+    local dep ver full match_keys
+    for dep in $ALL_PACKAGES; do
+        ver=$(jq -r '.version' "${MONOREPO_ROOT}/packages/${dep}/package.json")
+        full="${NPM_ORGANIZATION}/${dep}"
+        if [ "$include_full" = "true" ]; then
+            match_keys=$(jq -cn --arg b "$dep" --arg f "$full" '[$b, $f]')
+        else
+            match_keys=$(jq -cn --arg b "$dep" '[$b]')
+        fi
+        result=$(jq -c --argjson mk "$match_keys" --arg t "$full" --arg v "$ver" \
+            '. + [{matchKeys: $mk, target: $t, version: $v}]' <<< "$result")
+    done
+    printf '%s' "$result"
+}
+
+REWRITES_NEW_PKG=$(build_rewrites_json true)
+REWRITES_OTHER_PKG=$(build_rewrites_json false)
+
+# Single-pass filter applied to each package.json: walks every dependency-
+# shaped section, rewrites matching keys (or array entries for the bundle
+# spellings) to their @scoped equivalents pinned to the local workspace
+# version, and sorts each section.
+#
+# Object sections (dependencies, devDependencies, peerDependencies,
+# optionalDependencies) are sorted by key; the bundle arrays
+# (bundleDependencies and its legacy spelling bundledDependencies) are
+# sorted and uniqued, since they're a set of names with no associated
+# version.
+#
+# If rewriting an object section produces duplicate keys (e.g. a package.json
+# lists both "scratch-foo" and "@scratch/scratch-foo"), the filter errors
+# out naming the section and the colliding key. That state shouldn't occur
+# in practice, and silently merging it would let stale pins win over the
+# freshly-rewritten workspace version.
+# shellcheck disable=SC2016
+# $rewrites below is a jq variable bound via --argjson, not a shell expansion.
+REWRITE_FILTER='
+def rewriteSection($rewrites; $section):
+    if type == "object" then
+        to_entries
+        | map(. as $e
+              | ($rewrites | map(select(.matchKeys | index($e.key))) | first) as $hit
+              | if $hit then {key: $hit.target, value: $hit.version} else $e end)
+        | . as $entries
+        | ($entries | group_by(.key) | map(select(length > 1) | .[0].key)) as $dups
+        | if ($dups | length) > 0 then
+              error("duplicate keys in \($section) after rewrite: \($dups | join(", "))")
+          else
+              $entries | sort_by(.key) | from_entries
+          end
+    elif type == "array" then
+        map(. as $name
+            | ($rewrites | map(select(.matchKeys | index($name))) | first) as $hit
+            | if $hit then $hit.target else $name end)
+        | unique
+    else .
+    end;
+
+reduce (
+    "dependencies", "devDependencies", "peerDependencies", "optionalDependencies",
+    "bundleDependencies", "bundledDependencies"
+) as $k (.;
+    if .[$k] then .[$k] |= rewriteSection($rewrites; $k) else . end
+)
+'
+
 for PACKAGE in $ALL_PACKAGES; do
     PACKAGE_JSON="${MONOREPO_ROOT}/packages/${PACKAGE}/package.json"
     if [ ! -r "$PACKAGE_JSON" ]; then
         continue
     fi
 
-    for DEP in $ALL_PACKAGES; do
-        DEP_VERSION=$(jq -r '.version' "${MONOREPO_ROOT}/packages/${DEP}/package.json")
-        DEP_FULL="${NPM_ORGANIZATION}/${DEP}"
+    if [ "$PACKAGE" = "$REPO_NAME" ]; then
+        REWRITES="$REWRITES_NEW_PKG"
+    else
+        REWRITES="$REWRITES_OTHER_PKG"
+    fi
 
-        # The names this loop will rewrite. Always the bare name; for the newly-
-        # added package also its @scratch/-prefixed form (likely stale).
-        NAMES_TO_CHECK=("${DEP}")
-        if [ "$PACKAGE" = "$REPO_NAME" ]; then
-            NAMES_TO_CHECK+=("${DEP_FULL}")
-        fi
-
-        for KIND in dependencies devDependencies optionalDependencies peerDependencies; do
-            for NAME in "${NAMES_TO_CHECK[@]}"; do
-                if jq -e ".${KIND}.\"${NAME}\"" "$PACKAGE_JSON" > /dev/null 2>&1; then
-                    if ! jq "del(.${KIND}.\"${NAME}\") \
-                           | .${KIND} += {\"${DEP_FULL}\": \"${DEP_VERSION}\"}" \
-                           "$PACKAGE_JSON" | sponge "$PACKAGE_JSON"; then
-                        package_replacement_error "$PACKAGE" "${NAME} (${KIND})"
-                    fi
-                fi
-            done
-        done
-    done
+    if ! jq_in_place "$PACKAGE_JSON" --argjson rewrites "$REWRITES" "$REWRITE_FILTER"; then
+        package_replacement_error "$PACKAGE" "monorepo refs"
+    fi
 done
 
 # Rewrite require/import references for the new repo across the whole monorepo.
