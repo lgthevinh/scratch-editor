@@ -422,10 +422,10 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
     # $MONOREPO_URL and $MONOREPO_VERSION are jq variables (bound via --arg),
     # not shell variables — they must NOT be expanded by the shell.
     jq_in_place "${PACKAGE_PATH}/package.json" \
-        -f --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
-           --arg MONOREPO_URL "$MONOREPO_URL" \
-           --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
-        <(join_args ' | ' \
+        --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
+        --arg MONOREPO_URL "$MONOREPO_URL" \
+        --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
+        -f <(join_args ' | ' \
             '.name |= $PACKAGE_NAME' \
             '.version |= $MONOREPO_VERSION' \
             '.repository.url |= $MONOREPO_URL' \
