@@ -545,21 +545,39 @@ build_rewrites_json() {
 REWRITES_NEW_PKG=$(build_rewrites_json true)
 REWRITES_OTHER_PKG=$(build_rewrites_json false)
 
-# Single-pass filter applied to each package.json: walks every object-shaped
-# dep section, rewrites matching keys to their @scoped equivalents pinned to
-# the local workspace version, and sorts each section by key.
+# Single-pass filter applied to each package.json: walks every dependency-
+# shaped section, rewrites matching keys (or array entries for the bundle
+# spellings) to their @scoped equivalents pinned to the local workspace
+# version, and sorts each section.
+#
+# Object sections (dependencies, devDependencies, peerDependencies,
+# optionalDependencies) are sorted by key; the bundle arrays
+# (bundleDependencies and its legacy spelling bundledDependencies) are
+# sorted and uniqued, since they're a set of names with no associated
+# version.
 # shellcheck disable=SC2016
 # $rewrites below is a jq variable bound via --argjson, not a shell expansion.
 REWRITE_FILTER='
 def rewriteSection($rewrites):
-    to_entries
-    | map(. as $e
-          | ($rewrites | map(select(.matchKeys | index($e.key))) | first) as $hit
-          | if $hit then {key: $hit.target, value: $hit.version} else $e end)
-    | sort_by(.key)
-    | from_entries;
+    if type == "object" then
+        to_entries
+        | map(. as $e
+              | ($rewrites | map(select(.matchKeys | index($e.key))) | first) as $hit
+              | if $hit then {key: $hit.target, value: $hit.version} else $e end)
+        | sort_by(.key)
+        | from_entries
+    elif type == "array" then
+        map(. as $name
+            | ($rewrites | map(select(.matchKeys | index($name))) | first) as $hit
+            | if $hit then $hit.target else $name end)
+        | unique
+    else .
+    end;
 
-reduce ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies") as $k (.;
+reduce (
+    "dependencies", "devDependencies", "peerDependencies", "optionalDependencies",
+    "bundleDependencies", "bundledDependencies"
+) as $k (.;
     if .[$k] then .[$k] |= rewriteSection($rewrites) else . end
 )
 '
