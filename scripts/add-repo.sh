@@ -390,9 +390,12 @@ rm -rf "$BUILD_TMP"
 # 5. Fix up the new package's package.json: rename, version, strip repo-level config.
 echo "==> Fixing up ${PACKAGE_DIR}/package.json..."
 
-# Remove repository-level files that don't belong in a workspace package.
-# Keep things like .github/ around as reference for the eventual CI changes.
-rm -rf "${PACKAGE_PATH}/.husky" \
+# Remove repo-level metadata that doesn't apply inside a workspace. The
+# monorepo provides its own equivalents at the root, and per-package
+# copies (e.g. GitHub workflow YAMLs under packages/*/.github/workflows/)
+# are inert: GitHub Actions only honors workflows at the repo root.
+rm -rf "${PACKAGE_PATH}/.github" \
+       "${PACKAGE_PATH}/.husky" \
        "${PACKAGE_PATH}/package-lock.json" \
        "${PACKAGE_PATH}/renovate.json" \
        "${PACKAGE_PATH}/renovate.json5" \
@@ -413,7 +416,13 @@ rm -rf "${PACKAGE_PATH}/.husky" \
        "${PACKAGE_PATH}/.commitlintrc.js" \
        "${PACKAGE_PATH}/.commitlintrc.json" \
        "${PACKAGE_PATH}/.commitlintrc.yaml" \
-       "${PACKAGE_PATH}/.commitlintrc.yml"
+       "${PACKAGE_PATH}/.commitlintrc.yml" \
+       "${PACKAGE_PATH}/.editorconfig" \
+       "${PACKAGE_PATH}/.gitattributes" \
+       "${PACKAGE_PATH}/.nvmrc" \
+       "${PACKAGE_PATH}/.circleci" \
+       "${PACKAGE_PATH}/.travis.yml" \
+       "${PACKAGE_PATH}/.appveyor.yml"
 
 MONOREPO_VERSION=$(jq -r '.version' "${MONOREPO_ROOT}/package.json")
 if [ -r "${PACKAGE_PATH}/package.json" ]; then
@@ -668,7 +677,7 @@ if ! git diff --cached --quiet; then
     git commit -m "feat: integrate ${REPO_NAME} into monorepo
 
 - Renamed package to ${NPM_ORGANIZATION}/${REPO_NAME}
-- Removed repo-level config (.husky, renovate, commitlint, semantic-release)
+- Removed standalone-repo metadata (CI/release configs, hooks, repo-level dotfiles)
 - Rewired inter-package dependencies to use workspace versions
 - Added to root workspaces list
 - Regenerated package-lock.json"
