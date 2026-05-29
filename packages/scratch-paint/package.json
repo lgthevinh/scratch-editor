@@ -23,6 +23,7 @@
     "i18n:push": "tx-push-src scratch-editor paint-editor ./translations/en.json",
     "i18n:src": "rimraf ./translations/messages && babel src > tmp.js && rimraf tmp.js && ./scripts/build-i18n-source.js ./translations/messages/ ./translations/",
     "lint": "eslint",
+    "prepublishOnly": "echo \"Please publish through CI only.\" && exit 1",
     "start": "webpack serve",
     "test": "npm run unit",
     "unit": "jest --reporters=default",
@@ -96,7 +97,6 @@
     "scratch-l10n": "6.1.84",
     "scratch-webpack-configuration": "3.1.2",
     "style-loader": "4.0.0",
-    "tap": "21.7.4",
     "webpack": "5.107.2",
     "webpack-cli": "5.1.4",
     "webpack-dev-server": "5.2.4"
