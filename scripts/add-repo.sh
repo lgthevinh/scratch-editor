@@ -390,9 +390,12 @@ rm -rf "$BUILD_TMP"
 # 5. Fix up the new package's package.json: rename, version, strip repo-level config.
 echo "==> Fixing up ${PACKAGE_DIR}/package.json..."
 
-# Remove repository-level files that don't belong in a workspace package.
-# Keep things like .github/ around as reference for the eventual CI changes.
-rm -rf "${PACKAGE_PATH}/.husky" \
+# Remove repo-level metadata that doesn't apply inside a workspace. The
+# monorepo provides its own equivalents at the root, and per-package
+# copies (e.g. GitHub workflow YAMLs under packages/*/.github/workflows/)
+# are inert: GitHub Actions only honors workflows at the repo root.
+rm -rf "${PACKAGE_PATH}/.github" \
+       "${PACKAGE_PATH}/.husky" \
        "${PACKAGE_PATH}/package-lock.json" \
        "${PACKAGE_PATH}/renovate.json" \
        "${PACKAGE_PATH}/renovate.json5" \
@@ -413,7 +416,13 @@ rm -rf "${PACKAGE_PATH}/.husky" \
        "${PACKAGE_PATH}/.commitlintrc.js" \
        "${PACKAGE_PATH}/.commitlintrc.json" \
        "${PACKAGE_PATH}/.commitlintrc.yaml" \
-       "${PACKAGE_PATH}/.commitlintrc.yml"
+       "${PACKAGE_PATH}/.commitlintrc.yml" \
+       "${PACKAGE_PATH}/.editorconfig" \
+       "${PACKAGE_PATH}/.gitattributes" \
+       "${PACKAGE_PATH}/.nvmrc" \
+       "${PACKAGE_PATH}/.circleci" \
+       "${PACKAGE_PATH}/.travis.yml" \
+       "${PACKAGE_PATH}/.appveyor.yml"
 
 MONOREPO_VERSION=$(jq -r '.version' "${MONOREPO_ROOT}/package.json")
 if [ -r "${PACKAGE_PATH}/package.json" ]; then
@@ -509,6 +518,13 @@ else
         echo "    Inserted '${WORKSPACE_ENTRY}' at position ${INSERT_AT} (after its monorepo deps)."
     fi
 fi
+
+# 6a. Refresh the new package's LICENSE/TRADEMARK from the monorepo root so it
+# matches every other workspace. Runs after step 6 because update-legal
+# resolves the target via `npm query .workspace`, which needs the new entry
+# to already be in the root workspaces array.
+echo "==> Refreshing LICENSE/TRADEMARK from monorepo root..."
+npm run update-legal -- "${NPM_ORGANIZATION}/${REPO_NAME}"
 
 # 7. Rewire inter-package dependencies across all packages.
 echo "==> Rewiring inter-package dependencies..."
@@ -657,9 +673,15 @@ if [ ${#MATCHING_FILES[@]} -gt 0 ]; then
 fi
 
 # 8. Normalize the lockfile after all the dep changes.
+#
+# Lockfile generation deliberately does not use --prefer-offline: that step is
+# discovering which versions to resolve to, and a cached packument predating a
+# freshly published transitive dep will trip ETARGET on a range npm could
+# satisfy from the registry. The follow-up install can keep --prefer-offline
+# because the lockfile pins concrete tarballs by then.
 echo "==> Normalizing package-lock.json..."
+npm install --package-lock-only --no-audit --no-fund
 npm install --prefer-offline --no-audit --no-fund
-npm install --package-lock-only 2>/dev/null || true
 
 # 9. Commit the integration fixups as one cumulative commit.
 echo "==> Committing fixup changes..."
@@ -668,7 +690,8 @@ if ! git diff --cached --quiet; then
     git commit -m "feat: integrate ${REPO_NAME} into monorepo
 
 - Renamed package to ${NPM_ORGANIZATION}/${REPO_NAME}
-- Removed repo-level config (.husky, renovate, commitlint, semantic-release)
+- Removed standalone-repo metadata (CI/release configs, hooks, repo-level dotfiles)
+- Refreshed LICENSE/TRADEMARK from monorepo root
 - Rewired inter-package dependencies to use workspace versions
 - Added to root workspaces list
 - Regenerated package-lock.json"
