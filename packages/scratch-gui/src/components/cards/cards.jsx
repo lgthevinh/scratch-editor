@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React, {Fragment, useEffect} from 'react';
 import classNames from 'classnames';
-import {FormattedMessage} from 'react-intl';
+import {FormattedMessage, defineMessages, useIntl} from 'react-intl';
 import Draggable from 'react-draggable';
 
 import styles from './card.css';
@@ -20,8 +20,53 @@ import {translateImage} from '../../lib/libraries/decks/translate-image.js';
 
 import {KEY} from '../../lib/navigation-keys.js';
 
-const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, step, expanded}) => (
-    <div className={expanded ? styles.headerButtons : classNames(styles.headerButtons, styles.headerButtonsHidden)}>
+const labelMap = defineMessages({
+    tutorialsIcon: {
+        id: 'gui.cards.tutorialsIcon',
+        defaultMessage: 'Tutorials icon',
+        description: 'Label for help icon'
+    },
+    shrinkIcon: {
+        id: 'gui.cards.shrinkIcon',
+        defaultMessage: 'Shrink icon',
+        description: 'Title for button to shrink how-to card'
+    },
+    expandIcon: {
+        id: 'gui.cards.expandIcon',
+        defaultMessage: 'Expand icon',
+        description: 'Title for button to expand how-to card'
+    },
+    closeIcon: {
+        id: 'gui.cards.closeIcon',
+        defaultMessage: 'Close icon',
+        description: 'Title for button to close how-to card'
+    },
+    leftArrowIcon: {
+        id: 'gui.cards.leftArrowIcon',
+        defaultMessage: 'Left arrow icon',
+        description: 'Title for button to go to previous step in how-to card'
+    },
+    rightArrowIcon: {
+        id: 'gui.cards.rightArrowIcon',
+        defaultMessage: 'Right arrow icon',
+        description: 'Title for button to go to next step in how-to card'
+    },
+    previousStepButton: {
+        id: 'gui.cards.previousStepButton',
+        defaultMessage: 'Previous step',
+        description: 'Title for button to go to previous step in how-to card'
+    },
+    nextStepButton: {
+        id: 'gui.cards.nextStepButton',
+        defaultMessage: 'Next step',
+        description: 'Title for button to go to next step in how-to card'
+    }
+});
+
+const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, step, expanded}) => {
+    const intl = useIntl();
+
+    return <div className={expanded ? styles.headerButtons : classNames(styles.headerButtons, styles.headerButtonsHidden)}>
         <button
             className={styles.allButton}
             onClick={onShowAll}
@@ -29,6 +74,7 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
             <img
                 className={styles.helpIcon}
                 src={helpIcon}
+                alt={intl.formatMessage(labelMap.tutorialsIcon)}
             />
             <FormattedMessage
                 defaultMessage="Tutorials"
@@ -55,6 +101,7 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
                 <img
                     draggable={false}
                     src={expanded ? shrinkIcon : expandIcon}
+                    alt={expanded ? intl.formatMessage(labelMap.shrinkIcon) : intl.formatMessage(labelMap.expandIcon)}
                 />
                 {expanded ?
                     <FormattedMessage
@@ -76,6 +123,7 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
                 <img
                     className={styles.closeIcon}
                     src={closeIcon}
+                    alt={intl.formatMessage(labelMap.closeIcon)}
                 />
                 <FormattedMessage
                     defaultMessage="Close"
@@ -84,8 +132,8 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
                 />
             </button>
         </div>
-    </div>
-);
+    </div>;
+}
 
 class VideoStep extends React.Component {
 
@@ -189,18 +237,22 @@ ImageStep.propTypes = {
     title: PropTypes.node.isRequired
 };
 
-const NextPrevButtons = ({isRtl, onNextStep, onPrevStep, expanded}) => (
-    <Fragment>
+const NextPrevButtons = ({isRtl, onNextStep, onPrevStep, expanded}) => {
+   const intl = useIntl();
+
+   return <Fragment>
         {onNextStep ? (
             <div>
                 <div className={expanded ? (isRtl ? styles.leftCard : styles.rightCard) : styles.hidden} />
                 <button
                     className={expanded ? (isRtl ? styles.leftButton : styles.rightButton) : styles.hidden}
                     onClick={onNextStep}
+                    aria-label={intl.formatMessage(labelMap.nextStepButton)}
                 >
                     <img
                         draggable={false}
                         src={isRtl ? leftArrow : rightArrow}
+                        alt={isRtl ? intl.formatMessage(labelMap.leftArrowIcon) : intl.formatMessage(labelMap.rightArrowIcon)}
                     />
                 </button>
             </div>
@@ -211,16 +263,18 @@ const NextPrevButtons = ({isRtl, onNextStep, onPrevStep, expanded}) => (
                 <button
                     className={expanded ? (isRtl ? styles.rightButton : styles.leftButton) : styles.hidden}
                     onClick={onPrevStep}
+                    aria-label={intl.formatMessage(labelMap.previousStepButton)}
                 >
                     <img
                         draggable={false}
                         src={isRtl ? rightArrow : leftArrow}
+                        alt={isRtl ? intl.formatMessage(labelMap.rightArrowIcon) : intl.formatMessage(labelMap.leftArrowIcon)}
                     />
                 </button>
             </div>
         ) : null}
-    </Fragment>
-);
+    </Fragment>;
+}
 
 NextPrevButtons.propTypes = {
     expanded: PropTypes.bool.isRequired,
@@ -373,8 +427,12 @@ const Cards = props => {
     let {x, y} = posProps;
 
     useEffect(() => {
+        if (activeDeckId === null) return;
+        
         const handleKeyDown = e => {
             if (e.key === KEY.ESCAPE) {
+                e.preventDefault();
+
                 onCloseCards();
             }
         };
@@ -382,7 +440,7 @@ const Cards = props => {
         window.addEventListener('keydown', handleKeyDown);
 
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onCloseCards]);
+    }, [onCloseCards, activeDeckId]);
 
     if (activeDeckId === null) return;
 
