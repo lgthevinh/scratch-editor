@@ -533,13 +533,6 @@ else
     fi
 fi
 
-# 6a. Refresh the new package's LICENSE/TRADEMARK from the monorepo root so it
-# matches every other workspace. Runs after step 6 because update-legal
-# resolves the target via `npm query .workspace`, which needs the new entry
-# to already be in the root workspaces array.
-echo "==> Refreshing LICENSE/TRADEMARK from monorepo root..."
-npm run update-legal -- "${NPM_ORGANIZATION}/${REPO_NAME}"
-
 # 7. Rewire inter-package dependencies across all packages.
 echo "==> Rewiring inter-package dependencies..."
 
@@ -696,6 +689,14 @@ fi
 echo "==> Normalizing package-lock.json..."
 npm install --package-lock-only --no-audit --no-fund
 npm install --prefer-offline --no-audit --no-fund
+
+# 8a. Refresh the new package's LICENSE/TRADEMARK from the monorepo root so it
+# matches every other workspace. Runs after step 8 because update-legal
+# resolves the target via `npm query .workspace`, which walks the installed
+# tree — a lockfile-only update isn't enough; the full install above must
+# have populated node_modules with the new workspace symlink first.
+echo "==> Refreshing LICENSE/TRADEMARK from monorepo root..."
+npm run update-legal -- "${NPM_ORGANIZATION}/${REPO_NAME}"
 
 # 9. Commit the integration fixups as one cumulative commit.
 echo "==> Committing fixup changes..."
