@@ -425,15 +425,28 @@ rm -rf "${PACKAGE_PATH}/.github" \
        "${PACKAGE_PATH}/.appveyor.yml"
 
 MONOREPO_VERSION=$(jq -r '.version' "${MONOREPO_ROOT}/package.json")
+# Match the canonical prepublishOnly script used by every workspace in the
+# monorepo: a local `npm publish` should fail loudly, since publishing is a
+# CI-only operation. The standalone repo's prepublishOnly (if any) no longer
+# applies, so overwrite — and log if we're replacing something different.
+CANONICAL_PREPUBLISH_ONLY='echo "Please publish through CI only." && exit 1'
 if [ -r "${PACKAGE_PATH}/package.json" ]; then
+    EXISTING_PREPUBLISH_ONLY=$(jq -r '.scripts.prepublishOnly // ""' "${PACKAGE_PATH}/package.json")
+    if [ -n "$EXISTING_PREPUBLISH_ONLY" ] && [ "$EXISTING_PREPUBLISH_ONLY" != "$CANONICAL_PREPUBLISH_ONLY" ]; then
+        echo "    Note: replacing existing prepublishOnly script."
+        echo "      old: ${EXISTING_PREPUBLISH_ONLY}"
+        echo "      new: ${CANONICAL_PREPUBLISH_ONLY}"
+    fi
     # shellcheck disable=SC2016
     # The single-quoted fragments below are jq filter syntax. $PACKAGE_NAME,
-    # $MONOREPO_URL and $MONOREPO_VERSION are jq variables (bound via --arg),
-    # not shell variables — they must NOT be expanded by the shell.
+    # $MONOREPO_URL, $MONOREPO_VERSION, and $PREPUBLISH_ONLY are jq variables
+    # (bound via --arg), not shell variables — they must NOT be expanded by
+    # the shell.
     jq_in_place "${PACKAGE_PATH}/package.json" \
         --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
         --arg MONOREPO_URL "$MONOREPO_URL" \
         --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
+        --arg PREPUBLISH_ONLY "$CANONICAL_PREPUBLISH_ONLY" \
         -f <(join_args ' | ' \
             '.name |= $PACKAGE_NAME' \
             '.version |= $MONOREPO_VERSION' \
@@ -443,6 +456,7 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
             'del(.scripts."semantic-release")' \
             'del(.scripts.commitmsg)' \
             'del(.scripts.version)' \
+            '.scripts.prepublishOnly = $PREPUBLISH_ONLY' \
             'if (.scripts // {}) == {} then del(.scripts) else . end' \
             'del(.config.commitizen)' \
             'if (.config // {}) == {} then del(.config) else . end' \
