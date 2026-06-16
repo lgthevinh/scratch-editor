@@ -36,10 +36,6 @@ import {setConnectionModalExtensionId} from '../reducers/connection-modal';
 import {updateMetrics} from '../reducers/workspace-metrics';
 import {isTimeTravel2020} from '../reducers/time-travel';
 
-import {
-    activateTab,
-    SOUNDS_TAB_INDEX
-} from '../reducers/editor-tab';
 
 const addFunctionListener = (object, property, callback) => {
     const oldFn = object[property];
@@ -824,7 +820,6 @@ const mapDispatchToProps = dispatch => ({
         dispatch(openConnectionModal());
     },
     onOpenSoundRecorder: () => {
-        dispatch(activateTab(SOUNDS_TAB_INDEX));
         dispatch(openSoundRecorder());
     },
     onRequestCloseExtensionLibrary: () => {

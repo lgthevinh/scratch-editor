@@ -132,3 +132,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+# AI assistant stack files
+skills-lock.json
+.agents//

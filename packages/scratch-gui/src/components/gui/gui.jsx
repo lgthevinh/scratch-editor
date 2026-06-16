@@ -11,18 +11,12 @@ import VM from '@scratch/scratch-vm';
 import Renderer from '@scratch/scratch-render';
 
 import Blocks from '../../containers/blocks.jsx';
-import CostumeTab from '../../containers/costume-tab.jsx';
-import TargetPane from '../../containers/target-pane.jsx';
-import SoundTab from '../../containers/sound-tab.jsx';
 import StageWrapper from '../../containers/stage-wrapper.jsx';
 import Loader from '../loader/loader.jsx';
 import Box from '../box/box.jsx';
 import MenuBar from '../menu-bar/menu-bar.jsx';
-import CostumeLibrary from '../../containers/costume-library.jsx';
-import BackdropLibrary from '../../containers/backdrop-library.jsx';
 import Watermark from '../../containers/watermark.jsx';
 
-import Backpack from '../../containers/backpack.jsx';
 import ExtensionsButton from '../extension-button/extension-button.jsx';
 import WebGlModal from '../../containers/webgl-modal.jsx';
 import TipsLibrary from '../../containers/tips-library.jsx';
@@ -40,8 +34,6 @@ import {AccountMenuOptionsPropTypes} from '../../lib/account-menu-options';
 
 import styles from './gui.css';
 import codeIcon from './icon--code.svg';
-import costumesIcon from './icon--costumes.svg';
-import soundsIcon from './icon--sounds.svg';
 import DebugModal from '../debug-modal/debug-modal.jsx';
 import {setPlatform} from '../../reducers/platform.js';
 import {setTheme} from '../../reducers/settings.js';
@@ -70,26 +62,6 @@ const ariaMessages = defineMessages({
         defaultMessage: 'Code editor panel',
         description: 'accessibility label for the code editor panel'
     },
-    costumesPanel: {
-        id: 'gui.aria.costumesPanel',
-        defaultMessage: 'Costumes editor panel',
-        description: 'accessibility label for the costumes editor panel'
-    },
-    backdropsPanel: {
-        id: 'gui.aria.backdropsPanel',
-        defaultMessage: 'Backdrops editor panel',
-        description: 'accessibility label for the backdrops editor panel'
-    },
-    soundsPanel: {
-        id: 'gui.aria.soundsPanel',
-        defaultMessage: 'Sounds editor panel',
-        description: 'accessibility label for the sounds editor panel'
-    },
-    backpack: {
-        id: 'gui.aria.backpack',
-        defaultMessage: 'Backpack',
-        description: 'accessibility label for the backpack'
-    },
     stageAndTarget: {
         id: 'gui.aria.stageAndTarget',
         defaultMessage: 'Stage and target',
@@ -99,11 +71,6 @@ const ariaMessages = defineMessages({
         id: 'gui.aria.stage',
         defaultMessage: 'Stage',
         description: 'accessibility label for the stage'
-    },
-    targetPane: {
-        id: 'gui.aria.targetPane',
-        defaultMessage: 'Target pane',
-        description: 'accessibility label for the target pane'
     }
 });
 
@@ -122,10 +89,6 @@ const GUIComponent = props => {
         authorUsername,
         authorAvatarBadge,
         basePath,
-        backdropLibraryVisible,
-        backpackConfigured,
-        backpackHost,
-        backpackVisible,
         blocksId,
         blocksTabVisible,
         cardsVisible,
@@ -142,8 +105,6 @@ const GUIComponent = props => {
         canUseCloud,
         children,
         connectionModalVisible,
-        costumeLibraryVisible,
-        costumesTabVisible,
         debugModalVisible,
         onDebugModalClose,
         onTutorialSelect,
@@ -169,17 +130,10 @@ const GUIComponent = props => {
         onClickLogin,
         onOpenRegistration,
         onToggleLoginOpen,
-        onActivateCostumesTab,
-        onActivateSoundsTab,
         onActivateTab,
         onClickLogo,
         onExtensionButtonClick,
-        onNewSpriteClick,
-        onNewLibraryCostumeClick,
-        onNewLibraryBackdropClick,
         onProjectTelemetryEvent,
-        onRequestCloseBackdropLibrary,
-        onRequestCloseCostumeLibrary,
         onRequestCloseDebugModal,
         onRequestCloseTelemetryModal,
         onSeeCommunity,
@@ -190,11 +144,8 @@ const GUIComponent = props => {
         onTelemetryModalOptIn,
         onTelemetryModalOptOut,
         onUpdateProjectThumbnail,
-        showComingSoon,
         showNewFeatureCallouts,
-        soundsTabVisible,
         stageSizeMode,
-        targetIsStage,
         telemetryModalVisible,
         colorMode,
         theme,
@@ -313,22 +264,10 @@ const GUIComponent = props => {
                             vm={vm}
                         />
                     ) : null}
-                    {costumeLibraryVisible ? (
-                        <CostumeLibrary
-                            vm={vm}
-                            onRequestClose={onRequestCloseCostumeLibrary}
-                        />
-                    ) : null}
                     {<DebugModal
                         isOpen={debugModalVisible}
                         onClose={onCloseDebugModal}
                     />}
-                    {backdropLibraryVisible ? (
-                        <BackdropLibrary
-                            vm={vm}
-                            onRequestClose={onRequestCloseBackdropLibrary}
-                        />
-                    ) : null}
                     {/* TODO - in case of moving MenuRefProvider which seems likely,
                     make sure to move it from tests as well */}
                     {!menuBarHidden && <MenuRefProvider>
@@ -356,7 +295,6 @@ const GUIComponent = props => {
                             isTotallyNormal={isTotallyNormal}
                             logo={logo}
                             renderLogin={renderLogin}
-                            showComingSoon={showComingSoon}
                             onClickAbout={onClickAbout}
                             onClickLogo={onClickLogo}
                             onLogOut={onLogOut}
@@ -422,46 +360,6 @@ const GUIComponent = props => {
                                                 id="gui.gui.codeTab"
                                             />
                                         </Tab>
-                                        <Tab
-                                            className={tabClassNames.tab}
-                                            onClick={onActivateCostumesTab}
-                                            role="tab"
-                                            tabIndex="0"
-                                        >
-                                            <img
-                                                draggable={false}
-                                                src={costumesIcon}
-                                            />
-                                            {targetIsStage ? (
-                                                <FormattedMessage
-                                                    defaultMessage="Backdrops"
-                                                    description="Button to get to the backdrops panel"
-                                                    id="gui.gui.backdropsTab"
-                                                />
-                                            ) : (
-                                                <FormattedMessage
-                                                    defaultMessage="Costumes"
-                                                    description="Button to get to the costumes panel"
-                                                    id="gui.gui.costumesTab"
-                                                />
-                                            )}
-                                        </Tab>
-                                        <Tab
-                                            className={tabClassNames.tab}
-                                            onClick={onActivateSoundsTab}
-                                            role="tab"
-                                            tabIndex="0"
-                                        >
-                                            <img
-                                                draggable={false}
-                                                src={soundsIcon}
-                                            />
-                                            <FormattedMessage
-                                                defaultMessage="Sounds"
-                                                description="Button to get to the sounds panel"
-                                                id="gui.gui.soundsTab"
-                                            />
-                                        </Tab>
                                     </TabList>
                                 </Box>
                                 <TabPanel
@@ -496,38 +394,7 @@ const GUIComponent = props => {
                                         <Watermark />
                                     </Box>
                                 </TabPanel>
-                                <TabPanel
-                                    className={tabClassNames.tabPanel}
-                                    role="tabpanel"
-                                >
-                                    {costumesTabVisible ? <CostumeTab
-                                        ariaLabel={targetIsStage ? intl.formatMessage(ariaMessages.backdropsPanel) :
-                                            intl.formatMessage(ariaMessages.costumesPanel)}
-                                        ariaRole="region"
-                                        vm={vm}
-                                        onNewLibraryBackdropClick={onNewLibraryBackdropClick}
-                                        onNewLibraryCostumeClick={onNewLibraryCostumeClick}
-                                    /> : null}
-                                </TabPanel>
-                                <TabPanel
-                                    className={tabClassNames.tabPanel}
-                                    role="tabpanel"
-                                >
-                                    {soundsTabVisible ?
-                                        <SoundTab
-                                            ariaLabel={intl.formatMessage(ariaMessages.soundsPanel)}
-                                            ariaRole="region"
-                                            vm={vm}
-                                        /> : null}
-                                </TabPanel>
                             </Tabs>
-                            {backpackVisible && backpackConfigured ? (
-                                <Backpack
-                                    host={backpackHost}
-                                    ariaRole="region"
-                                    ariaLabel={intl.formatMessage(ariaMessages.backpack)}
-                                />
-                            ) : null}
                         </Box>
 
                         <Box
@@ -554,19 +421,6 @@ const GUIComponent = props => {
                                 username={username}
                                 onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                             />
-                            <Box
-                                className={styles.targetWrapper}
-                                role="region"
-                                aria-label={intl.formatMessage(ariaMessages.targetPane)}
-                                element="section"
-                            >
-                                <TargetPane
-                                    stageSize={stageSize}
-                                    vm={vm}
-                                    onNewSpriteClick={onNewSpriteClick}
-                                    onNewBackdropClick={onNewLibraryBackdropClick}
-                                />
-                            </Box>
                         </Box>
                     </Box>
                     <DragLayer />
@@ -583,10 +437,6 @@ GUIComponent.propTypes = {
     authorThumbnailUrl: PropTypes.string,
     authorUsername: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
     authorAvatarBadge: PropTypes.number,
-    backdropLibraryVisible: PropTypes.bool,
-    backpackConfigured: PropTypes.bool,
-    backpackHost: PropTypes.string,
-    backpackVisible: PropTypes.bool,
     basePath: PropTypes.string,
     blocksTabVisible: PropTypes.bool,
     blocksId: PropTypes.string,
@@ -603,8 +453,6 @@ GUIComponent.propTypes = {
     canUseCloud: PropTypes.bool,
     cardsVisible: PropTypes.bool,
     children: PropTypes.node,
-    costumeLibraryVisible: PropTypes.bool,
-    costumesTabVisible: PropTypes.bool,
     debugModalVisible: PropTypes.bool,
     hasActiveMembership: PropTypes.bool,
     onDebugModalClose: PropTypes.func,
@@ -623,18 +471,12 @@ GUIComponent.propTypes = {
     onSetManualThumbnail: PropTypes.func,
     onSetManualThumbnailButtonClick: PropTypes.func,
     menuBarHidden: PropTypes.bool,
-    onActivateCostumesTab: PropTypes.func,
-    onActivateSoundsTab: PropTypes.func,
     onActivateTab: PropTypes.func,
     onClickLogo: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
     onLogOut: PropTypes.func,
-    onNewSpriteClick: PropTypes.func,
-    onNewLibraryCostumeClick: PropTypes.func,
     onClickLogin: PropTypes.func,
     onOpenRegistration: PropTypes.func,
-    onRequestCloseBackdropLibrary: PropTypes.func,
-    onRequestCloseCostumeLibrary: PropTypes.func,
     onRequestCloseDebugModal: PropTypes.func,
     onRequestCloseTelemetryModal: PropTypes.func,
     onSeeCommunity: PropTypes.func,
@@ -650,12 +492,9 @@ GUIComponent.propTypes = {
     platform: PropTypes.oneOf(Object.keys(PLATFORM)),
     renderLogin: PropTypes.func,
     setTheme: PropTypes.func.isRequired,
-    showComingSoon: PropTypes.bool,
     showNewFeatureCallouts: PropTypes.bool,
-    soundsTabVisible: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     setPlatform: PropTypes.func,
-    targetIsStage: PropTypes.bool,
     telemetryModalVisible: PropTypes.bool,
     colorMode: PropTypes.string,
     theme: PropTypes.string,
@@ -668,8 +507,6 @@ GUIComponent.propTypes = {
 };
 
 GUIComponent.defaultProps = {
-    backpackHost: null,
-    backpackVisible: false,
     basePath: './',
     blocksId: 'original',
     // TODO: Currently all of those are always true. Do we actually need them?
@@ -690,7 +527,6 @@ GUIComponent.defaultProps = {
     isTotallyNormal: false,
     loading: false,
     menuBarHidden: false,
-    showComingSoon: false,
     showNewFeatureCallouts: false,
     stageSizeMode: STAGE_SIZE_MODES.large,
     useExternalPeripheralList: false
@@ -701,8 +537,7 @@ const mapStateToProps = state => ({
     blocksId: state.scratchGui.timeTravel.year.toString(),
     stageSizeMode: state.scratchGui.stageSize.stageSize,
     colorMode: state.scratchGui.settings.colorMode,
-    theme: state.scratchGui.settings.theme,
-    backpackConfigured: !!state.scratchGui.config.storage?.backpackStorage
+    theme: state.scratchGui.settings.theme
 });
 
 const mapDispatchToProps = dispatch => ({

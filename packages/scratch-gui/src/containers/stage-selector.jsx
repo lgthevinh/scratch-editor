@@ -8,7 +8,7 @@ import intlShape from '../lib/intlShape.js';
 
 import {connect} from 'react-redux';
 import {openBackdropLibrary} from '../reducers/modals';
-import {activateTab, COSTUMES_TAB_INDEX} from '../reducers/editor-tab';
+import {activateTab} from '../reducers/editor-tab';
 import {showStandardAlert, closeAlertWithId} from '../reducers/alerts';
 import {setHoveredSprite} from '../reducers/hovered-target';
 import DragConstants from '../lib/drag-constants';
@@ -89,7 +89,7 @@ class StageSelector extends React.Component {
             this.handlePointerEnter();
         }
     }
-    addBackdropFromLibraryItem (item, shouldActivateTab = true) {
+    addBackdropFromLibraryItem (item) {
         const vmBackdrop = {
             name: item.name,
             md5: item.md5ext,
@@ -98,7 +98,7 @@ class StageSelector extends React.Component {
             bitmapResolution: item.bitmapResolution,
             skinId: null
         };
-        this.handleNewBackdrop(vmBackdrop, shouldActivateTab);
+        this.handleNewBackdrop(vmBackdrop);
     }
     handleClick () {
         this.props.onSelect(this.props.id);
@@ -107,18 +107,14 @@ class StageSelector extends React.Component {
         e.stopPropagation();
         this.context.captureFocus();
         this.props.onNewBackdropClick(jsonStr => {
-            this.handleNewBackdrop(JSON.parse(jsonStr), false);
+            this.handleNewBackdrop(JSON.parse(jsonStr));
         });
     }
-    handleNewBackdrop (backdrops_, shouldActivateTab = true) {
+    handleNewBackdrop (backdrops_) {
         const backdrops = Array.isArray(backdrops_) ? backdrops_ : [backdrops_];
         return Promise.all(backdrops.map(backdrop =>
             this.props.vm.addBackdrop(backdrop.md5, backdrop)
-        )).then(() => {
-            if (shouldActivateTab) {
-                return this.props.onActivateTab(COSTUMES_TAB_INDEX);
-            }
-        });
+        ));
     }
     handleSurpriseBackdrop (e) {
         e.stopPropagation(); // Prevent click from falling through to selecting stage.
