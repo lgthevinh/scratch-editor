@@ -5,12 +5,18 @@ import React from 'react';
 import VM from '@scratch/scratch-vm';
 import {
     thingbotLoaded,
-    thingbotConnectStart,
     thingbotConnectSuccess,
     thingbotDisconnect
 } from '../reducers/thingbot-telemetrix';
+import {openConnectionModal} from '../reducers/modals';
+import {setConnectionModalExtensionId} from '../reducers/connection-modal';
 
 const THINGBOT_EXTENSION_ID = 'thingbotTelemetrix';
+
+// Mirror Runtime static event names to avoid importing the engine into GUI
+const PERIPHERAL_CONNECTED = 'PERIPHERAL_CONNECTED';
+const PERIPHERAL_DISCONNECTED = 'PERIPHERAL_DISCONNECTED';
+const PERIPHERAL_REQUEST_ERROR = 'PERIPHERAL_REQUEST_ERROR';
 
 const MenuBarHOC = function (WrappedComponent) {
     class MenuBarContainer extends React.PureComponent {
@@ -20,24 +26,50 @@ const MenuBarHOC = function (WrappedComponent) {
             bindAll(this, [
                 'confirmReadyToReplaceProject',
                 'shouldSaveBeforeTransition',
-                'handleExtensionAdded'
+                'handleExtensionAdded',
+                'handleBLEConnected',
+                'handleBLEDisconnected',
+                'handleBLEError'
             ]);
         }
+
         componentDidMount () {
             this.props.vm.addListener('EXTENSION_ADDED', this.handleExtensionAdded);
-            // Handle case where extension was already loaded (e.g. restored project)
+            this.props.vm.addListener(PERIPHERAL_CONNECTED, this.handleBLEConnected);
+            this.props.vm.addListener(PERIPHERAL_DISCONNECTED, this.handleBLEDisconnected);
+            this.props.vm.addListener(PERIPHERAL_REQUEST_ERROR, this.handleBLEError);
+
+            // Handle restored project (extension already loaded)
             if (this.props.vm.extensionManager.isExtensionLoaded(THINGBOT_EXTENSION_ID)) {
                 this.props.onThingbotLoaded();
             }
         }
+
         componentWillUnmount () {
             this.props.vm.removeListener('EXTENSION_ADDED', this.handleExtensionAdded);
+            this.props.vm.removeListener(PERIPHERAL_CONNECTED, this.handleBLEConnected);
+            this.props.vm.removeListener(PERIPHERAL_DISCONNECTED, this.handleBLEDisconnected);
+            this.props.vm.removeListener(PERIPHERAL_REQUEST_ERROR, this.handleBLEError);
         }
+
         handleExtensionAdded (categoryInfo) {
             if (categoryInfo.id === THINGBOT_EXTENSION_ID) {
                 this.props.onThingbotLoaded();
             }
         }
+
+        handleBLEConnected () {
+            this.props.onThingbotConnectSuccess();
+        }
+
+        handleBLEDisconnected () {
+            this.props.onThingbotDisconnect();
+        }
+
+        handleBLEError () {
+            this.props.onThingbotDisconnect();
+        }
+
         confirmReadyToReplaceProject (message) {
             let readyToReplaceProject = true;
             if (this.props.projectChanged && !this.props.canCreateNew) {
@@ -45,13 +77,16 @@ const MenuBarHOC = function (WrappedComponent) {
             }
             return readyToReplaceProject;
         }
+
         shouldSaveBeforeTransition () {
             return (this.props.canSave && this.props.projectChanged);
         }
+
         render () {
             const {
-                projectChanged,
-                onThingbotLoaded, // eslint-disable-line no-unused-vars
+                projectChanged: _projectChanged,
+                onThingbotLoaded: _onThingbotLoaded,
+                onThingbotConnectSuccess: _onThingbotConnectSuccess,
                 ...props
             } = this.props;
             return (<WrappedComponent
@@ -68,12 +103,16 @@ const MenuBarHOC = function (WrappedComponent) {
         confirmWithMessage: PropTypes.func,
         projectChanged: PropTypes.bool,
         vm: PropTypes.instanceOf(VM).isRequired,
-        onThingbotLoaded: PropTypes.func.isRequired
+        onThingbotLoaded: PropTypes.func.isRequired,
+        onThingbotConnectSuccess: PropTypes.func.isRequired,
+        onThingbotConnect: PropTypes.func.isRequired,
+        onThingbotDisconnect: PropTypes.func.isRequired
     };
+
     MenuBarContainer.defaultProps = {
-        // default to using standard js confirm
         confirmWithMessage: message => (confirm(message)) // eslint-disable-line no-alert
     };
+
     const mapStateToProps = state => ({
         projectChanged: state.scratchGui.projectChanged,
         vm: state.scratchGui.vm,
@@ -81,19 +120,34 @@ const MenuBarHOC = function (WrappedComponent) {
         thingbotConnected: state.scratchGui.thingbotTelemetrix.connected,
         thingbotConnecting: state.scratchGui.thingbotTelemetrix.connecting
     });
+
     const mapDispatchToProps = dispatch => ({
         onThingbotLoaded: () => dispatch(thingbotLoaded()),
-        onThingbotConnect: () => {
-            // stub: replace with BLE connection logic when transport is ready
-            dispatch(thingbotConnectStart());
-            setTimeout(() => dispatch(thingbotConnectSuccess()), 1500);
-        },
-        onThingbotDisconnect: () => dispatch(thingbotDisconnect())
+        onThingbotConnectSuccess: () => dispatch(thingbotConnectSuccess()),
+        onThingbotDisconnect: () => dispatch(thingbotDisconnect()),
+        openThingbotConnectionModal: () => {
+            dispatch(setConnectionModalExtensionId(THINGBOT_EXTENSION_ID));
+            dispatch(openConnectionModal());
+        }
     });
-    // Allow incoming props to override redux-provided props. Used to mock in tests.
+
+    // Wire connect/disconnect to vm using stateProps.vm
     const mergeProps = (stateProps, dispatchProps, ownProps) => Object.assign(
-        {}, stateProps, dispatchProps, ownProps
+        {},
+        stateProps,
+        dispatchProps,
+        ownProps,
+        {
+            onThingbotConnect: () => {
+                dispatchProps.openThingbotConnectionModal();
+            },
+            onThingbotDisconnect: () => {
+                stateProps.vm.runtime.disconnectPeripheral(THINGBOT_EXTENSION_ID);
+                dispatchProps.onThingbotDisconnect();
+            }
+        }
     );
+
     return connect(
         mapStateToProps,
         mapDispatchToProps,

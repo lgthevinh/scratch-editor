@@ -159,6 +159,29 @@ export default [
                 id="gui.extension.thingbotTelemetrix.description"
             />
         ),
-        featured: true
+        featured: true,
+        useAutoScan: true,
+        connectionSmallIconURL: thingbotTelemetrixInsetIconURL,
+        connectingMessage: (
+            <FormattedMessage
+                defaultMessage="Connecting"
+                description="Message shown while connecting to ThingBot"
+                id="gui.extension.thingbotTelemetrix.connectingMessage"
+            />
+        ),
+        prescanMessage: (
+            <FormattedMessage
+                defaultMessage="Make sure your ThingBot is powered on and nearby."
+                description="ThingBot pre-scan instruction"
+                id="gui.extension.thingbotTelemetrix.prescanMessage"
+            />
+        ),
+        scanBeginMessage: (
+            <FormattedMessage
+                defaultMessage="Select your ThingBot from the list."
+                description="ThingBot scan begin instruction"
+                id="gui.extension.thingbotTelemetrix.scanBeginMessage"
+            />
+        )
     }
 ];
