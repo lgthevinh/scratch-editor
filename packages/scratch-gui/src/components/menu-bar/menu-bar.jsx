@@ -14,7 +14,6 @@ import Box from '../box/box.jsx';
 import Button from '../button/button.jsx';
 import CommunityButton from './community-button.jsx';
 import ShareButton from './share-button.jsx';
-import {ComingSoonTooltip} from '../coming-soon/coming-soon.jsx';
 import Divider from '../divider/divider.jsx';
 import SaveStatus from './save-status.jsx';
 import ProjectWatcher from '../../containers/project-watcher.jsx';
@@ -22,6 +21,7 @@ import ProjectTitleInput from './project-title-input.jsx';
 import AuthorInfo from './author-info.jsx';
 import LoginDropdown from './login-dropdown.jsx';
 import MenuBarHOC from '../../containers/menu-bar-hoc.jsx';
+import ConnectThingbotButton from './connect-thingbot-button.jsx';
 import SettingsMenu from './settings-menu.jsx';
 import FileMenu from './file-menu.jsx';
 import EditMenu from './edit-menu.jsx';
@@ -100,59 +100,6 @@ const ariaMessages = defineMessages({
 });
 
 const getScratchLogo = platform => (platform === PLATFORM.ANDROID ? scratchLogoAndroid : scratchLogo);
-
-const MenuBarItemTooltip = ({
-    children,
-    className,
-    enable,
-    id,
-    place = 'bottom'
-}) => {
-    if (enable) {
-        return (
-            <React.Fragment>
-                {children}
-            </React.Fragment>
-        );
-    }
-    return (
-        <ComingSoonTooltip
-            className={classNames(styles.comingSoon, className)}
-            place={place}
-            tooltipClassName={styles.comingSoonTooltip}
-            tooltipId={id}
-        >
-            {children}
-        </ComingSoonTooltip>
-    );
-};
-
-MenuBarItemTooltip.propTypes = {
-    children: PropTypes.node,
-    className: PropTypes.string,
-    enable: PropTypes.bool,
-    id: PropTypes.string,
-    place: PropTypes.oneOf(['top', 'bottom', 'left', 'right'])
-};
-
-const MenuItemTooltip = ({id, isRtl, children, className}) => (
-    <ComingSoonTooltip
-        className={classNames(styles.comingSoon, className)}
-        isRtl={isRtl}
-        place={isRtl ? 'left' : 'right'}
-        tooltipClassName={styles.comingSoonTooltip}
-        tooltipId={id}
-    >
-        {children}
-    </ComingSoonTooltip>
-);
-
-MenuItemTooltip.propTypes = {
-    children: PropTypes.node,
-    className: PropTypes.string,
-    id: PropTypes.string,
-    isRtl: PropTypes.bool
-};
 
 class MenuBar extends React.Component {
     constructor (props) {
@@ -381,14 +328,9 @@ class MenuBar extends React.Component {
                     </div>
                     {this.props.canEditTitle ? (
                         <div className={classNames(styles.menuBarItem, styles.growable)}>
-                            <MenuBarItemTooltip
-                                enable
-                                id="title-field"
-                            >
-                                <ProjectTitleInput
-                                    className={classNames(styles.titleFieldGrowable)}
-                                />
-                            </MenuBarItemTooltip>
+                            <ProjectTitleInput
+                                className={classNames(styles.titleFieldGrowable)}
+                            />
                         </div>
                     ) : ((this.props.authorUsername && this.props.authorUsername !== this.props.username) ? (
                         <AuthorInfo
@@ -422,13 +364,7 @@ class MenuBar extends React.Component {
                                     }
                                 </ProjectWatcher>
                             )
-                        ) : (
-                            this.props.showComingSoon ? (
-                                <MenuBarItemTooltip id="share-button">
-                                    <ShareButton className={styles.menuBarButton} />
-                                </MenuBarItemTooltip>
-                            ) : []
-                        )}
+                        ) : []}
                         {this.props.canRemix ? remixButton : []}
                     </div>
                     <div className={classNames(styles.menuBarItem, styles.communityButtonWrapper)}>
@@ -449,11 +385,7 @@ class MenuBar extends React.Component {
                                     }
                                 </ProjectWatcher>
                             )
-                        ) : (this.props.showComingSoon ? (
-                            <MenuBarItemTooltip id="community-button">
-                                <CommunityButton className={styles.menuBarButton} />
-                            </MenuBarItemTooltip>
-                        ) : [])}
+                        ) : []}
                     </div>
                     <Divider className={classNames(styles.divider)} />
                     <div className={styles.fileGroup}>
@@ -491,6 +423,17 @@ class MenuBar extends React.Component {
                 {/* show the proper UI in the account menu, given whether the user is
                 logged in, and whether a session is available to log in with */}
                 <div className={styles.accountInfoGroup}>
+                    {this.props.thingbotLoaded && (
+                        <div className={styles.menuBarItem}>
+                            <ConnectThingbotButton
+                                className={styles.menuBarButton}
+                                connected={this.props.thingbotConnected}
+                                connecting={this.props.thingbotConnecting}
+                                onConnect={this.props.onThingbotConnect}
+                                onDisconnect={this.props.onThingbotDisconnect}
+                            />
+                        </div>
+                    )}
                     <div className={styles.menuBarItem}>
                         {this.props.canSave && (
                             <SaveStatus className={classNames(styles.hoverable, styles.menuBarItem)} />
@@ -577,53 +520,7 @@ class MenuBar extends React.Component {
                                 ) : null}
                             </React.Fragment>
                         )
-                    ) : (
-                        // ******** no login session is available, so don't show login stuff
-                        <React.Fragment>
-                            {this.props.showComingSoon ? (
-                                <React.Fragment>
-                                    <MenuBarItemTooltip id="mystuff">
-                                        <div
-                                            className={classNames(
-                                                styles.menuBarItem,
-                                                styles.hoverable,
-                                                styles.mystuffButton
-                                            )}
-                                        >
-                                            <img
-                                                className={styles.mystuffIcon}
-                                                src={mystuffIcon}
-                                            />
-                                        </div>
-                                    </MenuBarItemTooltip>
-                                    <MenuBarItemTooltip
-                                        id="account-nav"
-                                        place={this.props.isRtl ? 'right' : 'left'}
-                                    >
-                                        <div
-                                            className={classNames(
-                                                styles.menuBarItem,
-                                                styles.hoverable,
-                                                styles.accountNavMenu
-                                            )}
-                                        >
-                                            <img
-                                                className={styles.profileIcon}
-                                                src={profileIcon}
-                                            />
-                                            <span>
-                                                {'scratch-cat'}
-                                            </span>
-                                            <img
-                                                className={styles.dropdownCaretIcon}
-                                                src={dropdownCaret}
-                                            />
-                                        </div>
-                                    </MenuBarItemTooltip>
-                                </React.Fragment>
-                            ) : []}
-                        </React.Fragment>
-                    )}
+                    ) : null}
                 </div>
 
                 {this.props.onClickAbout && (
@@ -707,14 +604,19 @@ MenuBar.propTypes = {
     projectTitle: PropTypes.string,
     renderLogin: PropTypes.func,
     shouldSaveBeforeTransition: PropTypes.func,
-    showComingSoon: PropTypes.bool,
     username: PropTypes.string,
     avatarBadge: PropTypes.number,
     userOwnsProject: PropTypes.bool,
 
     accountMenuOptions: AccountMenuOptionsPropTypes,
 
-    vm: PropTypes.instanceOf(VM).isRequired
+    vm: PropTypes.instanceOf(VM).isRequired,
+
+    thingbotLoaded: PropTypes.bool,
+    thingbotConnected: PropTypes.bool,
+    thingbotConnecting: PropTypes.bool,
+    onThingbotConnect: PropTypes.func,
+    onThingbotDisconnect: PropTypes.func
 };
 
 MenuBar.defaultProps = {

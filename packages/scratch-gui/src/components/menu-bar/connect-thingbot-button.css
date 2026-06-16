@@ -1,0 +1,53 @@
+@import "../../css/colors.css";
+
+.connect-button {
+    background: $ui-white;
+    color: $text-primary;
+    border: 1.5px solid $ui-black-transparent;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.connect-button:hover:not([disabled]) {
+    background: $ui-primary;
+}
+
+.connect-button.connecting {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.connect-button.connected {
+    background: $pen-primary;
+    color: $ui-white;
+    border-color: transparent;
+}
+
+.connect-button.connected:hover {
+    background: hsla(163, 85%, 33%, 1);
+}
+
+.indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: $ui-black-transparent;
+    flex-shrink: 0;
+}
+
+.connected .indicator {
+    background: $ui-white;
+}
+
+.connecting .indicator {
+    background: $motion-primary;
+    animation: pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+}
