@@ -136,4 +136,4 @@ dist
 
 # AI assistant stack files
 skills-lock.json
-.agents//
+.agents/skills
