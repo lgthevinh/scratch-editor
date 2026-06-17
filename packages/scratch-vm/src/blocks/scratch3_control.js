@@ -38,7 +38,8 @@ class Scratch3ControlBlocks {
             control_get_counter: this.getCounter,
             control_incr_counter: this.incrCounter,
             control_clear_counter: this.clearCounter,
-            control_all_at_once: this.allAtOnce
+            control_all_at_once: this.allAtOnce,
+            control_print: this.print
         };
     }
 
@@ -200,6 +201,10 @@ class Scratch3ControlBlocks {
         // "run without screen refresh" custom blocks do now, but this was
         // removed before the release of 2.0.)
         util.startBranch(1, false);
+    }
+
+    print (args) {
+        this.runtime.emit('PRINT_TO_MONITOR', String(args.STRING ?? ''));
     }
 }
 

@@ -114,7 +114,6 @@ const GUIComponent = props => {
         isCreating,
         isFetchingUserData,
         isFullScreen,
-        isPlayerOnly,
         isRtl,
         isShared,
         isTelemetryEnabled,
@@ -182,6 +181,17 @@ const GUIComponent = props => {
     }, [theme, hasActiveMembership, props.setTheme]);
 
     const [devicePanelWidth, setDevicePanelWidth] = useState(420);
+    const [serialLogs, setSerialLogs] = useState([]);
+
+    useEffect(() => {
+        const handlePrint = message => {
+            setSerialLogs(prev => [...prev, {message: String(message)}]);
+        };
+        vm.runtime.on('PRINT_TO_MONITOR', handlePrint);
+        return () => {
+            vm.runtime.off('PRINT_TO_MONITOR', handlePrint);
+        };
+    }, [vm]);
 
     useEffect(() => {
         window.dispatchEvent(new Event('resize'));
@@ -230,20 +240,7 @@ const GUIComponent = props => {
             [styles.bodyWrapperWithoutMenuBar]: menuBarHidden
         });
 
-        return isPlayerOnly ? (
-            <StageWrapper
-                isFullScreen={isFullScreen}
-                isRendererSupported={isRendererSupported}
-                isRtl={isRtl}
-                loading={loading}
-                stageSize={STAGE_SIZE_MODES.large}
-                vm={vm}
-            >
-                {alertsVisible ? (
-                    <Alerts className={styles.alertsContainer} />
-                ) : null}
-            </StageWrapper>
-        ) : (
+        return (
             <ModalFocusProvider>
                 <Box
                     className={styles.pageWrapper}
@@ -433,7 +430,7 @@ const GUIComponent = props => {
                             style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
                             <CodeView code={null} />
-                            <SerialLog logs={[]} />
+                            <SerialLog logs={serialLogs} />
                         </Box>
                     </Box>
                     <DragLayer />
@@ -474,7 +471,6 @@ GUIComponent.propTypes = {
     isCreating: PropTypes.bool,
     isFetchingUserData: PropTypes.bool,
     isFullScreen: PropTypes.bool,
-    isPlayerOnly: PropTypes.bool,
     isRtl: PropTypes.bool,
     isShared: PropTypes.bool,
     isTotallyNormal: PropTypes.bool,

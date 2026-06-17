@@ -23,18 +23,6 @@ class Scratch3SensingBlocks {
         this._timer = new Timer();
 
         /**
-         * The stored microphone loudness measurement.
-         * @type {number}
-         */
-        this._cachedLoudness = -1;
-
-        /**
-         * The time of the most recent microphone loudness measurement.
-         * @type {number}
-         */
-        this._cachedLoudnessTimestamp = 0;
-
-        /**
          * The list of queued questions and respective `resolve` callbacks.
          * @type {!Array}
          */
@@ -53,27 +41,17 @@ class Scratch3SensingBlocks {
      */
     getPrimitives () {
         return {
-            sensing_touchingobject: this.touchingObject,
-            sensing_touchingcolor: this.touchingColor,
-            sensing_coloristouchingcolor: this.colorTouchingColor,
-            sensing_distanceto: this.distanceTo,
             sensing_timer: this.getTimer,
             sensing_resettimer: this.resetTimer,
-            sensing_of: this.getAttributeOf,
             sensing_mousex: this.getMouseX,
             sensing_mousey: this.getMouseY,
-            sensing_setdragmode: this.setDragMode,
             sensing_mousedown: this.getMouseDown,
             sensing_keypressed: this.getKeyPressed,
             sensing_current: this.current,
             sensing_dayssince2000: this.daysSince2000,
-            sensing_loudness: this.getLoudness,
-            sensing_loud: this.isLoud,
             sensing_askandwait: this.askAndWait,
             sensing_answer: this.getAnswer,
-            sensing_online: this.getOnline,
-            sensing_username: this.getUsername,
-            sensing_userid: () => {} // legacy no-op block
+            sensing_online: this.getOnline
         };
     }
 
@@ -81,9 +59,6 @@ class Scratch3SensingBlocks {
         return {
             sensing_answer: {
                 getId: () => 'answer'
-            },
-            sensing_loudness: {
-                getId: () => 'loudness'
             },
             sensing_online: {
                 getId: () => 'online'
@@ -172,48 +147,6 @@ class Scratch3SensingBlocks {
         return this._answer;
     }
 
-    touchingObject (args, util) {
-        return util.target.isTouchingObject(args.TOUCHINGOBJECTMENU);
-    }
-
-    touchingColor (args, util) {
-        const color = Cast.toRgbColorList(args.COLOR);
-        return util.target.isTouchingColor(color);
-    }
-
-    colorTouchingColor (args, util) {
-        const maskColor = Cast.toRgbColorList(args.COLOR);
-        const targetColor = Cast.toRgbColorList(args.COLOR2);
-        return util.target.colorIsTouchingColor(targetColor, maskColor);
-    }
-
-    distanceTo (args, util) {
-        if (util.target.isStage) return 10000;
-
-        let targetX = 0;
-        let targetY = 0;
-        if (args.DISTANCETOMENU === '_mouse_') {
-            targetX = util.ioQuery('mouse', 'getScratchX');
-            targetY = util.ioQuery('mouse', 'getScratchY');
-        } else {
-            args.DISTANCETOMENU = Cast.toString(args.DISTANCETOMENU);
-            const distTarget = this.runtime.getSpriteTargetByName(
-                args.DISTANCETOMENU
-            );
-            if (!distTarget) return 10000;
-            targetX = distTarget.x;
-            targetY = distTarget.y;
-        }
-
-        const dx = util.target.x - targetX;
-        const dy = util.target.y - targetY;
-        return Math.sqrt((dx * dx) + (dy * dy));
-    }
-
-    setDragMode (args, util) {
-        util.target.setDraggable(args.DRAG_MODE === 'draggable');
-    }
-
     getTimer (args, util) {
         return util.ioQuery('clock', 'projectTimer');
     }
@@ -263,75 +196,6 @@ class Scratch3SensingBlocks {
         return mSecsSinceStart / msPerDay;
     }
 
-    getLoudness () {
-        if (typeof this.runtime.audioEngine === 'undefined') return -1;
-        if (this.runtime.currentStepTime === null) return -1;
-
-        // Only measure loudness once per step
-        const timeSinceLoudness = this._timer.time() - this._cachedLoudnessTimestamp;
-        if (timeSinceLoudness < this.runtime.currentStepTime) {
-            return this._cachedLoudness;
-        }
-
-        this._cachedLoudnessTimestamp = this._timer.time();
-        this._cachedLoudness = this.runtime.audioEngine.getLoudness();
-        return this._cachedLoudness;
-    }
-
-    isLoud () {
-        return this.getLoudness() > 10;
-    }
-
-    getAttributeOf (args) {
-        let attrTarget;
-
-        if (args.OBJECT === '_stage_') {
-            attrTarget = this.runtime.getTargetForStage();
-        } else {
-            args.OBJECT = Cast.toString(args.OBJECT);
-            attrTarget = this.runtime.getSpriteTargetByName(args.OBJECT);
-        }
-
-        // attrTarget can be undefined if the target does not exist
-        // (e.g. single sprite uploaded from larger project referencing
-        // another sprite that wasn't uploaded)
-        if (!attrTarget) return 0;
-
-        // Generic attributes
-        if (attrTarget.isStage) {
-            switch (args.PROPERTY) {
-            // Scratch 1.4 support
-            case 'background #': return attrTarget.currentCostume + 1;
-
-            case 'backdrop #': return attrTarget.currentCostume + 1;
-            case 'backdrop name':
-                return attrTarget.getCostumes()[attrTarget.currentCostume].name;
-            case 'volume': return attrTarget.volume;
-            }
-        } else {
-            switch (args.PROPERTY) {
-            case 'x position': return attrTarget.x;
-            case 'y position': return attrTarget.y;
-            case 'direction': return attrTarget.direction;
-            case 'costume #': return attrTarget.currentCostume + 1;
-            case 'costume name':
-                return attrTarget.getCostumes()[attrTarget.currentCostume].name;
-            case 'size': return attrTarget.size;
-            case 'volume': return attrTarget.volume;
-            }
-        }
-
-        // Target variables.
-        const varName = args.PROPERTY;
-        const variable = attrTarget.lookupVariableByNameAndType(varName, '', true);
-        if (variable) {
-            return variable.value;
-        }
-
-        // Otherwise, 0
-        return 0;
-    }
-
     getOnline (args, util) {
         const status = window.navigator.onLine;
         if (typeof status === 'boolean') {
@@ -342,9 +206,6 @@ class Scratch3SensingBlocks {
         return '';
     }
 
-    getUsername (args, util) {
-        return util.ioQuery('userData', 'getUsername');
-    }
 }
 
 module.exports = Scratch3SensingBlocks;

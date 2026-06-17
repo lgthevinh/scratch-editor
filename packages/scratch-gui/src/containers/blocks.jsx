@@ -418,17 +418,11 @@ class Blocks extends React.Component {
             const stage = runtime.getTargetForStage();
             if (!target) target = stage; // If no editingTarget, use the stage
 
-            const stageCostumes = stage.getCostumes();
-            const targetCostumes = target.getCostumes();
-            const targetSounds = target.getSounds();
             const dynamicBlocksXML = injectExtensionCategoryMode(
                 this.props.vm.runtime.getBlocksXML(target),
                 this.props.colorMode
             );
             return makeToolboxXML(false, target.isStage, target.id, dynamicBlocksXML,
-                targetCostumes[targetCostumes.length - 1].name,
-                stageCostumes[stageCostumes.length - 1].name,
-                targetSounds.length > 0 ? targetSounds[targetSounds.length - 1].name : '',
                 getColorsForMode(this.props.colorMode)
             );
         } catch {

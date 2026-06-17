@@ -34,8 +34,14 @@ Use these defaults unless the user asks otherwise:
 
 ## What this repository is
 
-`scratch-editor` is an npm workspaces monorepo containing the packages that make up the Scratch editor. It was
-assembled by migrating previously separate repositories into a single repo.
+`scratch-editor` is an npm workspaces monorepo that extends the Scratch visual programming environment into a
+drag-and-drop firmware development IDE for Arduino-compatible hardware. Users program physical devices —
+motors, sensors, servos, LEDs — using Scratch blocks, with the extension architecture designed to support any
+Arduino-compatible device without changes to the core editor.
+
+The longer-term directions include educational hardware programming (making physical computing accessible to
+beginners through Scratch's block metaphor) and a general-purpose hardware extension platform reusable for
+future device integrations.
 
 All packages are published to npm under the `@scratch/` scope. They are consumed both internally (e.g.,
 `scratch-www` loads `scratch-gui`) and by third parties.
@@ -70,8 +76,11 @@ rejected by the pre-commit hook.
 packages/
 ├── scratch-gui/            React-based editor UI
 ├── scratch-vm/             Virtual machine that runs Scratch projects
+├── scratch-blocks/         Blockly-based block editor (workspace fork)
 ├── scratch-render/         WebGL renderer for the stage
+├── scratch-storage/        Asset and project file storage layer
 ├── scratch-svg-renderer/   SVG asset processor
+├── scratch-paint/          Costume/paint editor (in monorepo; not used by scratch-gui)
 ├── task-herder/            Async task scheduler with rate limiting
 └── scratch-media-lib-scripts/  Build scripts for media library assets
 scripts/                    Monorepo-level utility scripts
@@ -83,13 +92,16 @@ scripts/                    Monorepo-level utility scripts
 | - | - | - | - |
 | `scratch-gui` | JavaScript / JSX (some TypeScript) | webpack | Jest |
 | `scratch-vm` | JavaScript | webpack | Tap |
+| `scratch-blocks` | TypeScript | webpack | Vitest |
 | `scratch-render` | JavaScript | webpack | Tap |
+| `scratch-storage` | JavaScript | webpack | Jest |
 | `scratch-svg-renderer` | JavaScript | webpack | Tap |
 | `task-herder` | TypeScript | Vite | Vitest |
 | `scratch-media-lib-scripts` | JavaScript | — | Jest |
 
-`task-herder` represents the target stack for new packages (TypeScript + Vite + Vitest). The other packages
-reflect the legacy stack and are being migrated incrementally.
+`task-herder` represents the target stack for new packages (TypeScript + Vite + Vitest). `scratch-blocks` uses
+the same test framework (Vitest) but retains webpack as its bundler. The remaining packages reflect the legacy
+stack and are being migrated incrementally.
 
 ## Technology conventions by package
 
@@ -110,6 +122,16 @@ Prettier (currently `task-herder`), run `npm run format` in addition to lint.
 - After adding or changing messages, run `npm run i18n:src` to update the translation source file.
 - Integration tests (`test/integration/`) require a browser environment via Jest + jsdom; they are slow and
   should not be run unnecessarily. Smoke tests (`test/smoke/`) require a live server.
+- **Sprite UI is removed.** The right panel (formerly stage + sprite selector) is now a firmware device panel
+  (`components/gui/device-panel`) containing `CodeView` (generated code display) and `SerialLog` (Monitor,
+  collapsible serial/input panel). The VM's sprite/target execution model is kept intact — one implicit device
+  target — but no sprite UI renders.
+
+### scratch-blocks specifics
+
+- Block definitions live in `src/blocks/`. Each file registers blocks via `Blockly.Blocks.<block_id> = { init() }`.
+- `src/index.ts` imports all block files and exports the configured Blockly instance.
+- Uses TypeScript throughout; follow the existing patterns when adding or removing block definitions.
 
 ### scratch-vm specifics
 

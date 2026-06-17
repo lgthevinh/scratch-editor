@@ -438,7 +438,7 @@ class MenuBar extends React.Component {
                         </div>
                     )}
                     <RunControlsContainer
-                        buttonClassName={classNames(styles.menuBarItem, styles.hoverable)}
+                        buttonClassName={classNames(styles.menuBarItem, styles.hoverable, styles.noOffset)}
                         iconClassName={styles.helpIcon}
                         labelClassName={styles.collapsibleLabel}
                     />
