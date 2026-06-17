@@ -1,0 +1,139 @@
+@import "../../css/units.css";
+@import "../../css/colors.css";
+
+.serial-log {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    background-color: $ui-secondary;
+    border-radius: $space;
+    border: 1px solid $ui-black-transparent;
+    overflow: visible;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    position: relative;
+    /* height controlled via inline style from JS */
+}
+
+.resize-handle {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    cursor: row-resize;
+    z-index: 1;
+}
+
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.resize-handle:hover::after {
+    background-color: $motion-primary;
+}
+
+.inner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: $space;
+}
+
+.header {
+    height: $stage-menu-height;
+    background-color: $ui-tertiary;
+    color: $text-primary;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0 $space;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid $ui-black-transparent;
+    flex-shrink: 0;
+    user-select: none;
+    border-radius: $space $space 0 0;
+}
+
+.chevron {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: auto;
+    cursor: pointer;
+    color: $text-primary;
+    font-size: 0.75rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.chevron:hover {
+    color: $motion-primary;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: $space;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: $text-primary;
+    min-height: 0;
+}
+
+.entry {
+    word-break: break-all;
+    color: $extensions-primary;
+}
+
+.input-row {
+    display: flex;
+    flex-shrink: 0;
+    gap: $space;
+    padding: $space;
+    border-top: 1px solid $ui-black-transparent;
+    background-color: $ui-white;
+}
+
+.input {
+    flex: 1;
+    border: 1px solid $ui-black-transparent;
+    border-radius: calc($space / 2);
+    padding: calc($space * 0.75) $space;
+    font-size: 0.875rem;
+    font-family: inherit;
+    color: $text-primary;
+    outline: none;
+    background-color: $ui-white;
+}
+
+.input:focus {
+    border-color: $motion-primary;
+}
+
+.send-button {
+    background-color: $motion-primary;
+    color: $ui-white;
+    border: none;
+    border-radius: calc($space / 2);
+    padding: calc($space * 0.75) calc($space * 1.5);
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.send-button:hover {
+    background-color: $motion-tertiary;
+}

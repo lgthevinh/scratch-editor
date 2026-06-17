@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
-import React, {useEffect, useCallback} from 'react';
+import React, {useEffect, useCallback, useState} from 'react';
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import {connect} from 'react-redux';
 import MediaQuery from 'react-responsive';
@@ -11,7 +11,8 @@ import VM from '@scratch/scratch-vm';
 import Renderer from '@scratch/scratch-render';
 
 import Blocks from '../../containers/blocks.jsx';
-import StageWrapper from '../../containers/stage-wrapper.jsx';
+import CodeView from '../code-view/code-view.jsx';
+import SerialLog from '../serial-log/serial-log.jsx';
 import Loader from '../loader/loader.jsx';
 import Box from '../box/box.jsx';
 import MenuBar from '../menu-bar/menu-bar.jsx';
@@ -179,6 +180,29 @@ const GUIComponent = props => {
             props.setTheme(DEFAULT_THEME);
         }
     }, [theme, hasActiveMembership, props.setTheme]);
+
+    const [devicePanelWidth, setDevicePanelWidth] = useState(420);
+
+    useEffect(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, [devicePanelWidth]);
+
+    const handleResizeMouseDown = useCallback(e => {
+        const startX = e.clientX;
+        const startWidth = devicePanelWidth;
+
+        const onMouseMove = moveEvent => {
+            const delta = startX - moveEvent.clientX;
+            setDevicePanelWidth(Math.max(240, Math.min(700, startWidth + delta)));
+        };
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        e.preventDefault();
+    }, [devicePanelWidth]);
 
     const tabClassNames = {
         tabs: styles.tabs,
@@ -397,30 +421,19 @@ const GUIComponent = props => {
                             </Tabs>
                         </Box>
 
+                        <div
+                            className={styles.resizeHandle}
+                            onMouseDown={handleResizeMouseDown}
+                        />
                         <Box
                             role="complementary"
                             aria-label={intl.formatMessage(ariaMessages.stageAndTarget)}
-                            className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
+                            className={styles.devicePanel}
                             element="aside"
+                            style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
-                            <StageWrapper
-                                isFullScreen={isFullScreen}
-                                isRendererSupported={isRendererSupported}
-                                isRtl={isRtl}
-                                isCreating={isCreating}
-                                stageSize={stageSize}
-                                vm={vm}
-                                ariaRole="region"
-                                ariaLabel={intl.formatMessage(ariaMessages.stage)}
-                                manuallySaveThumbnails={manuallySaveThumbnails}
-                                onSetManualThumbnail={onSetManualThumbnail}
-                                onSetManualThumbnailButtonClick={onSetManualThumbnailButtonClick}
-                                loading={loading}
-                                showNewFeatureCallouts={showNewFeatureCallouts}
-                                userOwnsProject={userOwnsProject}
-                                username={username}
-                                onUpdateProjectThumbnail={onUpdateProjectThumbnail}
-                            />
+                            <CodeView code={null} />
+                            <SerialLog logs={[]} />
                         </Box>
                     </Box>
                     <DragLayer />

@@ -1,0 +1,42 @@
+@import "../../css/units.css";
+@import "../../css/colors.css";
+
+.code-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background-color: $ui-secondary;
+    border-radius: $space;
+    border: 1px solid $ui-black-transparent;
+    overflow: hidden;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.header {
+    height: $stage-menu-height;
+    background-color: $ui-tertiary;
+    color: $text-primary;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0 $space;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid $ui-black-transparent;
+    flex-shrink: 0;
+    user-select: none;
+    border-radius: $space $space 0 0;
+}
+
+.content {
+    flex: 1;
+    overflow: auto;
+    margin: 0;
+    padding: $space;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: $text-primary;
+    white-space: pre;
+    min-height: 0;
+}

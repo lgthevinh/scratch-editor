@@ -51,7 +51,7 @@
         much better ways to solve that (e.g. undo #2124, remove this flex-basis entirely). However, they run their own
         risks of breaking things, so let's just leave this as-is for the time being.
     */
-    flex-basis: calc(1024px - 408px - (($space + $stage-standard-border-width) * 2));
+    flex-basis: calc(1024px - 420px);
     flex-grow: 1;
     flex-shrink: 0;
     position: relative;
@@ -204,55 +204,29 @@
     position: relative;
 }
 
-.stage-and-target-wrapper {
-    /*
-        Makes rows for children:
-          1) stage menu
-          2) stage
-          3) sprite/stage selectors
-        Only reason we need this, is so .targetWrapper, which holds the selectors,
-        goes to full vertical height of the window
-    */
+.resize-handle {
+    width: 4px;
+    flex-shrink: 0;
+    cursor: col-resize;
+    background-color: transparent;
+    transition: background-color 0.15s ease;
+    z-index: 1;
+}
+
+.resize-handle:hover {
+    background-color: $motion-primary;
+}
+
+.device-panel {
     display: flex;
     flex-direction: column;
-    /* pad entire wrapper to the left and right; allow children to fill width */
-    padding-left: $space;
-    padding-right: $space;
-
-    /* this will only ever be as wide as the stage */
-    flex-basis: 0;
+    flex: 0 0 420px;
+    min-height: 0;
+    overflow: hidden;
+    padding: $space;
+    gap: $space;
 }
 
-.target-wrapper {
-    display: flex;
-    flex-grow: 1;
-    flex-basis: 0;
-
-    padding-top: $space;
-    min-height: 0; /* this makes it work in Firefox */
-
-    /*
-        For making the sprite-selector a scrollable pane
-        @todo: Not working in Safari
-    */
-    /* TODO this also breaks the thermometer menu */
-    /* overflow: hidden; */
-}
-
-/* Sprite Selection Watermark */
-body .watermark {
-    position: absolute;
-    top: 1.25rem;
-    pointer-events: none;
-}
-
-[dir="ltr"] .watermark {
-    right: 1.25rem;
-}
-
-[dir="rtl"] .watermark {
-    left: 1.25rem;
-}
 
 /* Menu */
 
