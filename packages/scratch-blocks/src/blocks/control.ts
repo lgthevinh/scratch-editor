@@ -470,4 +470,3 @@ Blockly.Blocks.control_all_at_once = {
     })
   },
 }
-
