@@ -26,6 +26,7 @@ import Alerts from '../../containers/alerts.jsx';
 import DragLayer from '../../containers/drag-layer.jsx';
 import ConnectionModal from '../../containers/connection-modal.jsx';
 import TelemetryModal from '../telemetry-modal/telemetry-modal.jsx';
+import BoardLibrary from '../../containers/board-library.jsx';
 
 import layout, {STAGE_SIZE_MODES} from '../../lib/layout-constants';
 import {resolveStageSize} from '../../lib/screen-utils';
@@ -182,6 +183,7 @@ const GUIComponent = props => {
 
     const [devicePanelWidth, setDevicePanelWidth] = useState(420);
     const [serialLogs, setSerialLogs] = useState([]);
+    const [monitorPrompt, setMonitorPrompt] = useState(null);
 
     useEffect(() => {
         const handlePrint = message => {
@@ -194,8 +196,25 @@ const GUIComponent = props => {
     }, [vm]);
 
     useEffect(() => {
+        const onPrompt = q => setMonitorPrompt(q != null ? q : null);
+        vm.runtime.on('QUESTION', onPrompt);
+        return () => {
+            vm.runtime.off('QUESTION', onPrompt);
+        };
+    }, [vm]);
+
+    useEffect(() => {
         window.dispatchEvent(new Event('resize'));
     }, [devicePanelWidth]);
+
+    const handleClearMonitor = useCallback(() => {
+        setSerialLogs([]);
+    }, []);
+
+    const handleMonitorSend = useCallback(value => {
+        vm.runtime.emit('ANSWER', value);
+        setMonitorPrompt(null);
+    }, [vm]);
 
     const handleResizeMouseDown = useCallback(e => {
         const startX = e.clientX;
@@ -273,6 +292,7 @@ const GUIComponent = props => {
                             onTutorialSelect={onTutorialSelect}
                         />
                     ) : null}
+                    <BoardLibrary />
                     {cardsVisible ? (
                         <Cards />
                     ) : null}
@@ -430,7 +450,12 @@ const GUIComponent = props => {
                             style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
                             <CodeView code={null} />
-                            <SerialLog logs={serialLogs} />
+                            <SerialLog
+                                logs={serialLogs}
+                                onClear={handleClearMonitor}
+                                onSend={handleMonitorSend}
+                                prompt={monitorPrompt}
+                            />
                         </Box>
                     </Box>
                     <DragLayer />

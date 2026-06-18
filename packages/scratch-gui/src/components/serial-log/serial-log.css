@@ -63,11 +63,40 @@
     border-radius: $space $space 0 0;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: calc($space / 2);
+    margin-left: auto;
+}
+
+.clear-button {
+    background: $ui-white-transparent;
+    border: 1px solid $ui-black-transparent;
+    border-radius: calc($space / 2);
+    color: $text-primary;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: calc($space / 2) $space;
+}
+
+.clear-button:hover:not(:disabled) {
+    border-color: $motion-primary;
+    color: $motion-primary;
+}
+
+.clear-button:disabled {
+    color: $text-primary-transparent;
+    cursor: default;
+}
+
 .chevron {
     background: none;
     border: none;
     padding: 0;
-    margin-left: auto;
     cursor: pointer;
     color: $text-primary;
     font-size: 0.75rem;
@@ -94,6 +123,16 @@
 .entry {
     word-break: break-all;
     color: $extensions-primary;
+}
+
+.prompt-banner {
+    flex-shrink: 0;
+    padding: calc($space * 0.75) $space;
+    background-color: $ui-modal-overlay;
+    color: $ui-white;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-top: 1px solid $ui-black-transparent;
 }
 
 .input-row {
