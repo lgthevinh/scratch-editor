@@ -15,6 +15,7 @@ const MathUtil = require('./util/math-util');
 const Runtime = require('./engine/runtime');
 const StringUtil = require('./util/string-util');
 const formatMessage = require('format-message');
+const generateTargetCode = require('./codegen/generate-code');
 
 const Variable = require('./engine/variable');
 const newBlockIds = require('./util/new-block-ids');
@@ -1172,6 +1173,19 @@ class VirtualMachine extends EventEmitter {
      */
     getLocale () {
         return formatMessage.setup().locale;
+    }
+
+    /**
+     * Generate source code for the current editing target or a selected target.
+     * @param {string} language Code generation language ID.
+     * @param {string=} optTargetId Optional target ID.
+     * @returns {{language: string, code: string, diagnostics: Array.<object>}} Generated source and diagnostics.
+     */
+    generateCode (language, optTargetId) {
+        const target = optTargetId ?
+            this.runtime.getTargetById(optTargetId) :
+            this.editingTarget;
+        return generateTargetCode(target, language);
     }
 
     /**

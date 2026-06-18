@@ -157,6 +157,7 @@ GUI.propTypes = {
     projectHost: PropTypes.string,
     projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     shouldStopProject: PropTypes.bool,
+    selectedBoardId: PropTypes.string,
     telemetryModalVisible: PropTypes.bool,
     username: PropTypes.string,
     userOwnsProject: PropTypes.bool,
@@ -192,6 +193,7 @@ const mapStateToProps = (state, ownProps) => {
         loadingStateVisible: state.scratchGui.modals.loadingProject,
         platform: ownProps.platform,
         projectId: state.scratchGui.projectState.projectId,
+        selectedBoardId: state.scratchGui.board.selectedBoardId,
         telemetryModalVisible: state.scratchGui.modals.telemetryModal,
         tipsLibraryVisible: state.scratchGui.modals.tipsLibrary,
         vm: state.scratchGui.vm
