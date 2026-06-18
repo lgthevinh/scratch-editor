@@ -5,6 +5,8 @@ import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import locales from 'scratch-l10n';
 
+const SUPPORTED_LOCALES = ['en', 'vi'];
+
 import check from './check.svg';
 import {MenuItem, Submenu} from '../menu/menu.jsx';
 import languageIcon from '../language-selector/language-icon.svg';
@@ -40,7 +42,7 @@ const LanguageMenu = ({
         menuRef
     } = useMenuNavigation({
         depth: depth ?? 1,
-        defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale)),
+        defaultIndexOnOpen: SUPPORTED_LOCALES.indexOf(currentLocale),
         isRtl
     });
 
@@ -90,7 +92,7 @@ const LanguageMenu = ({
                 place={isRtl ? 'left' : 'right'}
             >
                 {
-                    Object.keys(locales)
+                    SUPPORTED_LOCALES
                         .map(locale => {
                             const isSelected = currentLocale === locale;
 
