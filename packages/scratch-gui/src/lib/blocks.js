@@ -6,58 +6,6 @@
 export default function (vm) {
     const ScratchBlocks = require('@scratch/scratch-blocks');
 
-    const jsonForMenuBlock = function (name, menuOptionsFn, category, start) {
-        return {
-            message0: '%1',
-            args0: [
-                {
-                    type: 'field_dropdown',
-                    name: name,
-                    options: function () {
-                        return start.concat(menuOptionsFn());
-                    }
-                }
-            ],
-            inputsInline: true,
-            output: 'String',
-            outputShape: ScratchBlocks.OUTPUT_SHAPE_ROUND,
-            extensions: [`colours_${category}`]
-        };
-    };
-
-    const spriteMenu = function () {
-        const sprites = [];
-        for (const targetId in vm.runtime.targets) {
-            if (!Object.prototype.hasOwnProperty.call(vm.runtime.targets, targetId)) continue;
-            if (vm.runtime.targets[targetId].isOriginal) {
-                if (!vm.runtime.targets[targetId].isStage) {
-                    if (vm.runtime.targets[targetId] === vm.editingTarget) {
-                        continue;
-                    }
-                    sprites.push([vm.runtime.targets[targetId].sprite.name, vm.runtime.targets[targetId].sprite.name]);
-                }
-            }
-        }
-        return sprites;
-    };
-
-    const cloneMenu = function () {
-        if (vm.editingTarget && vm.editingTarget.isStage) {
-            const menu = spriteMenu();
-            if (menu.length === 0) {
-                return [['', '']]; // Empty menu matches Scratch 2 behavior
-            }
-            return menu;
-        }
-        const myself = ScratchBlocks.ScratchMsgs.translate('CONTROL_CREATECLONEOF_MYSELF', 'myself');
-        return [[myself, '_myself_']].concat(spriteMenu());
-    };
-
-    ScratchBlocks.Blocks.control_create_clone_of_menu.init = function () {
-        const json = jsonForMenuBlock('CLONE_OPTION', cloneMenu, 'control', []);
-        this.jsonInit(json);
-    };
-
     ScratchBlocks.CheckboxBubble.prototype.isChecked = function (blockId) {
         const monitoredBlock = vm.runtime.monitorBlocks._blocks[blockId];
         return monitoredBlock ? monitoredBlock.isMonitored : false;

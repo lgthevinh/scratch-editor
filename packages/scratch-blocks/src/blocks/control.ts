@@ -337,57 +337,6 @@ Blockly.Blocks.control_for_each = {
   },
 }
 
-Blockly.Blocks.control_start_as_clone = {
-  /**
-   * Block for "when I start as a clone" hat.
-   */
-  init: function (this: Blockly.Block) {
-    this.jsonInit({
-      id: 'control_start_as_clone',
-      message0: Blockly.Msg.CONTROL_STARTASCLONE,
-      args0: [],
-      extensions: ['colours_control', 'shape_hat'],
-    })
-  },
-}
-
-/**
- * Create-clone drop-down menu. Populated dynamically by scratch-gui.
- */
-Blockly.Blocks.control_create_clone_of_menu = {}
-
-Blockly.Blocks.control_create_clone_of = {
-  /**
-   * Block for "create clone of..."
-   */
-  init: function (this: Blockly.Block) {
-    this.jsonInit({
-      id: 'control_start_as_clone',
-      message0: Blockly.Msg.CONTROL_CREATECLONEOF,
-      args0: [
-        {
-          type: 'input_value',
-          name: 'CLONE_OPTION',
-        },
-      ],
-      extensions: ['colours_control', 'shape_statement'],
-    })
-  },
-}
-
-Blockly.Blocks.control_delete_this_clone = {
-  /**
-   * Block for "delete this clone."
-   */
-  init: function (this: Blockly.Block) {
-    this.jsonInit({
-      message0: Blockly.Msg.CONTROL_DELETETHISCLONE,
-      args0: [],
-      extensions: ['colours_control', 'shape_end'],
-    })
-  },
-}
-
 Blockly.Blocks.control_print = {
   init: function (this: Blockly.Block) {
     this.jsonInit({

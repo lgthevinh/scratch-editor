@@ -77,22 +77,6 @@ const control = function (isInitialSetup, isStage, targetId, colors) {
                 </shadow>
             </value>
         </block>
-        ${blockSeparator}
-        ${isStage ? `
-            <block type="control_create_clone_of">
-                <value name="CLONE_OPTION">
-                    <shadow type="control_create_clone_of_menu"/>
-                </value>
-            </block>
-        ` : `
-            <block type="control_start_as_clone"/>
-            <block type="control_create_clone_of">
-                <value name="CLONE_OPTION">
-                    <shadow type="control_create_clone_of_menu"/>
-                </value>
-            </block>
-            <block type="control_delete_this_clone"/>
-        `}
         ${categorySeparator}
     </category>
     `;
