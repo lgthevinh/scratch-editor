@@ -5,7 +5,7 @@ import {PLATFORM} from '../lib/platform.js';
 import log from '../lib/log.js';
 
 const onClickLogo = () => {
-    window.location = 'https://scratch.mit.edu';
+    window.open('https://github.com/ThingEdu', '_blank');
 };
 
 const handleTelemetryModalCancel = () => {

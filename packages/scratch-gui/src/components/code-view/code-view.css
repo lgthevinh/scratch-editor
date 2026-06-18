@@ -6,16 +6,13 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    background-color: $ui-white;
     border-radius: $space;
     border: 1px solid $ui-black-transparent;
     overflow: hidden;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 .header {
     height: $stage-menu-height;
-    background-color: $ui-tertiary;
     color: $text-primary;
     font-size: 0.75rem;
     font-weight: 600;
@@ -26,17 +23,115 @@
     flex-shrink: 0;
     user-select: none;
     border-radius: $space $space 0 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 .content {
     flex: 1;
     overflow: auto;
-    margin: 0;
-    padding: $space;
-    font-family: "Courier New", Courier, monospace;
-    font-size: 1rem;
-    line-height: 1.6;
-    color: $text-primary;
-    white-space: pre;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    background: #ffffff;
     min-height: 0;
+    min-width: 0;
+}
+
+.gutter {
+    flex: 0 0 auto;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #f5f5f5;
+    border-right: 1px solid #e0e0e0;
+    padding: 1rem 0.625rem;
+    text-align: right;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #aaaaaa;
+    user-select: none;
+    min-width: 2.5rem;
+}
+
+.line-number {
+    display: block;
+    line-height: 1.6;
+}
+
+.pre {
+    flex: 1 0 auto;
+    margin: 0;
+    padding: 1rem;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #333333;
+    white-space: pre;
+    overflow: visible;
+    background: transparent;
+}
+
+.pre code {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+}
+
+/* ── Syntax token colors (light theme) ── */
+
+.content :global(.token.comment),
+.content :global(.token.prolog),
+.content :global(.token.doctype),
+.content :global(.token.cdata) {
+    color: #6e8a6e;
+    font-style: italic;
+}
+
+.content :global(.token.string),
+.content :global(.token.char),
+.content :global(.token.attr-value),
+.content :global(.token.template-string) {
+    color: #b5390a;
+}
+
+.content :global(.token.number),
+.content :global(.token.boolean) {
+    color: #0070c1;
+}
+
+.content :global(.token.keyword) {
+    color: #0000ff;
+}
+
+.content :global(.token.operator) {
+    color: #333333;
+}
+
+.content :global(.token.function) {
+    color: #795e26;
+}
+
+.content :global(.token.class-name) {
+    color: #267f99;
+}
+
+.content :global(.token.constant),
+.content :global(.token.builtin) {
+    color: #0070c1;
+}
+
+.content :global(.token.punctuation) {
+    color: #333333;
+}
+
+.content :global(.token.directive-hash),
+.content :global(.token.macro),
+.content :global(.token.property) {
+    color: #af00db;
+}
+
+.content :global(.token.variable) {
+    color: #001080;
 }

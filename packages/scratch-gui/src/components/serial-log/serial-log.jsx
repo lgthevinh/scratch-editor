@@ -5,7 +5,7 @@ import styles from './serial-log.css';
 
 const MIN_HEIGHT = 48;
 const MAX_HEIGHT = 500;
-const DEFAULT_HEIGHT = 192;
+const DEFAULT_HEIGHT = 280;
 
 const messages = defineMessages({
     clearMonitor: {
@@ -13,10 +13,10 @@ const messages = defineMessages({
         defaultMessage: 'Clear monitor',
         description: 'Accessible label for the button that clears all messages from the serial monitor'
     },
-    clear: {
-        id: 'gui.serialLog.clear',
-        defaultMessage: 'Clear',
-        description: 'Button label for clearing all messages from the serial monitor'
+    monitor: {
+        id: 'gui.serialLog.monitor',
+        defaultMessage: 'Monitor',
+        description: 'Title for the serial monitor panel'
     },
     collapseMonitor: {
         id: 'gui.serialLog.collapseMonitor',
@@ -27,11 +27,6 @@ const messages = defineMessages({
         id: 'gui.serialLog.expandMonitor',
         defaultMessage: 'Expand monitor',
         description: 'Accessible label for the button that expands the serial monitor'
-    },
-    monitor: {
-        id: 'gui.serialLog.monitor',
-        defaultMessage: 'Monitor',
-        description: 'Title for the serial monitor panel'
     },
     send: {
         id: 'gui.serialLog.send',
@@ -123,7 +118,13 @@ const SerialLog = ({logs = [], onClear, onSend, prompt}) => {
                                 onClick={onClear}
                                 aria-label={intl.formatMessage(messages.clearMonitor)}
                             >
-                                <FormattedMessage {...messages.clear} />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6l-1 14H6L5 6" />
+                                    <path d="M10 11v6" />
+                                    <path d="M14 11v6" />
+                                    <path d="M9 6V4h6v2" />
+                                </svg>
                             </button>
                         )}
                         <button

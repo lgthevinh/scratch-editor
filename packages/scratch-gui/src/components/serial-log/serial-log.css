@@ -51,7 +51,7 @@
 
 .header {
     height: $stage-menu-height;
-    background-color: $ui-tertiary;
+    background-color: transparent;
     color: $text-primary;
     font-size: 0.75rem;
     font-weight: 600;
@@ -72,20 +72,18 @@
 }
 
 .clear-button {
-    background: $ui-white-transparent;
-    border: 1px solid $ui-black-transparent;
-    border-radius: calc($space / 2);
+    background: none;
+    border: none;
+    padding: calc($space / 2);
     color: $text-primary;
     cursor: pointer;
-    font-family: inherit;
-    font-size: 0.75rem;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    border-radius: calc($space / 2);
     line-height: 1;
-    padding: calc($space / 2) $space;
 }
 
 .clear-button:hover:not(:disabled) {
-    border-color: $motion-primary;
     color: $motion-primary;
 }
 
@@ -115,7 +113,7 @@
     overflow-y: auto;
     padding: $space;
     font-family: "Courier New", Courier, monospace;
-    font-size: 1rem;
+    font-size: 0.75rem;
     line-height: 1.6;
     color: $text-primary;
     min-height: 0;
@@ -150,7 +148,7 @@
     border: 1px solid $ui-black-transparent;
     border-radius: calc($space / 2);
     padding: calc($space * 0.75) $space;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-family: inherit;
     color: $text-primary;
     outline: none;
@@ -167,7 +165,7 @@
     border: none;
     border-radius: calc($space / 2);
     padding: calc($space * 0.75) calc($space * 1.5);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;

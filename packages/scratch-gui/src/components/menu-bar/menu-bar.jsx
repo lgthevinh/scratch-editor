@@ -65,12 +65,7 @@ import remixIcon from './icon--remix.svg';
 import dropdownCaret from './dropdown-caret.svg';
 import debugIcon from '../debug-modal/icons/icon--debug.svg';
 
-import scratchLogo from './scratch-logo.svg';
-import scratchLogoAndroid from './scratch-logo-android.svg';
-import ninetiesLogo from './nineties_logo.svg';
-import catLogo from './cat_logo.svg';
-import prehistoricLogo from './prehistoric-logo.svg';
-import oldtimeyLogo from './oldtimey-logo.svg';
+import ThingBlockLogo from './thingblock-logo.jsx';
 
 import sharedMessages from '../../lib/shared-messages';
 
@@ -100,7 +95,6 @@ const ariaMessages = defineMessages({
     }
 });
 
-const getScratchLogo = platform => (platform === PLATFORM.ANDROID ? scratchLogoAndroid : scratchLogo);
 
 class MenuBar extends React.Component {
     constructor (props) {
@@ -171,19 +165,6 @@ class MenuBar extends React.Component {
             } else {
                 document.documentElement.style.filter = '';
                 document.documentElement.style.height = '';
-            }
-
-            // Change logo for modes
-            if (mode === '1990') {
-                document.getElementById('logo_img').src = ninetiesLogo;
-            } else if (mode === '2020') {
-                document.getElementById('logo_img').src = catLogo;
-            } else if (mode === '1920') {
-                document.getElementById('logo_img').src = oldtimeyLogo;
-            } else if (mode === '220022BC') {
-                document.getElementById('logo_img').src = prehistoricLogo;
-            } else {
-                document.getElementById('logo_img').src = getScratchLogo(this.props.platform);
             }
 
             this.props.onSetTimeTravelMode(mode);
@@ -280,14 +261,10 @@ class MenuBar extends React.Component {
                             className={classNames(styles.menuBarItem)}
                             onClick={this.props.onClickLogo}
                         >
-                            <img
-                                id="logo_img"
-                                alt="Scratch"
+                            <ThingBlockLogo
                                 className={classNames(styles.scratchLogo, {
                                     [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
                                 })}
-                                draggable={false}
-                                src={getScratchLogo(this.props.platform)}
                             />
                         </button>
                         {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) &&
@@ -622,7 +599,6 @@ MenuBar.propTypes = {
 };
 
 MenuBar.defaultProps = {
-    logo: scratchLogo,
     onShare: () => {}
 };
 

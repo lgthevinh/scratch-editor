@@ -148,6 +148,7 @@ const GUIComponent = props => {
         onUpdateProjectThumbnail,
         showNewFeatureCallouts,
         stageSizeMode,
+        selectedBoardId,
         telemetryModalVisible,
         colorMode,
         theme,
@@ -182,9 +183,30 @@ const GUIComponent = props => {
         }
     }, [theme, hasActiveMembership, props.setTheme]);
 
-    const [devicePanelWidth, setDevicePanelWidth] = useState(420);
+    const [devicePanelWidth, setDevicePanelWidth] = useState(540);
+    const [generatedCode, setGeneratedCode] = useState('');
     const [serialLogs, setSerialLogs] = useState([]);
     const [monitorPrompt, setMonitorPrompt] = useState(null);
+    const codeLanguage = selectedBoardId ? 'arduino-cpp' : 'js';
+    const prismLanguage = selectedBoardId ? 'arduino' : 'javascript';
+
+    const updateGeneratedCode = useCallback(() => {
+        if (typeof vm.generateCode !== 'function') {
+            setGeneratedCode('');
+            return;
+        }
+        setGeneratedCode(vm.generateCode(codeLanguage).code);
+    }, [codeLanguage, vm]);
+
+    useEffect(() => {
+        updateGeneratedCode();
+        vm.on('PROJECT_CHANGED', updateGeneratedCode);
+        vm.on('targetsUpdate', updateGeneratedCode);
+        return () => {
+            vm.removeListener('PROJECT_CHANGED', updateGeneratedCode);
+            vm.removeListener('targetsUpdate', updateGeneratedCode);
+        };
+    }, [updateGeneratedCode, vm]);
 
     useEffect(() => {
         const handlePrint = message => {
@@ -451,7 +473,7 @@ const GUIComponent = props => {
                             style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
                             <DeviceControls />
-                            <CodeView code={null} />
+                            <CodeView code={generatedCode} language={prismLanguage} />
                             <SerialLog
                                 logs={serialLogs}
                                 onClear={handleClearMonitor}
@@ -528,6 +550,7 @@ GUIComponent.propTypes = {
     platform: PropTypes.oneOf(Object.keys(PLATFORM)),
     renderLogin: PropTypes.func,
     setTheme: PropTypes.func.isRequired,
+    selectedBoardId: PropTypes.string,
     showNewFeatureCallouts: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     setPlatform: PropTypes.func,
