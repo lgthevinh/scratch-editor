@@ -13,6 +13,7 @@ import Renderer from '@scratch/scratch-render';
 import Blocks from '../../containers/blocks.jsx';
 import CodeView from '../code-view/code-view.jsx';
 import SerialLog from '../serial-log/serial-log.jsx';
+import DeviceControls from '../../containers/device-controls.jsx';
 import Loader from '../loader/loader.jsx';
 import Box from '../box/box.jsx';
 import MenuBar from '../menu-bar/menu-bar.jsx';
@@ -66,8 +67,8 @@ const ariaMessages = defineMessages({
     },
     stageAndTarget: {
         id: 'gui.aria.stageAndTarget',
-        defaultMessage: 'Stage and target',
-        description: 'accessibility label for stage and target area'
+        defaultMessage: 'Device panel',
+        description: 'accessibility label for the device panel'
     },
     stage: {
         id: 'gui.aria.stage',
@@ -196,7 +197,7 @@ const GUIComponent = props => {
     }, [vm]);
 
     useEffect(() => {
-        const onPrompt = q => setMonitorPrompt(q != null ? q : null);
+        const onPrompt = q => setMonitorPrompt(q === null || typeof q === 'undefined' ? null : q);
         vm.runtime.on('QUESTION', onPrompt);
         return () => {
             vm.runtime.off('QUESTION', onPrompt);
@@ -449,6 +450,7 @@ const GUIComponent = props => {
                             element="aside"
                             style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
+                            <DeviceControls />
                             <CodeView code={null} />
                             <SerialLog
                                 logs={serialLogs}

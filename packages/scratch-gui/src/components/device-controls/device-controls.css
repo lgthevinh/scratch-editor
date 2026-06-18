@@ -1,0 +1,58 @@
+@import "../../css/units.css";
+@import "../../css/colors.css";
+
+/* Fixed-height row matching the tab strip on the left, so the Generated Code
+   panel below aligns with the canvas top. The button is vertically centered,
+   keeping it clear of the menu bar above. */
+.controls-header {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: $stage-menu-height;
+}
+
+.primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    gap: $space;
+    min-width: 7rem;
+    height: 2.25rem;
+    border: 1px solid transparent;
+    border-radius: $space;
+    background-color: $ui-green-2;
+    color: $ui-white;
+    cursor: pointer;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0 calc($space * 2.5);
+}
+
+.primary-button:hover {
+    background-color: $ui-green;
+}
+
+.upload-button {
+    background-color: $ui-green-2;
+}
+
+.upload-button:hover {
+    background-color: $ui-green;
+}
+
+.stop-button {
+    background-color: $red-primary;
+}
+
+.stop-button:hover {
+    background-color: $red-tertiary;
+}
+
+.primary-icon {
+    flex-shrink: 0;
+    /* Render the flag/stop glyph white to sit on the solid button background. */
+    filter: brightness(0) invert(1);
+}

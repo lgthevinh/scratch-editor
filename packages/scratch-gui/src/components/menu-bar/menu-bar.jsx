@@ -22,7 +22,6 @@ import AuthorInfo from './author-info.jsx';
 import LoginDropdown from './login-dropdown.jsx';
 import MenuBarHOC from '../../containers/menu-bar-hoc.jsx';
 import ConnectThingbotButton from './connect-thingbot-button.jsx';
-import RunControlsContainer from '../../containers/run-controls.jsx';
 import SettingsMenu from './settings-menu.jsx';
 import FileMenu from './file-menu.jsx';
 import EditMenu from './edit-menu.jsx';
@@ -439,11 +438,6 @@ class MenuBar extends React.Component {
                             />
                         </div>
                     )}
-                    <RunControlsContainer
-                        buttonClassName={classNames(styles.menuBarItem, styles.hoverable, styles.noOffset)}
-                        iconClassName={styles.helpIcon}
-                        labelClassName={styles.collapsibleLabel}
-                    />
                     {this.props.canSave && (
                         <SaveStatus className={classNames(styles.hoverable, styles.menuBarItem)} />
                     )}

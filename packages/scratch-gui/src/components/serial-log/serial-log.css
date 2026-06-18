@@ -5,7 +5,8 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    background-color: $ui-secondary;
+    margin-top: $space;
+    background-color: $ui-white;
     border-radius: $space;
     border: 1px solid $ui-black-transparent;
     overflow: visible;
@@ -114,7 +115,7 @@
     overflow-y: auto;
     padding: $space;
     font-family: "Courier New", Courier, monospace;
-    font-size: 0.8125rem;
+    font-size: 1rem;
     line-height: 1.6;
     color: $text-primary;
     min-height: 0;

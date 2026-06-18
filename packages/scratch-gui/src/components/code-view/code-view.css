@@ -6,7 +6,7 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    background-color: $ui-secondary;
+    background-color: $ui-white;
     border-radius: $space;
     border: 1px solid $ui-black-transparent;
     overflow: hidden;
@@ -34,7 +34,7 @@
     margin: 0;
     padding: $space;
     font-family: "Courier New", Courier, monospace;
-    font-size: 0.8125rem;
+    font-size: 1rem;
     line-height: 1.6;
     color: $text-primary;
     white-space: pre;

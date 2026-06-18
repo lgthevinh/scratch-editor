@@ -223,8 +223,10 @@
     flex: 0 0 420px;
     min-height: 0;
     overflow: hidden;
-    padding: $space;
-    gap: $space;
+    /* No top padding so the controls row (a $stage-menu-height strip) matches
+       the tab strip on the left, aligning the Generated Code panel with the
+       canvas top. The gap below the code view is added on the monitor itself. */
+    padding: 0 $space $space;
 }
 
 
