@@ -30,21 +30,19 @@ const ensureVariable = (ctx, block) => {
     return name;
 };
 
-// Warns (without blocking) when a value's kind doesn't match the variable's type, pointing the
-// learner at the convert block that would fix it.
-const checkAssignment = (ctx, block, name, type) => {
-    const valueIsString = ctx.expressionKind(ctx.getInputBlockId(block, 'VALUE')) === 'string';
-    const variableIsString = type === 'string';
-    if (variableIsString !== valueIsString) {
-        const convert = variableIsString ? 'to text' : 'to number';
-        ctx.addDiagnostic(
-            'warning',
-            `Variable '${name}' holds ${variableIsString ? 'text' : 'a number'} but is being ` +
-                `assigned ${valueIsString ? 'text' : 'a number'}; wrap the value in the ` +
-                `'${convert}' block`,
-            block
-        );
+// Generate a `set` value that matches the variable's declared type. The set block's literal
+// shadow is a text field, which the `text` generator quotes; for a numeric variable that would
+// assign a string, so unwrap the literal to a bare number instead. Set/change blocks enforce that
+// the entered value is valid for the type, so the unwrapped literal is already numeric.
+const typedSetValue = (ctx, block, type) => {
+    if (type !== 'string') {
+        const valueBlock = ctx.getBlock(ctx.getInputBlockId(block, 'VALUE'));
+        if (valueBlock && valueBlock.opcode === 'text') {
+            const raw = String(field(ctx, valueBlock, 'TEXT', '0')).trim();
+            return raw !== '' && Number.isFinite(Number(raw)) ? raw : '0';
+        }
     }
+    return input(ctx, block, 'VALUE', type === 'string' ? '""' : '0');
 };
 
 // Lists keep the JavaScript-array preview (C++ array support is a follow-up).
@@ -270,9 +268,7 @@ const registerData = registry => {
     register(registry, 'data_variable', expression((ctx, block) => ensureVariable(ctx, block)));
     register(registry, 'data_setvariableto', statement((ctx, block, indentLevel) => {
         const variable = ensureVariable(ctx, block);
-        const type = ctx.variableType(variable);
-        checkAssignment(ctx, block, variable, type);
-        const value = input(ctx, block, 'VALUE', type === 'string' ? '""' : '0');
+        const value = typedSetValue(ctx, block, ctx.variableType(variable));
         return line(ctx, indentLevel, `${variable} = ${value};`);
     }));
     register(registry, 'data_changevariableby', statement((ctx, block, indentLevel) => {

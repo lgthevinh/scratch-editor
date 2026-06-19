@@ -283,7 +283,7 @@ test('generateCode covers data, sensing, operator, and procedure opcodes', t => 
     t.end();
 });
 
-test('generateCode infers int/float/String variable types and warns on mismatched assignment', t => {
+test('generateCode declares each variable using its explicit dataType, defaulting to int', t => {
     const blocks = createBlockContainer();
     const setBlock = (id, next, varName, valueId) => blocks.createBlock({
         id,
@@ -301,7 +301,13 @@ test('generateCode infers int/float/String variable types and warns on mismatche
     addNumberBlock(blocks, 'ratioVal', '3.5');
     addTextBlock(blocks, 'nameVal', 'Ada');
 
-    const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
+    // `count` carries no explicit type and defaults to int; the others use their dialog type.
+    const variables = {
+        'ratio id': {name: 'ratio', dataType: 'float'},
+        'name id': {name: 'name', dataType: 'string'}
+    };
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
     t.same(arduinoCpp.diagnostics, []);
     t.match(arduinoCpp.code, 'int count = 0;');
     t.match(arduinoCpp.code, 'float ratio = 0;');
@@ -310,98 +316,67 @@ test('generateCode infers int/float/String variable types and warns on mismatche
     t.end();
 });
 
-test('generateCode lets an explicit variable dataType override the inferred type', t => {
+test('generateCode assigns a bare number when setting a numeric variable from a text literal', t => {
+    // The set block's literal shadow is a text field; a numeric variable must still get a number.
     const blocks = createBlockContainer();
-    const setBlock = (id, next, varName, valueId, topLevel) => blocks.createBlock({
-        id,
+    blocks.createBlock({
+        id: 'setX',
         opcode: 'data_setvariableto',
-        next,
+        next: null,
         parent: null,
-        inputs: {VALUE: {name: 'VALUE', block: valueId, shadow: valueId}},
-        fields: {VARIABLE: {id: `${varName} id`, name: 'VARIABLE', value: varName}},
-        topLevel
+        inputs: {VALUE: {name: 'VALUE', block: 'val', shadow: 'val'}},
+        fields: {VARIABLE: {id: 'x id', name: 'VARIABLE', value: 'x'}},
+        topLevel: true
     });
-    // `temp` is assigned an integer (would infer `int`) but is declared `float` explicitly.
-    setBlock('setTemp', 'setNote', 'temp', 'tempVal', true);
-    setBlock('setNote', null, 'note', 'noteVal', false);
-    addNumberBlock(blocks, 'tempVal', 5);
-    addTextBlock(blocks, 'noteVal', 'ok');
+    addTextBlock(blocks, 'val', '42');
 
-    const variables = {
-        'temp id': {name: 'temp', dataType: 'float'},
-        'note id': {name: 'note', dataType: 'string'}
-    };
-
-    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
     t.same(arduinoCpp.diagnostics, []);
-    t.match(arduinoCpp.code, 'float temp = 0;');
-    t.match(arduinoCpp.code, 'String note = "";');
-    t.notMatch(arduinoCpp.code, 'int temp = 0;');
-
-    // Without an explicit dataType the value-based inference still applies (`temp` -> int).
-    const inferred = generateCode({blocks}, Language.ARDUINO_CPP);
-    t.match(inferred.code, 'int temp = 0;');
+    t.match(arduinoCpp.code, 'x = 42;');
+    t.notMatch(arduinoCpp.code, 'x = "42";');
     t.end();
 });
 
-test('generateCode warns when assigning text to a number variable and a convert block clears it', t => {
-    const mismatchTarget = () => {
-        const blocks = createBlockContainer();
-        blocks.createBlock({
-            id: 'setScore',
-            opcode: 'data_setvariableto',
-            next: 'setLabel',
-            parent: null,
-            inputs: {VALUE: {name: 'VALUE', block: 'num', shadow: 'num'}},
-            fields: {VARIABLE: {id: 'score id', name: 'VARIABLE', value: 'score'}},
-            topLevel: true
-        });
-        addNumberBlock(blocks, 'num', 1);
-        // `label` is String (set to text), but here it is assigned a raw number -> mismatch.
-        blocks.createBlock({
-            id: 'setLabel',
-            opcode: 'data_setvariableto',
-            next: null,
-            parent: 'setScore',
-            inputs: {VALUE: {name: 'VALUE', block: 'count', shadow: 'count'}},
-            fields: {VARIABLE: {id: 'label id', name: 'VARIABLE', value: 'label'}},
-            topLevel: false
-        });
-        blocks.createBlock({
-            id: 'seedLabel',
-            opcode: 'data_setvariableto',
-            next: null,
-            parent: null,
-            inputs: {VALUE: {name: 'VALUE', block: 'word', shadow: 'word'}},
-            fields: {VARIABLE: {id: 'label id', name: 'VARIABLE', value: 'label'}},
-            topLevel: true
-        });
-        addTextBlock(blocks, 'word', 'hi');
-        addNumberBlock(blocks, 'count', 7);
-        return blocks;
-    };
-
-    const blocks = mismatchTarget();
-    const result = generateCode({blocks}, Language.ARDUINO_CPP);
-    t.equal(result.diagnostics.length, 1);
-    t.match(result.diagnostics[0], {severity: 'warning', blockId: 'setLabel'});
-    t.match(result.diagnostics[0].message, 'to text');
-
-    // Wrapping the number in a `to text` convert block makes the kinds agree -> no diagnostic.
-    const fixed = mismatchTarget();
-    fixed.createBlock({
-        id: 'convert',
-        opcode: 'operator_totext',
+test('generateCode keeps quotes when setting a string variable from a text literal', t => {
+    const blocks = createBlockContainer();
+    blocks.createBlock({
+        id: 'setName',
+        opcode: 'data_setvariableto',
         next: null,
-        parent: 'setLabel',
-        inputs: {VALUE: {name: 'VALUE', block: 'count', shadow: 'count'}},
-        fields: {},
-        topLevel: false
+        parent: null,
+        inputs: {VALUE: {name: 'VALUE', block: 'val', shadow: 'val'}},
+        fields: {VARIABLE: {id: 'name id', name: 'VARIABLE', value: 'name'}},
+        topLevel: true
     });
-    fixed.getBlock('setLabel').inputs.VALUE = {name: 'VALUE', block: 'convert', shadow: 'count'};
-    const fixedResult = generateCode({blocks: fixed}, Language.ARDUINO_CPP);
-    t.same(fixedResult.diagnostics, []);
-    t.match(fixedResult.code, 'label = String(7);');
+    addTextBlock(blocks, 'val', 'hi');
+    const variables = {'name id': {name: 'name', dataType: 'string'}};
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'name = "hi";');
+    t.end();
+});
+
+test('generateCode reads the explicit type of a global (stage) variable', t => {
+    // Global variables live on the stage, not the editing target; codegen must still see the type.
+    const blocks = createBlockContainer();
+    blocks.createBlock({
+        id: 'setName',
+        opcode: 'data_setvariableto',
+        next: null,
+        parent: null,
+        inputs: {VALUE: {name: 'VALUE', block: 'val', shadow: 'val'}},
+        fields: {VARIABLE: {id: 'name id', name: 'VARIABLE', value: 'name'}},
+        topLevel: true
+    });
+    addTextBlock(blocks, 'val', 'hi');
+    const stage = {variables: {'name id': {name: 'name', dataType: 'string'}}};
+    const target = {blocks, variables: {}, runtime: {getTargetForStage: () => stage}};
+
+    const arduinoCpp = generateCode(target, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'String name = "";');
+    t.match(arduinoCpp.code, 'name = "hi";');
     t.end();
 });
 
@@ -477,57 +452,7 @@ test('generateCode emits list operations', t => {
     t.end();
 });
 
-// `set b to (a)`, where `a` carries an explicit dataType. Used to check that explicit types seed
-// inference and flow through `data_variable` references into dependent variables.
-const createVariableCopyTarget = () => {
-    const blocks = createBlockContainer();
-    blocks.createBlock({
-        id: 'setB',
-        opcode: 'data_setvariableto',
-        next: null,
-        parent: null,
-        inputs: {VALUE: {name: 'VALUE', block: 'aRef', shadow: null}},
-        fields: {VARIABLE: {id: 'b id', name: 'VARIABLE', value: 'b'}},
-        topLevel: true
-    });
-    blocks.createBlock({
-        id: 'aRef',
-        opcode: 'data_variable',
-        next: null,
-        parent: 'setB',
-        inputs: {},
-        fields: {VARIABLE: {id: 'a id', name: 'VARIABLE', value: 'a'}},
-        topLevel: false
-    });
-    return {blocks};
-};
-
-test('an explicit String type propagates through a variable reference to dependent variables', t => {
-    const {blocks} = createVariableCopyTarget();
-    const variables = {'a id': {name: 'a', dataType: 'string'}};
-
-    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
-    t.same(arduinoCpp.diagnostics, []);
-    t.match(arduinoCpp.code, 'String a = "";');
-    t.match(arduinoCpp.code, 'String b = "";');
-    t.match(arduinoCpp.code, 'b = a;');
-    t.notMatch(arduinoCpp.code, 'int b = 0;');
-    t.end();
-});
-
-test('an explicit float type propagates precision through a variable reference', t => {
-    const {blocks} = createVariableCopyTarget();
-    const variables = {'a id': {name: 'a', dataType: 'float'}};
-
-    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
-    t.same(arduinoCpp.diagnostics, []);
-    t.match(arduinoCpp.code, 'float a = 0;');
-    t.match(arduinoCpp.code, 'float b = 0;');
-    t.notMatch(arduinoCpp.code, 'int b = 0;');
-    t.end();
-});
-
-test('codegen ignores an unrecognized explicit dataType and falls back to inference', t => {
+const createSetVariableTarget = varName => {
     const blocks = createBlockContainer();
     blocks.createBlock({
         id: 'setX',
@@ -535,10 +460,27 @@ test('codegen ignores an unrecognized explicit dataType and falls back to infere
         next: null,
         parent: null,
         inputs: {VALUE: {name: 'VALUE', block: 'val', shadow: 'val'}},
-        fields: {VARIABLE: {id: 'x id', name: 'VARIABLE', value: 'x'}},
+        fields: {VARIABLE: {id: `${varName} id`, name: 'VARIABLE', value: varName}},
         topLevel: true
     });
     addNumberBlock(blocks, 'val', 5);
+    return blocks;
+};
+
+test('an explicit dataType drives the declaration regardless of the assigned value', t => {
+    // `x` is assigned an integer but declared float; set/change blocks enforce values match.
+    const blocks = createSetVariableTarget('x');
+    const variables = {'x id': {name: 'x', dataType: 'float'}};
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'float x = 0;');
+    t.notMatch(arduinoCpp.code, 'int x = 0;');
+    t.end();
+});
+
+test('codegen ignores an unrecognized explicit dataType and defaults to int', t => {
+    const blocks = createSetVariableTarget('x');
     // A crafted/corrupt project could carry an arbitrary type string; it must never reach output.
     const variables = {'x id': {name: 'x', dataType: 'int x = 1; int'}};
 

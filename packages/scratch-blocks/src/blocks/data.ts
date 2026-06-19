@@ -62,7 +62,7 @@ Blockly.Blocks.data_setvariableto = {
           name: 'VALUE',
         },
       ],
-      extensions: ['colours_data', 'shape_statement'],
+      extensions: ['colours_data', 'shape_statement', 'enforce_variable_value_type'],
     })
   },
 }
@@ -86,7 +86,7 @@ Blockly.Blocks.data_changevariableby = {
           name: 'VALUE',
         },
       ],
-      extensions: ['colours_data', 'shape_statement'],
+      extensions: ['colours_data', 'shape_statement', 'enforce_variable_value_type'],
     })
   },
 }
@@ -641,3 +641,67 @@ const DELETE_OPTION_CALLBACK_FACTORY = function (block: Blockly.Block, fieldName
     Blockly.Variables.deleteVariable(variable.getWorkspace(), variable, block)
   }
 }
+
+/**
+ * Sanitize a literal value so it matches a variable's explicit data type. Number variables only
+ * keep their numeric form; string variables accept any text.
+ * @param value The current literal value.
+ * @param dataType The variable's data type ('int' | 'float' | 'string').
+ * @returns The sanitized value.
+ */
+export const sanitizeValueForType = function (value: string, dataType: string): string {
+  if (dataType === 'string') return value
+  if (dataType === 'float') {
+    // Digits with an optional leading minus and at most one decimal point.
+    const cleaned = value.replace(/[^0-9.-]/g, '').replace(/(?!^)-/g, '')
+    const firstDot = cleaned.indexOf('.')
+    if (firstDot === -1) return cleaned
+    return cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '')
+  }
+  // 'int' (default): digits with an optional leading minus.
+  return value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
+}
+
+/**
+ * Resolve the explicit data type of the variable selected on a set/change block, defaulting to
+ * 'int' when the variable carries no explicit type.
+ * @param block The set/change variable block.
+ * @returns The data type ('int' | 'float' | 'string').
+ */
+const selectedVariableDataType = function (block: Blockly.Block): string {
+  const variable = (block.getField('VARIABLE') as ScratchFieldVariable | null)?.getVariable() as
+    | ScratchVariableModel
+    | null
+  const dataType = variable?.dataType
+  return dataType === 'float' || dataType === 'string' ? dataType : 'int'
+}
+
+/**
+ * Extension for the set/change variable blocks: keep the literal VALUE input consistent with the
+ * selected variable's data type. Number variables reject non-numeric input; string variables
+ * accept anything. Re-runs when the value or the selected variable changes.
+ */
+const ENFORCE_VARIABLE_VALUE_TYPE = function (this: Blockly.Block) {
+  this.setOnChange(function (this: Blockly.Block, event: Blockly.Events.Abstract) {
+    if (this.isInFlyout || this.workspace.isFlyout) return
+    if (
+      event.type !== (Blockly.Events.BLOCK_CHANGE as string) &&
+      event.type !== (Blockly.Events.BLOCK_MOVE as string)
+    ) {
+      return
+    }
+
+    const valueBlock = this.getInputTargetBlock('VALUE')
+    if (!valueBlock?.isShadow()) return
+    const field = valueBlock.getField('TEXT') ?? valueBlock.getField('NUM')
+    if (!field) return
+
+    const current = String(field.getValue() ?? '')
+    const sanitized = sanitizeValueForType(current, selectedVariableDataType(this))
+    if (sanitized !== current) {
+      field.setValue(sanitized)
+    }
+  })
+}
+
+Blockly.Extensions.register('enforce_variable_value_type', ENFORCE_VARIABLE_VALUE_TYPE)

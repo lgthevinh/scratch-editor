@@ -1,13 +1,12 @@
 const Blocks = require('../engine/blocks');
 const Variable = require('../engine/variable');
 const {sanitizeIdentifier} = require('./code-generator-provider');
-const {classifyKind, inferVariableTypes} = require('./variable-types');
 
 const DEFAULT_EXPRESSION = '0';
 
-// Build a map of variable name -> explicit value type for variables that carry a valid one.
-// Keyed by the sanitized identifier so it matches the names code generators emit. Unrecognized
-// types are dropped (falling back to inference) so codegen never emits an arbitrary type string.
+// Build a map of variable name -> explicit value type. Keyed by the sanitized identifier so it
+// matches the names code generators emit. Unrecognized types are dropped (the variable then
+// defaults to 'int') so codegen never emits an arbitrary type string.
 const explicitVariableTypes = variables => {
     const types = Object.create(null);
     if (!variables) return types;
@@ -25,9 +24,9 @@ class CodeGenerationContext {
         this.blockContainer = blockContainer;
         this.registry = registry;
         this.language = language;
-        // Explicit types chosen in the variable dialog seed inference: they are locked (never
-        // overwritten by assignments) and propagate through `data_variable` references.
-        this.variableTypes = inferVariableTypes(blockContainer, explicitVariableTypes(variables));
+        // Variable types come straight from the explicit type chosen in the variable dialog;
+        // set/change blocks enforce that values match, so no inference is needed.
+        this.variableTypes = explicitVariableTypes(variables);
         this.diagnostics = [];
         this.helpers = [];
         this.includes = [];
@@ -76,13 +75,8 @@ class CodeGenerationContext {
         return blockId ? this.blockContainer.getBlock(blockId) : null;
     }
 
-    // Inferred kind ('int' | 'float' | 'string') of the value produced by a reporter block.
-    expressionKind (blockId) {
-        return classifyKind(this.blockContainer, this.variableTypes, blockId);
-    }
-
-    // Inferred type of a scalar variable by sanitized name. Variables that are never `set`
-    // default to 'int'.
+    // Explicit type ('int' | 'float' | 'string') of a scalar variable by sanitized name.
+    // Variables without an explicit type default to 'int'.
     variableType (name) {
         return this.variableTypes[name] || 'int';
     }
