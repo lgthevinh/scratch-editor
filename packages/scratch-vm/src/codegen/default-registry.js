@@ -1,15 +1,16 @@
 const GeneratorRegistry = require('./generator-registry');
-const Language = require('./language');
+const {
+    Language,
+    expression,
+    field,
+    input,
+    line,
+    quote,
+    statement
+} = require('./code-generator-provider');
 const ThingBotTelemetrixExtension = require('../extensions/scratch3_thingbot_telemetrix');
 
 const LANGUAGES = [Language.JAVASCRIPT, Language.ARDUINO_CPP];
-
-const statement = generate => ({type: 'statement', generate});
-const expression = generate => ({type: 'expression', generate});
-
-const quote = value => JSON.stringify(String(value));
-const input = (ctx, block, name, fallback) => ctx.generateInput(block, name, fallback);
-const field = (ctx, block, name, fallback) => ctx.getFieldValue(block, name, fallback);
 
 const sanitizeIdentifier = value => {
     const identifier = String(value || 'value')
@@ -28,7 +29,26 @@ const procedureName = block => {
     return sanitizeIdentifier(mutation.proccode || 'custom_block');
 };
 
-const line = (ctx, indentLevel, code) => `${ctx.indent(indentLevel)}${code}`;
+// JavaScript output declares each scratch variable/list once as a hoisted helper so that
+// repeated `set`/`change`/`add` blocks become plain assignments instead of re-declarations.
+// Arduino C++ output is a non-compilable preview and keeps its inline declarations.
+const declareJsVariable = (ctx, name, init) => {
+    if (ctx.language === Language.JAVASCRIPT) {
+        ctx.addHelper(`let ${name} = ${init};`);
+    }
+};
+
+const scalarName = (ctx, block) => {
+    const variable = variableName(ctx, block, 'VARIABLE', 'variable');
+    declareJsVariable(ctx, variable, '0');
+    return variable;
+};
+
+const listName = (ctx, block) => {
+    const list = variableName(ctx, block, 'LIST', 'list');
+    declareJsVariable(ctx, list, '[]');
+    return list;
+};
 
 const emptyBody = (ctx, indentLevel) => line(ctx, indentLevel, '/* no blocks */');
 
@@ -369,15 +389,15 @@ const registerData = registry => {
     registerBoth(
         registry,
         'data_variable',
-        expression((ctx, block) => variableName(ctx, block, 'VARIABLE', 'variable')),
+        expression((ctx, block) => scalarName(ctx, block)),
         expression((ctx, block) => variableName(ctx, block, 'VARIABLE', 'variable'))
     );
     registerBoth(
         registry,
         'data_setvariableto',
         statement((ctx, block, indentLevel) => {
-            const variable = variableName(ctx, block, 'VARIABLE', 'variable');
-            return line(ctx, indentLevel, `let ${variable} = ${input(ctx, block, 'VALUE', '0')};`);
+            const variable = scalarName(ctx, block);
+            return line(ctx, indentLevel, `${variable} = ${input(ctx, block, 'VALUE', '0')};`);
         }),
         statement((ctx, block, indentLevel) => {
             const variable = variableName(ctx, block, 'VARIABLE', 'variable');
@@ -386,50 +406,50 @@ const registerData = registry => {
     );
     for (const language of LANGUAGES) {
         registry.register('data_changevariableby', language, statement((ctx, block, indentLevel) => {
-            const variable = variableName(ctx, block, 'VARIABLE', 'variable');
+            const variable = scalarName(ctx, block);
             return line(ctx, indentLevel, `${variable} += ${input(ctx, block, 'VALUE', '0')};`);
         }));
         registry.register('data_listcontents', language, expression((ctx, block) => (
-            variableName(ctx, block, 'LIST', 'list')
+            listName(ctx, block)
         )));
         registry.register('data_addtolist', language, statement((ctx, block, indentLevel) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return line(ctx, indentLevel, `${list}.push(${input(ctx, block, 'ITEM', '0')});`);
         }));
         registry.register('data_deleteoflist', language, statement((ctx, block, indentLevel) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return line(ctx, indentLevel, `${list}.splice(${input(ctx, block, 'INDEX', '1')} - 1, 1);`);
         }));
         registry.register('data_deletealloflist', language, statement((ctx, block, indentLevel) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return line(ctx, indentLevel, `${list}.length = 0;`);
         }));
         registry.register('data_insertatlist', language, statement((ctx, block, indentLevel) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             const index = input(ctx, block, 'INDEX', '1');
             const item = input(ctx, block, 'ITEM', '0');
             return line(ctx, indentLevel, `${list}.splice(${index} - 1, 0, ${item});`);
         }));
         registry.register('data_replaceitemoflist', language, statement((ctx, block, indentLevel) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             const index = input(ctx, block, 'INDEX', '1');
             const item = input(ctx, block, 'ITEM', '0');
             return line(ctx, indentLevel, `${list}[${index} - 1] = ${item};`);
         }));
         registry.register('data_itemoflist', language, expression((ctx, block) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return `${list}[${input(ctx, block, 'INDEX', '1')} - 1]`;
         }));
         registry.register('data_itemnumoflist', language, expression((ctx, block) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return `(${list}.indexOf(${input(ctx, block, 'ITEM', '0')}) + 1)`;
         }));
         registry.register('data_lengthoflist', language, expression((ctx, block) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return `${list}.length`;
         }));
         registry.register('data_listcontainsitem', language, expression((ctx, block) => {
-            const list = variableName(ctx, block, 'LIST', 'list');
+            const list = listName(ctx, block);
             return `${list}.includes(${input(ctx, block, 'ITEM', '0')})`;
         }));
         registry.register('data_showvariable', language, noOpStatement('show variable monitor'));

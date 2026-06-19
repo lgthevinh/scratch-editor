@@ -311,9 +311,83 @@ test('generateCode covers data, sensing, operator, procedure, and ThingBot opcod
         blockId: 'thingbot',
         opcode: 'thingbotTelemetrix_digitalWrite'
     }]);
-    t.match(js.code, 'let score = (1 + 2);');
+    t.match(js.code, 'let score = 0;');
+    t.match(js.code, 'score = (1 + 2);');
     t.match(js.code, 'thingbot.digitalWrite(13, "HIGH");');
     t.match(arduinoCpp.code, 'int score = (1 + 2);');
     t.match(arduinoCpp.code, '/* Unsupported block: thingbotTelemetrix_digitalWrite */');
+    t.end();
+});
+
+test('generateCode declares a JavaScript variable once when set multiple times', t => {
+    const blocks = createBlockContainer();
+    blocks.createBlock({
+        id: 'flag',
+        opcode: 'event_whenflagclicked',
+        next: 'set1',
+        parent: null,
+        inputs: {},
+        fields: {},
+        topLevel: true
+    });
+    blocks.createBlock({
+        id: 'set1',
+        opcode: 'data_setvariableto',
+        next: 'set2',
+        parent: 'flag',
+        inputs: {VALUE: {name: 'VALUE', block: 'v1', shadow: 'v1'}},
+        fields: {VARIABLE: {id: 'score id', name: 'VARIABLE', value: 'score'}},
+        topLevel: false
+    });
+    blocks.createBlock({
+        id: 'set2',
+        opcode: 'data_setvariableto',
+        next: null,
+        parent: 'set1',
+        inputs: {VALUE: {name: 'VALUE', block: 'v2', shadow: 'v2'}},
+        fields: {VARIABLE: {id: 'score id', name: 'VARIABLE', value: 'score'}},
+        topLevel: false
+    });
+    addNumberBlock(blocks, 'v1', 1);
+    addNumberBlock(blocks, 'v2', 2);
+
+    const js = generateCode({blocks}, Language.JAVASCRIPT);
+
+    t.same(js.diagnostics, []);
+    const declarations = js.code.match(/let score = 0;/g) || [];
+    t.equal(declarations.length, 1, 'variable is declared exactly once');
+    t.match(js.code, 'score = 1;');
+    t.match(js.code, 'score = 2;');
+    t.notMatch(js.code, 'let score = 1;', 'set does not re-declare the variable');
+    t.end();
+});
+
+test('generateCode initializes a JavaScript list before use', t => {
+    const blocks = createBlockContainer();
+    blocks.createBlock({
+        id: 'flag',
+        opcode: 'event_whenflagclicked',
+        next: 'add',
+        parent: null,
+        inputs: {},
+        fields: {},
+        topLevel: true
+    });
+    blocks.createBlock({
+        id: 'add',
+        opcode: 'data_addtolist',
+        next: null,
+        parent: 'flag',
+        inputs: {ITEM: {name: 'ITEM', block: 'item', shadow: 'item'}},
+        fields: {LIST: {id: 'queue id', name: 'LIST', value: 'queue'}},
+        topLevel: false
+    });
+    addNumberBlock(blocks, 'item', 7);
+
+    const js = generateCode({blocks}, Language.JAVASCRIPT);
+
+    t.same(js.diagnostics, []);
+    t.match(js.code, 'let queue = [];');
+    t.match(js.code, 'queue.push(7);');
     t.end();
 });
