@@ -1,10 +1,10 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {FormattedMessage, defineMessage, useIntl} from 'react-intl';
+import {defineMessage, useIntl} from 'react-intl';
 import {connect} from 'react-redux';
+import VM from '@scratch/scratch-vm';
 
-import {boardMap} from '../../lib/boards';
 import {openBoardLibrary} from '../../reducers/modals';
 
 import menuBarStyles from './menu-bar.css';
@@ -23,14 +23,17 @@ const selectBoardMessage = defineMessage({
 });
 
 const BoardMenu = ({
-    selectedBoardId,
+    selectedDeviceId,
+    vm,
     onOpenBoardLibrary
 }) => {
     const intl = useIntl();
-    const selectedBoardName = selectedBoardId ? boardMap[selectedBoardId]?.name : null;
-    const label = selectedBoardName
-        ? intl.formatMessage(boardMenuMessage, {boardName: selectedBoardName})
-        : intl.formatMessage(selectBoardMessage);
+    const selectedDevice = selectedDeviceId ?
+        vm.getDeviceList().find(device => device.deviceId === selectedDeviceId) :
+        null;
+    const label = selectedDevice ?
+        intl.formatMessage(boardMenuMessage, {boardName: selectedDevice.name}) :
+        intl.formatMessage(selectBoardMessage);
 
     return (
         <button
@@ -45,11 +48,13 @@ const BoardMenu = ({
 
 BoardMenu.propTypes = {
     onOpenBoardLibrary: PropTypes.func.isRequired,
-    selectedBoardId: PropTypes.string
+    selectedDeviceId: PropTypes.string,
+    vm: PropTypes.instanceOf(VM).isRequired
 };
 
 const mapStateToProps = state => ({
-    selectedBoardId: state.scratchGui.board.selectedBoardId
+    selectedDeviceId: state.scratchGui.board.selectedDeviceId,
+    vm: state.scratchGui.vm
 });
 
 const mapDispatchToProps = dispatch => ({

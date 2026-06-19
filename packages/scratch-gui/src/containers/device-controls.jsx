@@ -31,13 +31,13 @@ class DeviceControls extends React.Component {
 
     render () {
         const {
-            hasSelectedBoard,
+            hasSelectedDevice,
             projectRunning
         } = this.props;
 
         return (
             <DeviceControlsComponent
-                hasSelectedBoard={hasSelectedBoard}
+                hasSelectedDevice={hasSelectedDevice}
                 projectRunning={projectRunning}
                 onRun={this.handleRun}
                 onStop={this.handleStop}
@@ -48,14 +48,14 @@ class DeviceControls extends React.Component {
 }
 
 DeviceControls.propTypes = {
-    hasSelectedBoard: PropTypes.bool.isRequired,
+    hasSelectedDevice: PropTypes.bool.isRequired,
     isStarted: PropTypes.bool.isRequired,
     projectRunning: PropTypes.bool.isRequired,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 
 const mapStateToProps = state => ({
-    hasSelectedBoard: state.scratchGui.board.selectedBoardId !== null,
+    hasSelectedDevice: state.scratchGui.board.selectedDeviceId !== null,
     isStarted: state.scratchGui.vmStatus.running,
     projectRunning: state.scratchGui.vmStatus.running,
     vm: state.scratchGui.vm

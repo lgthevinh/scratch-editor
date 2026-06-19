@@ -27,23 +27,23 @@ const messages = defineMessages({
 });
 
 const DeviceControls = ({
-    hasSelectedBoard,
+    hasSelectedDevice,
     projectRunning,
     onRun,
     onStop,
     onUpload
 }) => {
     const intl = useIntl();
-    const isStopButton = !hasSelectedBoard && projectRunning;
-    const label = isStopButton ? messages.stop : (hasSelectedBoard ? messages.upload : messages.run);
+    const isStopButton = !hasSelectedDevice && projectRunning;
+    const label = isStopButton ? messages.stop : (hasSelectedDevice ? messages.upload : messages.run);
     const icon = isStopButton ? stopAllIcon : greenFlagIcon;
-    const onClick = isStopButton ? onStop : (hasSelectedBoard ? onUpload : onRun);
+    const onClick = isStopButton ? onStop : (hasSelectedDevice ? onUpload : onRun);
 
     return (
         <div className={styles.controlsHeader}>
             <button
                 className={classNames(styles.primaryButton, {
-                    [styles.uploadButton]: hasSelectedBoard,
+                    [styles.uploadButton]: hasSelectedDevice,
                     [styles.stopButton]: isStopButton
                 })}
                 onClick={onClick}
@@ -63,7 +63,7 @@ const DeviceControls = ({
 };
 
 DeviceControls.propTypes = {
-    hasSelectedBoard: PropTypes.bool,
+    hasSelectedDevice: PropTypes.bool,
     projectRunning: PropTypes.bool.isRequired,
     onRun: PropTypes.func.isRequired,
     onStop: PropTypes.func.isRequired,
@@ -71,7 +71,7 @@ DeviceControls.propTypes = {
 };
 
 DeviceControls.defaultProps = {
-    hasSelectedBoard: false
+    hasSelectedDevice: false
 };
 
 export default DeviceControls;

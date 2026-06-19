@@ -206,7 +206,7 @@ class Blocks extends React.Component {
 
         // Rebuild the toolbox when board selection changes, since board mode gates which
         // blocks and extension categories appear in the palette.
-        if (prevProps.selectedBoardId !== this.props.selectedBoardId) {
+        if (prevProps.selectedDeviceId !== this.props.selectedDeviceId) {
             const toolboxXML = this.getToolboxXML();
             if (toolboxXML) {
                 this.props.updateToolboxState(toolboxXML);
@@ -428,7 +428,7 @@ class Blocks extends React.Component {
             const stage = runtime.getTargetForStage();
             if (!target) target = stage; // If no editingTarget, use the stage
 
-            const boardMode = Boolean(this.props.selectedBoardId);
+            const boardMode = Boolean(this.props.selectedDeviceId);
             const dynamicBlocksXML = injectExtensionCategoryMode(
                 this.props.vm.runtime.getBlocksXML(target),
                 this.props.colorMode
@@ -692,7 +692,7 @@ class Blocks extends React.Component {
             useCatBlocks,
             workspaceMetrics,
             colorMode,
-            selectedBoardId,
+            selectedDeviceId,
             ...props
         } = this.props;
          
@@ -761,7 +761,7 @@ Blocks.propTypes = {
     }),
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     colorMode: PropTypes.oneOf(Object.keys(colorModeMap)),
-    selectedBoardId: PropTypes.string,
+    selectedDeviceId: PropTypes.string,
     toolboxXML: PropTypes.string,
     updateMetrics: PropTypes.func,
     updateToolboxState: PropTypes.func,
@@ -809,7 +809,7 @@ const mapStateToProps = state => ({
     isRtl: state.locales.isRtl,
     locale: state.locales.locale,
     messages: state.locales.messages,
-    selectedBoardId: state.scratchGui.board.selectedBoardId,
+    selectedDeviceId: state.scratchGui.board.selectedDeviceId,
     toolboxXML: state.scratchGui.toolbox.toolboxXML,
     customProceduresVisible: state.scratchGui.customProcedures.active,
     workspaceMetrics: state.scratchGui.workspaceMetrics,

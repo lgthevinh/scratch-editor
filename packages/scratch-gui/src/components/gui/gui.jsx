@@ -148,7 +148,7 @@ const GUIComponent = props => {
         onUpdateProjectThumbnail,
         showNewFeatureCallouts,
         stageSizeMode,
-        selectedBoardId,
+        selectedDeviceId,
         telemetryModalVisible,
         colorMode,
         theme,
@@ -192,12 +192,12 @@ const GUIComponent = props => {
 
     const updateGeneratedCode = useCallback(() => {
         // Code generation only applies in board mode; host mode has no code view.
-        if (!selectedBoardId || typeof vm.generateCode !== 'function') {
+        if (!selectedDeviceId || typeof vm.generateCode !== 'function') {
             setGeneratedCode('');
             return;
         }
         setGeneratedCode(vm.generateCode(codeLanguage).code);
-    }, [codeLanguage, selectedBoardId, vm]);
+    }, [codeLanguage, selectedDeviceId, vm]);
 
     useEffect(() => {
         updateGeneratedCode();
@@ -474,12 +474,15 @@ const GUIComponent = props => {
                             style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
                             <DeviceControls />
-                            {selectedBoardId && (
-                                <CodeView code={generatedCode} language={prismLanguage} />
+                            {selectedDeviceId && (
+                                <CodeView
+                                    code={generatedCode}
+                                    language={prismLanguage}
+                                />
                             )}
                             <SerialLog
                                 logs={serialLogs}
-                                fill={!selectedBoardId}
+                                fill={!selectedDeviceId}
                                 onClear={handleClearMonitor}
                                 onSend={handleMonitorSend}
                                 prompt={monitorPrompt}
@@ -554,7 +557,7 @@ GUIComponent.propTypes = {
     platform: PropTypes.oneOf(Object.keys(PLATFORM)),
     renderLogin: PropTypes.func,
     setTheme: PropTypes.func.isRequired,
-    selectedBoardId: PropTypes.string,
+    selectedDeviceId: PropTypes.string,
     showNewFeatureCallouts: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     setPlatform: PropTypes.func,

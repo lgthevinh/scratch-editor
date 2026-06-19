@@ -274,6 +274,9 @@ class LibraryComponent extends React.Component {
     }
     renderElement (data) {
         const key = this.constructKey(data);
+        if (this.props.renderItem) {
+            return this.props.renderItem(data, key, this.handleSelect);
+        }
         const icons = getItemIcons(data);
         return (<LibraryItem
             bluetoothRequired={data.bluetoothRequired}
@@ -422,6 +425,7 @@ LibraryComponent.propTypes = {
     onItemMouseLeave: PropTypes.func,
     onItemSelected: PropTypes.func,
     onRequestClose: PropTypes.func,
+    renderItem: PropTypes.func,
     setStopHandler: PropTypes.func,
     showPlayButton: PropTypes.bool,
     tags: PropTypes.arrayOf(PropTypes.shape(TagButton.propTypes)),

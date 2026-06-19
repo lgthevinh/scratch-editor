@@ -4,15 +4,19 @@ import {Provider} from 'react-redux';
 import configureStore from 'redux-mock-store';
 import {fireEvent, render, screen} from '@testing-library/react';
 import '@testing-library/jest-dom';
+import VM from '@scratch/scratch-vm';
 
 import BoardMenu from '../../../src/components/menu-bar/board-menu.jsx';
-import {boardMap} from '../../../src/lib/boards';
 
 describe('BoardMenu', () => {
-    const renderBoardMenu = (selectedBoardId = 'arduino:avr:uno') => {
+    const vm = new VM();
+    const selectedDevice = vm.getDeviceList()[0];
+
+    const renderBoardMenu = (selectedDeviceId = selectedDevice.deviceId) => {
         const store = configureStore()({
             scratchGui: {
-                board: {selectedBoardId}
+                board: {selectedDeviceId},
+                vm
             }
         });
 
@@ -28,24 +32,24 @@ describe('BoardMenu', () => {
         };
     };
 
-    test('renders "Select board" when no board is selected', () => {
+    test('renders "Select board" when no device is selected', () => {
         renderBoardMenu(null);
         expect(screen.getByRole('button', {name: 'Select board'})).toBeInTheDocument();
     });
 
-    test('renders with the selected board name', () => {
-        renderBoardMenu('arduino:avr:uno');
+    test('renders with the selected device name', () => {
+        renderBoardMenu(selectedDevice.deviceId);
 
         expect(screen.getByRole('button', {
-            name: `Board: ${boardMap['arduino:avr:uno'].name}`
+            name: `Board: ${selectedDevice.name}`
         })).toBeInTheDocument();
     });
 
     test('clicking opens the board library', () => {
-        const {store} = renderBoardMenu('arduino:avr:uno');
+        const {store} = renderBoardMenu(selectedDevice.deviceId);
 
         fireEvent.click(screen.getByRole('button', {
-            name: `Board: ${boardMap['arduino:avr:uno'].name}`
+            name: `Board: ${selectedDevice.name}`
         }));
 
         expect(store.getActions()).toEqual([{

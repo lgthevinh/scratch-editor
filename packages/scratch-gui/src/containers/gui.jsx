@@ -79,7 +79,7 @@ class GUI extends React.Component {
         if (this.props.shouldStopProject && !prevProps.shouldStopProject) {
             this.props.vm.stopAll();
         }
-        if (this.props.selectedBoardId && this.props.selectedBoardId !== prevProps.selectedBoardId) {
+        if (this.props.selectedDeviceId && this.props.selectedDeviceId !== prevProps.selectedDeviceId) {
             // Board-only blocks live in the Arduino extension; load it on first board selection so its
             // category is available to the palette. It stays loaded after deselect; the toolbox hides it.
             const {extensionManager} = this.props.vm;
@@ -165,7 +165,7 @@ GUI.propTypes = {
     projectHost: PropTypes.string,
     projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     shouldStopProject: PropTypes.bool,
-    selectedBoardId: PropTypes.string,
+    selectedDeviceId: PropTypes.string,
     telemetryModalVisible: PropTypes.bool,
     username: PropTypes.string,
     userOwnsProject: PropTypes.bool,
@@ -201,7 +201,7 @@ const mapStateToProps = (state, ownProps) => {
         loadingStateVisible: state.scratchGui.modals.loadingProject,
         platform: ownProps.platform,
         projectId: state.scratchGui.projectState.projectId,
-        selectedBoardId: state.scratchGui.board.selectedBoardId,
+        selectedDeviceId: state.scratchGui.board.selectedDeviceId,
         telemetryModalVisible: state.scratchGui.modals.telemetryModal,
         tipsLibraryVisible: state.scratchGui.modals.tipsLibrary,
         vm: state.scratchGui.vm

@@ -1,0 +1,144 @@
+@import "../../css/colors.css";
+@import "../../css/units.css";
+
+.card {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    flex-basis: 300px;
+    max-width: 300px;
+    margin: $space;
+    overflow: hidden;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: $text-primary;
+    background: $ui-white;
+    border: 2px solid $ui-black-transparent;
+    border-radius: $space;
+    box-sizing: border-box;
+}
+
+.card:hover,
+.card:focus-within {
+    border-color: $motion-primary;
+}
+
+.select-button {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+
+.select-button:focus {
+    outline: none;
+}
+
+.image-container {
+    width: 100%;
+    aspect-ratio: 600 / 372;
+    overflow: hidden;
+    background: $ui-primary;
+}
+
+.image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.text {
+    width: 100%;
+    min-height: 94px;
+    padding: 10px 1.25rem;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+[dir="rtl"] .text {
+    text-align: right;
+}
+
+.name {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.description {
+    display: -webkit-box;
+    padding-top: 0.3125rem;
+    overflow: hidden;
+    font-weight: normal;
+    line-height: 1.375rem;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.metadata {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    padding: 0 1.25rem 1rem;
+    box-sizing: border-box;
+    color: $text-primary;
+    font-size: 12px;
+    opacity: 0.75;
+    text-align: left;
+}
+
+[dir="rtl"] .metadata {
+    text-align: right;
+}
+
+.metadata-column {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    min-width: 0;
+}
+
+.metadata-label {
+    min-height: 1rem;
+}
+
+.metadata-detail {
+    padding-top: 0.4rem;
+    overflow: hidden;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.links {
+    display: flex;
+    gap: 1rem;
+    padding: 0 1.25rem 1rem;
+    font-size: 12px;
+    text-align: left;
+}
+
+[dir="rtl"] .links {
+    text-align: right;
+}
+
+.link {
+    font-weight: bold;
+    color: $motion-primary;
+    text-decoration: none;
+}
+
+.link:hover,
+.link:focus {
+    text-decoration: underline;
+}

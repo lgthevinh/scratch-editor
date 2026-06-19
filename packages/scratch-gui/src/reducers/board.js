@@ -1,25 +1,25 @@
-const SET_BOARD = 'scratch-gui/board/SET_BOARD';
+const SET_DEVICE = 'scratch-gui/board/SET_DEVICE';
 
 const initialState = {
-    selectedBoardId: null
+    selectedDeviceId: null
 };
 
 const reducer = function (state = initialState, action) {
     switch (action.type) {
-    case SET_BOARD:
-        return {...state, selectedBoardId: action.boardId};
+    case SET_DEVICE:
+        return {...state, selectedDeviceId: action.deviceId};
     default:
         return state;
     }
 };
 
-const setBoard = boardId => ({
-    type: SET_BOARD,
-    boardId
+const setDevice = deviceId => ({
+    type: SET_DEVICE,
+    deviceId
 });
 
 export {
     reducer as default,
     initialState as boardInitialState,
-    setBoard
+    setDevice
 };
