@@ -19,16 +19,6 @@ const messages = defineMessages({
         defaultMessage: 'Monitor',
         description: 'Title for the serial monitor panel'
     },
-    collapseMonitor: {
-        id: 'gui.serialLog.collapseMonitor',
-        defaultMessage: 'Collapse monitor',
-        description: 'Accessible label for the button that collapses the serial monitor'
-    },
-    expandMonitor: {
-        id: 'gui.serialLog.expandMonitor',
-        defaultMessage: 'Expand monitor',
-        description: 'Accessible label for the button that expands the serial monitor'
-    },
     send: {
         id: 'gui.serialLog.send',
         defaultMessage: 'Send',
@@ -48,19 +38,18 @@ const messages = defineMessages({
 
 const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
     const intl = useIntl();
-    const [collapsed, setCollapsed] = useState(false);
+    const hasPrompt = prompt !== null && typeof prompt !== 'undefined';
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
     const [inputValue, setInputValue] = useState('');
     const inputRef = useRef(null);
 
-    // Auto-expand and focus input when a prompt arrives
+    // Clear and focus the input when a prompt arrives.
     useEffect(() => {
-        if (prompt != null) {
-            setCollapsed(false);
+        if (hasPrompt) {
             setInputValue('');
             if (inputRef.current) inputRef.current.focus();
         }
-    }, [prompt]);
+    }, [hasPrompt, prompt]);
 
     const handleResizeMouseDown = useCallback(e => {
         const startY = e.clientY;
@@ -80,12 +69,12 @@ const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
 
     const handleSend = useCallback(() => {
         // Empty input is valid when responding to a prompt
-        const hasContent = prompt != null ? true : inputValue.trim().length > 0;
+        const hasContent = hasPrompt || inputValue.trim().length > 0;
         if (hasContent && onSend) {
             onSend(inputValue);
             setInputValue('');
         }
-    }, [inputValue, onSend, prompt]);
+    }, [hasPrompt, inputValue, onSend]);
 
     const handleInputChange = useCallback(e => {
         setInputValue(e.target.value);
@@ -95,86 +84,77 @@ const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
         if (e.key === 'Enter') handleSend();
     }, [handleSend]);
 
-    const handleToggleCollapsed = useCallback(() => {
-        setCollapsed(currentCollapsed => !currentCollapsed);
-    }, []);
-
     return (
         <div
-            className={classNames(styles.serialLog, {[styles.fill]: fill && !collapsed})}
-            style={(fill || collapsed) ? null : {height: `${height}px`}}
+            className={classNames(styles.serialLog, {[styles.fill]: fill})}
+            style={fill ? null : {height: `${height}px`}}
         >
             <div
                 className={styles.resizeHandle}
-                onMouseDown={(fill || collapsed) ? null : handleResizeMouseDown}
+                onMouseDown={fill ? null : handleResizeMouseDown}
             />
             <div className={styles.inner}>
                 <div className={styles.header}>
                     <span><FormattedMessage {...messages.monitor} /></span>
                     <div className={styles.headerActions}>
-                        {!collapsed && (
-                            <button
-                                className={styles.clearButton}
-                                disabled={!onClear || logs.length === 0}
-                                onClick={onClear}
-                                aria-label={intl.formatMessage(messages.clearMonitor)}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6l-1 14H6L5 6" />
-                                    <path d="M10 11v6" />
-                                    <path d="M14 11v6" />
-                                    <path d="M9 6V4h6v2" />
-                                </svg>
-                            </button>
-                        )}
                         <button
-                            className={styles.chevron}
-                            onClick={handleToggleCollapsed}
-                            aria-label={intl.formatMessage(collapsed ?
-                                messages.expandMonitor :
-                                messages.collapseMonitor)}
+                            className={styles.clearButton}
+                            disabled={!onClear || logs.length === 0}
+                            onClick={onClear}
+                            aria-label={intl.formatMessage(messages.clearMonitor)}
                         >
-                            {collapsed ? '▸' : '▾'}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-1 14H6L5 6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                                <path d="M9 6V4h6v2" />
+                            </svg>
                         </button>
                     </div>
                 </div>
-                {!collapsed && (
-                    <>
-                        <div className={styles.content}>
-                            {logs && logs.map((entry, i) => (
-                                <div
-                                    key={i}
-                                    className={styles.entry}
-                                >
-                                    {entry.message}
-                                </div>
-                            ))}
+                <div className={styles.content}>
+                    {logs && logs.map((entry, i) => (
+                        <div
+                            key={i}
+                            className={styles.entry}
+                        >
+                            {entry.message}
                         </div>
-                        {prompt != null && (
-                            <div className={styles.promptBanner}>{prompt}</div>
-                        )}
-                        <div className={styles.inputRow}>
-                            <input
-                                ref={inputRef}
-                                className={styles.input}
-                                type="text"
-                                value={inputValue}
-                                placeholder={intl.formatMessage(
-                                    prompt != null ? messages.promptedInputPlaceholder : messages.sendPlaceholder
-                                )}
-                                onChange={handleInputChange}
-                                onKeyDown={handleKeyDown}
-                            />
-                            <button
-                                className={styles.sendButton}
-                                onClick={handleSend}
-                            >
-                                <FormattedMessage {...messages.send} />
-                            </button>
-                        </div>
-                    </>
+                    ))}
+                </div>
+                {hasPrompt && (
+                    <div className={styles.promptBanner}>{prompt}</div>
                 )}
+                <div className={styles.inputRow}>
+                    <input
+                        ref={inputRef}
+                        className={styles.input}
+                        type="text"
+                        value={inputValue}
+                        placeholder={intl.formatMessage(
+                            hasPrompt ? messages.promptedInputPlaceholder : messages.sendPlaceholder
+                        )}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                    />
+                    <button
+                        className={styles.sendButton}
+                        onClick={handleSend}
+                    >
+                        <FormattedMessage {...messages.send} />
+                    </button>
+                </div>
             </div>
         </div>
     );

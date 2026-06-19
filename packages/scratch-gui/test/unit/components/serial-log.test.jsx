@@ -65,34 +65,11 @@ describe('SerialLog', () => {
             expect(onSend).not.toHaveBeenCalled();
         });
 
-        test('auto-expands and clears input when prompt transitions from null to a value', () => {
-            const onSend = jest.fn();
-            const {rerender} = render(
-                <IntlProvider locale="en">
-                    <SerialLog
-                        logs={[]}
-                        onSend={onSend}
-                        prompt={null}
-                    />
-                </IntlProvider>
-            );
+        test('does not render a collapse control', () => {
+            renderSerialLog({});
 
-            // Collapse the panel manually
-            fireEvent.click(screen.getByRole('button', {name: 'Collapse monitor'}));
-            expect(screen.queryByPlaceholderText('Send message...')).not.toBeInTheDocument();
-
-            // Trigger a prompt — panel should expand
-            rerender(
-                <IntlProvider locale="en">
-                    <SerialLog
-                        logs={[]}
-                        onSend={onSend}
-                        prompt="What is your name?"
-                    />
-                </IntlProvider>
-            );
-
-            expect(screen.getByPlaceholderText('Type your answer...')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Collapse monitor'})).not.toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Send message...')).toBeInTheDocument();
         });
 
         test('clears pre-existing input value when prompt becomes active', () => {
