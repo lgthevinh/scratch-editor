@@ -40,7 +40,7 @@
     "coverage": "tap ./test/{unit,integration}/*.js --coverage --coverage-report=lcov",
     "docs": "typedoc",
     "i18n:push": "tx-push-src scratch-editor extensions translations/core/en.json",
-    "i18n:src": "mkdirp translations/core && format-message extract --out-file translations/core/en.json src/extensions/**/index.js",
+    "i18n:src": "mkdirp translations/core && format-message extract --out-file translations/core/en.json src/extensions/**/index.js src/devices/**/index.js",
     "lint": "eslint && format-message lint src/**/*.js",
     "prepublishOnly": "echo \"Please publish through CI only.\" && exit 1",
     "start": "webpack serve",

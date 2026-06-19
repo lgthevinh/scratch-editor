@@ -16,6 +16,7 @@ const Runtime = require('./engine/runtime');
 const StringUtil = require('./util/string-util');
 const formatMessage = require('format-message');
 const generateTargetCode = require('./codegen/generate-code');
+const {DeviceRegistry, deviceClasses} = require('./devices');
 
 const Variable = require('./engine/variable');
 const newBlockIds = require('./util/new-block-ids');
@@ -163,6 +164,15 @@ class VirtualMachine extends EventEmitter {
         // Load core extensions
         for (const id of CORE_EXTENSIONS) {
             this.extensionManager.loadExtensionIdSync(id);
+        }
+
+        /**
+         * Registry of upload-mode devices, keyed by deviceId. Drives the GUI device-selection list.
+         * @type {DeviceRegistry}
+         */
+        this.deviceRegistry = new DeviceRegistry();
+        for (const DeviceClass of deviceClasses) {
+            this.deviceRegistry.register(new DeviceClass(this.runtime));
         }
 
         this.blockListener = this.blockListener.bind(this);
@@ -1186,6 +1196,21 @@ class VirtualMachine extends EventEmitter {
             this.runtime.getTargetById(optTargetId) :
             this.editingTarget;
         return generateTargetCode(target, language);
+    }
+
+    /**
+     * The list of selectable devices for the GUI, each with its presentation info and FQBN.
+     * @returns {Array.<object>} device descriptors: {deviceId, fqbn, name, description,
+     *   manufacturer, requires, learnMore, help}.
+     */
+    getDeviceList () {
+        return this.deviceRegistry.deviceIds.map(deviceId => {
+            const device = this.deviceRegistry.get(deviceId);
+            return Object.assign(
+                {deviceId: device.deviceId, fqbn: device.fqbn},
+                device.getDeviceInfo()
+            );
+        });
     }
 
     /**

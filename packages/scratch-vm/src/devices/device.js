@@ -26,6 +26,16 @@ class Device {
     }
 
     /**
+     * Presentation metadata for the device-selection card. `name` and `description` are localized
+     * (via format-message); `requires` is a {@link ConnectionType}; `learnMore` and `help` are URLs.
+     * @returns {{name: string, description: string, manufacturer: string, requires: string,
+     *   learnMore: string, help: string}} the device info.
+     */
+    getDeviceInfo () {
+        throw new Error(`${this.constructor.name} must implement getDeviceInfo()`);
+    }
+
+    /**
      * arduino-cli compile/upload target (FQBN), e.g. 'arduino:avr:uno'. The board identity is the
      * same on every OS. Per-OS upload tuning (upload speed, CDC flags) belongs in
      * `getUploadConfig()`, not here; the uploader appends those options to the FQBN at flash time.

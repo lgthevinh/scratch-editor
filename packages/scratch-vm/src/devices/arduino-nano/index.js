@@ -1,4 +1,6 @@
+const formatMessage = require('format-message');
 const Device = require('../device');
+const ConnectionType = require('../connection-type');
 
 /**
  * Arduino Nano (ATmega328P) device. Shares the ATmega328P FQBN family with the Uno but is a
@@ -8,6 +10,25 @@ const Device = require('../device');
 class ArduinoNano extends Device {
     get deviceId () {
         return 'arduinoNano';
+    }
+
+    getDeviceInfo () {
+        return {
+            name: formatMessage({
+                id: 'device.arduinoNano.name',
+                default: 'Arduino Nano',
+                description: 'Name of the Arduino Nano device'
+            }),
+            description: formatMessage({
+                id: 'device.arduinoNano.description',
+                default: 'The Arduino Nano is a classic small board to build your projects with.',
+                description: 'Description of the Arduino Nano device'
+            }),
+            manufacturer: 'arduino.cc',
+            requires: ConnectionType.SERIAL,
+            learnMore: 'https://docs.arduino.cc/hardware/nano',
+            help: 'https://support.arduino.cc'
+        };
     }
 
     get fqbn () {
