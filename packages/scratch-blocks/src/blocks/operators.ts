@@ -323,6 +323,42 @@ Blockly.Blocks.operator_length = {
   },
 }
 
+Blockly.Blocks.operator_tonumber = {
+  /**
+   * Block that converts its input to a number.
+   */
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: Blockly.Msg.OPERATORS_TONUMBER,
+      args0: [
+        {
+          type: 'input_value',
+          name: 'VALUE',
+        },
+      ],
+      extensions: ['colours_operators', 'output_number'],
+    })
+  },
+}
+
+Blockly.Blocks.operator_totext = {
+  /**
+   * Block that converts its input to text.
+   */
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      message0: Blockly.Msg.OPERATORS_TOTEXT,
+      args0: [
+        {
+          type: 'input_value',
+          name: 'VALUE',
+        },
+      ],
+      extensions: ['colours_operators', 'output_string'],
+    })
+  },
+}
+
 Blockly.Blocks.operator_contains = {
   /**
    * Block for _ contains _ operator

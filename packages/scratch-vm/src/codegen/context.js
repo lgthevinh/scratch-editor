@@ -1,4 +1,5 @@
 const Blocks = require('../engine/blocks');
+const {classifyKind, inferVariableTypes} = require('./variable-types');
 
 const DEFAULT_EXPRESSION = '0';
 
@@ -7,13 +8,16 @@ class CodeGenerationContext {
         this.blockContainer = blockContainer;
         this.registry = registry;
         this.language = language;
+        this.variableTypes = inferVariableTypes(blockContainer);
         this.diagnostics = [];
         this.helpers = [];
         this.includes = [];
         this.setup = [];
+        this.setupBlocks = [];
         this._helperSet = Object.create(null);
         this._includeSet = Object.create(null);
         this._setupSet = Object.create(null);
+        this._setupBlockSet = Object.create(null);
     }
 
     addDiagnostic (severity, message, block) {
@@ -37,6 +41,12 @@ class CodeGenerationContext {
         this._addUnique(this.setup, this._setupSet, code);
     }
 
+    // Adds a pre-indented multi-line body (e.g. an Arduino "begin" hat) to the setup() function.
+    // Unlike addSetup, the body is kept verbatim rather than treated as a single config line.
+    addSetupBlock (code) {
+        this._addUnique(this.setupBlocks, this._setupBlockSet, code);
+    }
+
     _addUnique (list, set, code) {
         if (!code || set[code]) return;
         set[code] = true;
@@ -45,6 +55,17 @@ class CodeGenerationContext {
 
     getBlock (blockId) {
         return blockId ? this.blockContainer.getBlock(blockId) : null;
+    }
+
+    // Inferred kind ('int' | 'float' | 'string') of the value produced by a reporter block.
+    expressionKind (blockId) {
+        return classifyKind(this.blockContainer, this.variableTypes, blockId);
+    }
+
+    // Inferred type of a scalar variable by sanitized name. Variables that are never `set`
+    // default to 'int'.
+    variableType (name) {
+        return this.variableTypes[name] || 'int';
     }
 
     getFieldValue (block, fieldName, defaultValue) {

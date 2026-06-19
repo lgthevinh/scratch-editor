@@ -97,3 +97,23 @@ Blockly.Blocks.event_whenkeypressed = {
     })
   },
 }
+
+Blockly.Blocks.event_whenarduinobegin = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      id: 'event_whenarduinobegin',
+      message0: Blockly.Msg.EVENT_WHENARDUINOBEGIN,
+      extensions: ['colours_event', 'shape_hat'],
+    })
+  },
+}
+
+Blockly.Blocks.event_whenarduinoloop = {
+  init: function (this: Blockly.Block) {
+    this.jsonInit({
+      id: 'event_whenarduinoloop',
+      message0: Blockly.Msg.EVENT_WHENARDUINOLOOP,
+      extensions: ['colours_event', 'shape_hat'],
+    })
+  },
+}

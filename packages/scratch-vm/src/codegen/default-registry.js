@@ -6,48 +6,59 @@ const {
     input,
     line,
     quote,
-    statement
+    sanitizeIdentifier,
+    statement,
+    variableName
 } = require('./code-generator-provider');
 const ThingBotTelemetrixExtension = require('../extensions/scratch3_thingbot_telemetrix');
 const Scratch3Arduino = require('../extensions/scratch3_arduino');
 
 const LANGUAGES = [Language.JAVASCRIPT, Language.ARDUINO_CPP];
 
-const sanitizeIdentifier = value => {
-    const identifier = String(value || 'value')
-        .replace(/[^A-Za-z0-9_$]/g, '_')
-        .replace(/^[^A-Za-z_$]/, '_$&');
-    return identifier || 'value';
-};
-
-const variableName = (ctx, block, fieldName, fallback) => {
-    const variable = block.fields && block.fields[fieldName];
-    return sanitizeIdentifier((variable && (variable.value || variable.name)) || fallback);
-};
-
 const procedureName = block => {
     const mutation = block.mutation || {};
     return sanitizeIdentifier(mutation.proccode || 'custom_block');
 };
 
-// JavaScript output declares each scratch variable/list once as a hoisted helper so that
-// repeated `set`/`change`/`add` blocks become plain assignments instead of re-declarations.
-// Arduino C++ output is a non-compilable preview and keeps its inline declarations.
-const declareJsVariable = (ctx, name, init) => {
+// Both JavaScript and Arduino C++ declare each scalar variable once, as a hoisted helper, using
+// its inferred type ('int' | 'float' | 'string'). Repeated set/change blocks then become plain
+// assignments. Surfacing the type in both languages helps learners reason about variable types.
+const ensureVariable = (ctx, block) => {
+    const name = variableName(block, 'VARIABLE', 'variable');
+    const type = ctx.variableType(name);
+    const init = type === 'string' ? '""' : '0';
     if (ctx.language === Language.JAVASCRIPT) {
         ctx.addHelper(`let ${name} = ${init};`);
+    } else {
+        const cppType = type === 'string' ? 'String' : type;
+        ctx.addHelper(`${cppType} ${name} = ${init};`);
+    }
+    return name;
+};
+
+// Warns (without blocking) when a value's kind doesn't match the variable's type, pointing the
+// learner at the convert block that would fix it.
+const checkAssignment = (ctx, block, name, type) => {
+    const valueIsString = ctx.expressionKind(ctx.getInputBlockId(block, 'VALUE')) === 'string';
+    const variableIsString = type === 'string';
+    if (variableIsString !== valueIsString) {
+        const convert = variableIsString ? 'to text' : 'to number';
+        ctx.addDiagnostic(
+            'warning',
+            `Variable '${name}' holds ${variableIsString ? 'text' : 'a number'} but is being ` +
+                `assigned ${valueIsString ? 'text' : 'a number'}; wrap the value in the ` +
+                `'${convert}' block`,
+            block
+        );
     }
 };
 
-const scalarName = (ctx, block) => {
-    const variable = variableName(ctx, block, 'VARIABLE', 'variable');
-    declareJsVariable(ctx, variable, '0');
-    return variable;
-};
-
+// Lists keep the JavaScript-array preview in both languages (C++ array support is a follow-up).
 const listName = (ctx, block) => {
-    const list = variableName(ctx, block, 'LIST', 'list');
-    declareJsVariable(ctx, list, '[]');
+    const list = variableName(block, 'LIST', 'list');
+    if (ctx.language === Language.JAVASCRIPT) {
+        ctx.addHelper(`let ${list} = [];`);
+    }
     return list;
 };
 
@@ -230,6 +241,18 @@ const registerOperators = registry => {
             return `${cppOperators[operator] || 'abs'}(${number})`;
         })
     );
+    registerBoth(
+        registry,
+        'operator_tonumber',
+        expression((ctx, block) => `Number(${input(ctx, block, 'VALUE', '0')})`),
+        expression((ctx, block) => `String(${input(ctx, block, 'VALUE', '0')}).toFloat()`)
+    );
+    registerBoth(
+        registry,
+        'operator_totext',
+        expression((ctx, block) => `String(${input(ctx, block, 'VALUE', '""')})`),
+        expression((ctx, block) => `String(${input(ctx, block, 'VALUE', '""')})`)
+    );
 };
 
 const registerEvents = registry => {
@@ -257,6 +280,16 @@ const registerEvents = registry => {
             '    /* Keyboard events are not available on Arduino boards. */',
             ctx.generateStack(block.next, 1)
         ].filter(Boolean).join('\n')
+    )));
+
+    // Board-only hats: route their bodies to the Arduino setup()/loop() functions. No js generators,
+    // so opening them in host mode produces an "unsupported" diagnostic.
+    registry.register('event_whenarduinobegin', Language.ARDUINO_CPP, statement((ctx, block) => {
+        ctx.addSetupBlock(ctx.generateStack(block.next, 1));
+        return '';
+    }));
+    registry.register('event_whenarduinoloop', Language.ARDUINO_CPP, statement((ctx, block) => (
+        ctx.generateStack(block.next, 1)
     )));
 };
 
@@ -356,7 +389,7 @@ const registerControl = registry => {
         return line(ctx, indentLevel, `while (!(${condition})) { delay(16); }`);
     }));
     registry.register('control_for_each', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        const variable = variableName(ctx, block, 'VARIABLE', 'item');
+        const variable = variableName(block, 'VARIABLE', 'item');
         const value = input(ctx, block, 'VALUE', '0');
         const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
         return [
@@ -366,7 +399,7 @@ const registerControl = registry => {
         ].join('\n');
     }));
     registry.register('control_for_each', Language.ARDUINO_CPP, statement((ctx, block, indentLevel) => {
-        const variable = variableName(ctx, block, 'VARIABLE', 'item');
+        const variable = variableName(block, 'VARIABLE', 'item');
         const value = input(ctx, block, 'VALUE', '0');
         const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
         return [
@@ -387,27 +420,24 @@ const registerControl = registry => {
 };
 
 const registerData = registry => {
-    registerBoth(
-        registry,
-        'data_variable',
-        expression((ctx, block) => scalarName(ctx, block)),
-        expression((ctx, block) => variableName(ctx, block, 'VARIABLE', 'variable'))
-    );
-    registerBoth(
-        registry,
-        'data_setvariableto',
-        statement((ctx, block, indentLevel) => {
-            const variable = scalarName(ctx, block);
-            return line(ctx, indentLevel, `${variable} = ${input(ctx, block, 'VALUE', '0')};`);
-        }),
-        statement((ctx, block, indentLevel) => {
-            const variable = variableName(ctx, block, 'VARIABLE', 'variable');
-            return line(ctx, indentLevel, `int ${variable} = ${input(ctx, block, 'VALUE', '0')};`);
-        })
-    );
     for (const language of LANGUAGES) {
+        registry.register('data_variable', language, expression((ctx, block) => ensureVariable(ctx, block)));
+        registry.register('data_setvariableto', language, statement((ctx, block, indentLevel) => {
+            const variable = ensureVariable(ctx, block);
+            const type = ctx.variableType(variable);
+            checkAssignment(ctx, block, variable, type);
+            const value = input(ctx, block, 'VALUE', type === 'string' ? '""' : '0');
+            return line(ctx, indentLevel, `${variable} = ${value};`);
+        }));
         registry.register('data_changevariableby', language, statement((ctx, block, indentLevel) => {
-            const variable = scalarName(ctx, block);
+            const variable = ensureVariable(ctx, block);
+            if (ctx.variableType(variable) === 'string') {
+                ctx.addDiagnostic(
+                    'warning',
+                    `Cannot change text variable '${variable}' by a number`,
+                    block
+                );
+            }
             return line(ctx, indentLevel, `${variable} += ${input(ctx, block, 'VALUE', '0')};`);
         }));
         registry.register('data_listcontents', language, expression((ctx, block) => (

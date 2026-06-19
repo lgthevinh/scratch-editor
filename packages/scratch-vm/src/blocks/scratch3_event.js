@@ -31,6 +31,12 @@ class Scratch3EventBlocks {
             },
             event_whenkeypressed: {
                 restartExistingThreads: false
+            },
+            event_whenarduinobegin: {
+                restartExistingThreads: true
+            },
+            event_whenarduinoloop: {
+                restartExistingThreads: true
             }
         };
     }

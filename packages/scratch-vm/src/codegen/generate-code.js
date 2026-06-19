@@ -13,7 +13,9 @@ const finalizeJavaScript = (scripts, context) => {
 const finalizeArduinoCpp = (scripts, context) => {
     const includes = context.includes.join('\n');
     const helpers = context.helpers.join('\n\n');
-    const setupBody = context.setup.map(line => `    ${line}`).join('\n');
+    const setupConfig = context.setup.map(line => `    ${line}`).join('\n');
+    const setupBlocks = context.setupBlocks.join('\n\n');
+    const setupBody = [setupConfig, setupBlocks].filter(Boolean).join('\n');
     const loopBody = scripts.filter(Boolean).join('\n\n');
     const sections = [
         includes,

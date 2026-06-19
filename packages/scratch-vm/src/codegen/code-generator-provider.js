@@ -14,6 +14,18 @@ const arg = (ctx, block, name, fallback) => {
     return field(ctx, block, name, fallback);
 };
 
+const sanitizeIdentifier = value => {
+    const identifier = String(value || 'value')
+        .replace(/[^A-Za-z0-9_$]/g, '_')
+        .replace(/^[^A-Za-z_$]/, '_$&');
+    return identifier || 'value';
+};
+
+const variableName = (block, fieldName, fallback) => {
+    const variable = block.fields && block.fields[fieldName];
+    return sanitizeIdentifier((variable && (variable.value || variable.name)) || fallback);
+};
+
 module.exports = {
     Language,
     arg,
@@ -22,5 +34,7 @@ module.exports = {
     input,
     line,
     quote,
-    statement
+    sanitizeIdentifier,
+    statement,
+    variableName
 };

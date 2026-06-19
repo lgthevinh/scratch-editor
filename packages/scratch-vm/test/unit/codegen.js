@@ -7,7 +7,6 @@ const generateCode = require('../../src/codegen/generate-code');
 const Language = require('../../src/codegen/language');
 const Scratch3ControlBlocks = require('../../src/blocks/scratch3_control');
 const ThingBotTelemetrixExtension = require('../../src/extensions/scratch3_thingbot_telemetrix');
-const Scratch3Arduino = require('../../src/extensions/scratch3_arduino');
 
 const getOpcodeNames = primitiveClass => Object.keys(
     new primitiveClass(new Runtime()).getPrimitives()
@@ -315,56 +314,97 @@ test('generateCode covers data, sensing, operator, procedure, and ThingBot opcod
     t.match(js.code, 'let score = 0;');
     t.match(js.code, 'score = (1 + 2);');
     t.match(js.code, 'thingbot.digitalWrite(13, "HIGH");');
-    t.match(arduinoCpp.code, 'int score = (1 + 2);');
+    t.match(arduinoCpp.code, 'int score = 0;');
+    t.match(arduinoCpp.code, 'score = (1 + 2);');
     t.match(arduinoCpp.code, '/* Unsupported block: thingbotTelemetrix_digitalWrite */');
     t.end();
 });
 
-test('Arduino extension registers arduino-cpp generators only', t => {
-    const registry = new GeneratorRegistry();
+test('generateCode infers int/float/String variable types and warns on mismatched assignment', t => {
+    const blocks = createBlockContainer();
+    const setBlock = (id, next, varName, valueId) => blocks.createBlock({
+        id,
+        opcode: 'data_setvariableto',
+        next,
+        parent: null,
+        inputs: {VALUE: {name: 'VALUE', block: valueId, shadow: valueId}},
+        fields: {VARIABLE: {id: `${varName} id`, name: 'VARIABLE', value: varName}},
+        topLevel: id === 'setCount'
+    });
+    setBlock('setCount', 'setRatio', 'count', 'countVal');
+    setBlock('setRatio', 'setName', 'ratio', 'ratioVal');
+    setBlock('setName', null, 'name', 'nameVal');
+    addNumberBlock(blocks, 'countVal', 5);
+    addNumberBlock(blocks, 'ratioVal', '3.5');
+    addTextBlock(blocks, 'nameVal', 'Ada');
 
-    registry.registerProvider(Scratch3Arduino);
-
-    t.ok(registry.get('arduino_digitalWrite', Language.ARDUINO_CPP));
-    t.notOk(registry.get('arduino_digitalWrite', Language.JAVASCRIPT));
+    const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'int count = 0;');
+    t.match(arduinoCpp.code, 'float ratio = 0;');
+    t.match(arduinoCpp.code, 'String name = "";');
+    t.match(arduinoCpp.code, 'name = "Ada";');
     t.end();
 });
 
-test('generateCode emits Arduino C++ for board-only Arduino blocks and is unsupported in js', t => {
-    const blocks = createBlockContainer();
-    blocks.createBlock({
-        id: 'flag',
-        opcode: 'event_whenflagclicked',
-        next: 'write',
-        parent: null,
-        inputs: {},
-        fields: {},
-        topLevel: true
-    });
-    blocks.createBlock({
-        id: 'write',
-        opcode: 'arduino_digitalWrite',
+test('generateCode warns when assigning text to a number variable and a convert block clears it', t => {
+    const mismatchTarget = () => {
+        const blocks = createBlockContainer();
+        blocks.createBlock({
+            id: 'setScore',
+            opcode: 'data_setvariableto',
+            next: 'setLabel',
+            parent: null,
+            inputs: {VALUE: {name: 'VALUE', block: 'num', shadow: 'num'}},
+            fields: {VARIABLE: {id: 'score id', name: 'VARIABLE', value: 'score'}},
+            topLevel: true
+        });
+        addNumberBlock(blocks, 'num', 1);
+        // `label` is String (set to text), but here it is assigned a raw number -> mismatch.
+        blocks.createBlock({
+            id: 'setLabel',
+            opcode: 'data_setvariableto',
+            next: null,
+            parent: 'setScore',
+            inputs: {VALUE: {name: 'VALUE', block: 'count', shadow: 'count'}},
+            fields: {VARIABLE: {id: 'label id', name: 'VARIABLE', value: 'label'}},
+            topLevel: false
+        });
+        blocks.createBlock({
+            id: 'seedLabel',
+            opcode: 'data_setvariableto',
+            next: null,
+            parent: null,
+            inputs: {VALUE: {name: 'VALUE', block: 'word', shadow: 'word'}},
+            fields: {VARIABLE: {id: 'label id', name: 'VARIABLE', value: 'label'}},
+            topLevel: true
+        });
+        addTextBlock(blocks, 'word', 'hi');
+        addNumberBlock(blocks, 'count', 7);
+        return blocks;
+    };
+
+    const blocks = mismatchTarget();
+    const result = generateCode({blocks}, Language.JAVASCRIPT);
+    t.equal(result.diagnostics.length, 1);
+    t.match(result.diagnostics[0], {severity: 'warning', blockId: 'setLabel'});
+    t.match(result.diagnostics[0].message, 'to text');
+
+    // Wrapping the number in a `to text` convert block makes the kinds agree -> no diagnostic.
+    const fixed = mismatchTarget();
+    fixed.createBlock({
+        id: 'convert',
+        opcode: 'operator_totext',
         next: null,
-        parent: 'flag',
-        inputs: {PIN: {name: 'PIN', block: 'pin', shadow: 'pin'}},
-        fields: {LEVEL: {name: 'LEVEL', value: 'HIGH'}},
+        parent: 'setLabel',
+        inputs: {VALUE: {name: 'VALUE', block: 'count', shadow: 'count'}},
+        fields: {},
         topLevel: false
     });
-    addNumberBlock(blocks, 'pin', 13);
-
-    const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
-    const js = generateCode({blocks}, Language.JAVASCRIPT);
-
-    t.same(arduinoCpp.diagnostics, []);
-    t.match(arduinoCpp.code, 'digitalWrite(13, HIGH);');
-
-    t.equal(js.diagnostics.length, 1);
-    t.match(js.diagnostics[0], {
-        severity: 'warning',
-        blockId: 'write',
-        opcode: 'arduino_digitalWrite'
-    });
-    t.match(js.code, '/* Unsupported block: arduino_digitalWrite */');
+    fixed.getBlock('setLabel').inputs.VALUE = {name: 'VALUE', block: 'convert', shadow: 'count'};
+    const fixedResult = generateCode({blocks: fixed}, Language.JAVASCRIPT);
+    t.same(fixedResult.diagnostics, []);
+    t.match(fixedResult.code, 'label = String(7);');
     t.end();
 });
 

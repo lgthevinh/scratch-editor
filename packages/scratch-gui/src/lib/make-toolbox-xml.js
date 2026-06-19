@@ -27,8 +27,11 @@ const events = function (isInitialSetup, isStage, targetId, colors, boardMode) {
     )}" toolboxitemid="events" colour="${
         colors.colourPrimary
     }" secondaryColour="${colors.colourTertiary}">
+        ${boardMode ? `
+        <block type="event_whenarduinobegin"/>
+        <block type="event_whenarduinoloop"/>
+        ` : `
         <block type="event_whenflagclicked"/>
-        ${boardMode ? '' : `
         <block type="event_whenkeypressed">
         </block>
         `}
@@ -319,6 +322,21 @@ const operators = function (isInitialSetup, isStage, targetId, colors) {
         ${blockSeparator}
         <block type="operator_mathop">
             <value name="NUM">
+                <shadow type="math_number">
+                    <field name="NUM"/>
+                </shadow>
+            </value>
+        </block>
+        ${blockSeparator}
+        <block type="operator_tonumber">
+            <value name="VALUE">
+                <shadow type="text">
+                    <field name="TEXT">0</field>
+                </shadow>
+            </value>
+        </block>
+        <block type="operator_totext">
+            <value name="VALUE">
                 <shadow type="math_number">
                     <field name="NUM"/>
                 </shadow>
