@@ -689,3 +689,40 @@ test('deserializeBlocks repairs broken shadow references', t => {
 
     t.end();
 });
+
+test('serializing and deserializing sb3 preserves explicit variable dataType', t => {
+    const vm = new VirtualMachine();
+    return vm.loadProject(readFileToBuffer(exampleProjectPath))
+        .then(() => {
+            const stage = vm.runtime.targets[0];
+            stage.createVariable('typedVarId', 'temperature', '', false, 'float');
+
+            const serialized = sb3.serialize(vm.runtime);
+            t.equal(serialized.targets[0].variableTypes.typedVarId, 'float');
+
+            return sb3.deserialize(JSON.parse(JSON.stringify(serialized)), new Runtime(), null, false);
+        })
+        .then(({targets}) => {
+            t.equal(targets[0].variables.typedVarId.dataType, 'float');
+            t.end();
+        });
+});
+
+test('deserializing sb3 rejects an unrecognized variable dataType', t => {
+    const vm = new VirtualMachine();
+    return vm.loadProject(readFileToBuffer(exampleProjectPath))
+        .then(() => {
+            const stage = vm.runtime.targets[0];
+            stage.createVariable('typedVarId', 'temperature', '', false, 'float');
+
+            const serialized = JSON.parse(JSON.stringify(sb3.serialize(vm.runtime)));
+            // Simulate a corrupt/hand-edited project carrying an arbitrary type string.
+            serialized.targets[0].variableTypes.typedVarId = 'int hacked = 1; int';
+
+            return sb3.deserialize(serialized, new Runtime(), null, false);
+        })
+        .then(({targets}) => {
+            t.equal(targets[0].variables.typedVarId.dataType, '');
+            t.end();
+        });
+});

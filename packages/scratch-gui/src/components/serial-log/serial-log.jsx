@@ -1,5 +1,6 @@
 import React, {useState, useCallback, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import styles from './serial-log.css';
 
@@ -45,7 +46,7 @@ const messages = defineMessages({
     }
 });
 
-const SerialLog = ({logs = [], onClear, onSend, prompt}) => {
+const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
     const intl = useIntl();
     const [collapsed, setCollapsed] = useState(false);
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
@@ -100,12 +101,12 @@ const SerialLog = ({logs = [], onClear, onSend, prompt}) => {
 
     return (
         <div
-            className={styles.serialLog}
-            style={collapsed ? null : {height: `${height}px`}}
+            className={classNames(styles.serialLog, {[styles.fill]: fill && !collapsed})}
+            style={(fill || collapsed) ? null : {height: `${height}px`}}
         >
             <div
                 className={styles.resizeHandle}
-                onMouseDown={collapsed ? null : handleResizeMouseDown}
+                onMouseDown={(fill || collapsed) ? null : handleResizeMouseDown}
             />
             <div className={styles.inner}>
                 <div className={styles.header}>
@@ -183,6 +184,7 @@ SerialLog.propTypes = {
     logs: PropTypes.arrayOf(PropTypes.shape({
         message: PropTypes.string
     })),
+    fill: PropTypes.bool,
     onClear: PropTypes.func,
     onSend: PropTypes.func,
     prompt: PropTypes.string

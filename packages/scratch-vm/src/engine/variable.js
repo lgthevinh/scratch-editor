@@ -12,13 +12,16 @@ class Variable {
      * @param {string} name Name of the variable.
      * @param {string} type Type of the variable, one of '' or 'list'
      * @param {boolean} isCloud Whether the variable is stored in the cloud.
+     * @param {string} [dataType] Explicit value type for code generation, one of 'int', 'float', or 'string'.
+     * Empty when the type should be inferred from the variable's assignments.
      * @class
      */
-    constructor (id, name, type, isCloud) {
+    constructor (id, name, type, isCloud, dataType) {
         this.id = id || uid();
         this.name = name;
         this.type = type;
         this.isCloud = isCloud;
+        this.dataType = Variable.normalizeDataType(dataType);
         switch (this.type) {
         case Variable.SCALAR_TYPE:
             this.value = 0;
@@ -64,6 +67,25 @@ class Variable {
      */
     static get BROADCAST_MESSAGE_TYPE () {
         return 'broadcast_msg';
+    }
+
+    /**
+     * Allowed explicit value types for code generation.
+     * @constant {Array.<string>}
+     */
+    static get DATA_TYPES () {
+        return ['int', 'float', 'string'];
+    }
+
+    /**
+     * Validate an explicit value type, returning '' (infer from assignments) for any value
+     * that is not a recognized data type. Used at trust boundaries (deserialize, variable
+     * creation) so codegen never receives an arbitrary type string.
+     * @param {*} dataType Candidate explicit value type.
+     * @returns {string} A valid data type, or '' when unrecognized.
+     */
+    static normalizeDataType (dataType) {
+        return Variable.DATA_TYPES.includes(dataType) ? dataType : '';
     }
 }
 

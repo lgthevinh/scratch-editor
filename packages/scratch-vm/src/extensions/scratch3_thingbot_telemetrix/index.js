@@ -3,7 +3,6 @@ const BlockType = require('../../extension-support/block-type');
 const formatMessage = require('format-message');
 const ThingBotTelemetrix = require('./thingbot-telemetrix');
 const BLETransport = require('./transport/ble');
-const codegen = require('./codegen');
 
 // eslint-disable-next-line @stylistic/max-len
 const blockIconURI = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9ImhzbCgxNjMsIDg1JSwgNDAlKSIvPgogIDxnIHN0cm9rZT0id2hpdGUiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cmVjdCB4PSIxMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcng9IjIiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMTIpIi8+CiAgICA8cGF0aCBkPSJNIDE1LDEwIGEgNSw1IDAgMCwwIDEwLDAiIHN0cm9rZS13aWR0aD0iMS4yIi8+CiAgICA8bGluZSB4MT0iNiIgeTE9IjE1IiB4Mj0iMTAiIHkyPSIxNSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICAgIDxsaW5lIHgxPSI2IiB5MT0iMjAiIHgyPSIxMCIgeTI9IjIwIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogICAgPGxpbmUgeDE9IjYiIHkxPSIyNSIgeDI9IjEwIiB5Mj0iMjUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgICA8bGluZSB4MT0iMzAiIHkxPSIxNSIgeDI9IjM0IiB5Mj0iMTUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgICA8bGluZSB4MT0iMzAiIHkxPSIyMCIgeDI9IjM0IiB5Mj0iMjAiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgICA8bGluZSB4MT0iMzAiIHkxPSIyNSIgeDI9IjM0IiB5Mj0iMjUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgICA8bGluZSB4MT0iMTYiIHkxPSI2IiB4Mj0iMTYiIHkyPSIxMCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICAgIDxsaW5lIHgxPSIyNCIgeTE9IjYiIHgyPSIyNCIgeTI9IjEwIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogICAgPGxpbmUgeDE9IjE2IiB5MT0iMzAiIHgyPSIxNiIgeTI9IjM0IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogICAgPGxpbmUgeDE9IjI0IiB5MT0iMzAiIHgyPSIyNCIgeTI9IjM0IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDwvZz4KPC9zdmc+';
@@ -379,10 +378,6 @@ class ThingBotTelemetrixExtension {
         };
     }
 
-    getCodeGenerators () {
-        return codegen.getCodeGenerators();
-    }
-
     // ─── Block handlers ───
 
     setPinMode ({PIN, MODE}) {
@@ -465,7 +460,5 @@ class ThingBotTelemetrixExtension {
         return this._telemetrix.readHumidity(parseInt(PIN, 10));
     }
 }
-
-ThingBotTelemetrixExtension.getCodeGenerators = codegen.getCodeGenerators;
 
 module.exports = ThingBotTelemetrixExtension;

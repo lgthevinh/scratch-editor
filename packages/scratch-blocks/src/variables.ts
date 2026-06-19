@@ -39,7 +39,7 @@ type PromptType = (
   callback: (
     variableName: string,
     additionalVars: string[],
-    variableOptions?: { scope?: string; isCloud?: boolean },
+    variableOptions?: { scope?: string; isCloud?: boolean; dataType?: string },
   ) => void,
   title?: string,
   varType?: string,
@@ -97,11 +97,16 @@ export function createVariable(
   prompt(
     newMsg,
     '',
-    (text: string, additionalVars?: string[], variableOptions?: { scope?: string; isCloud?: boolean }) => {
+    (
+      text: string,
+      additionalVars?: string[],
+      variableOptions?: { scope?: string; isCloud?: boolean; dataType?: string },
+    ) => {
       variableOptions = variableOptions ?? {}
       const scope = variableOptions.scope
       const isLocal = scope === 'local'
       const isCloud = variableOptions.isCloud ?? false
+      const dataType = variableOptions.dataType ?? ''
       // Default to [] if additionalVars is not provided
       additionalVars = additionalVars ?? []
       // Only use additionalVars for global variable creation.
@@ -109,7 +114,15 @@ export function createVariable(
 
       const validatedText = validate(text, workspace, additionalVarNames, isCloud, opt_callback)
       if (validatedText) {
-        const variable = new ScratchVariableModel(workspace, validatedText, opt_type, undefined, isLocal, isCloud)
+        const variable = new ScratchVariableModel(
+          workspace,
+          validatedText,
+          opt_type,
+          undefined,
+          isLocal,
+          isCloud,
+          dataType,
+        )
         workspace.getVariableMap().addVariable(variable)
         Blockly.Events.fire(new (Blockly.Events.get(Blockly.Events.VAR_CREATE))(variable))
 

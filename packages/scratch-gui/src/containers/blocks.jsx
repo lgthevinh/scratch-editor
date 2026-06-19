@@ -622,11 +622,11 @@ class Blocks extends React.Component {
             this.ScratchBlocks.Msg.VARIABLE_MODAL_TITLE;
         p.prompt.varType = typeof optVarType === 'string' ?
             optVarType : this.ScratchBlocks.SCALAR_VARIABLE_TYPE;
-        p.prompt.showVariableOptions = // This flag means that we should show variable/list options about scope
-            optVarType !== this.ScratchBlocks.BROADCAST_MESSAGE_VARIABLE_TYPE &&
-            p.prompt.title !== this.ScratchBlocks.Msg.RENAME_VARIABLE_MODAL_TITLE &&
-            p.prompt.title !== this.ScratchBlocks.Msg.RENAME_LIST_MODAL_TITLE;
-        p.prompt.showCloudOption = (optVarType === this.ScratchBlocks.SCALAR_VARIABLE_TYPE) && this.props.canUseCloud;
+        // The value-type chooser only applies when creating a new scalar variable
+        // (not lists, broadcasts, or renames).
+        p.prompt.showTypeOption =
+            p.prompt.varType === this.ScratchBlocks.SCALAR_VARIABLE_TYPE &&
+            p.prompt.title !== this.ScratchBlocks.Msg.RENAME_VARIABLE_MODAL_TITLE;
         this.setState(p);
     }
     handleConnectionModalStart (extensionId) {
@@ -706,13 +706,9 @@ class Blocks extends React.Component {
                 {this.state.prompt ? (
                     <Prompt
                         defaultValue={this.state.prompt.defaultValue}
-                        isStage={vm.runtime.getEditingTarget().isStage}
-                        showListMessage={this.state.prompt.varType === this.ScratchBlocks.LIST_VARIABLE_TYPE}
                         label={this.state.prompt.message}
-                        showCloudOption={this.state.prompt.showCloudOption}
-                        showVariableOptions={this.state.prompt.showVariableOptions}
+                        showTypeOption={this.state.prompt.showTypeOption}
                         title={this.state.prompt.title}
-                        vm={vm}
                         onCancel={this.handlePromptClose}
                         onOk={this.handlePromptCallback}
                     />

@@ -4,10 +4,24 @@ import {FormattedMessage} from 'react-intl';
 import arduinoUnoIconURL from './arduino-uno.svg';
 import arduinoNanoIconURL from './arduino-nano.svg';
 import esp32IconURL from './esp32.svg';
+import noBoardIconURL from './no-board.svg';
 
 // Mock board catalog used by the board-selection dialog. Replace/extend with the
 // real board registry (FQBN, pin maps, toolchain) when upload mode is wired up.
 export default [
+    {
+        name: 'No board',
+        boardId: null,
+        iconURL: noBoardIconURL,
+        description: (
+            <FormattedMessage
+                defaultMessage="Run in host mode without a board. Code runs in the browser."
+                description="Description for the option that deselects the board and runs in host mode"
+                id="gui.boardLibrary.noBoard.description"
+            />
+        ),
+        featured: true
+    },
     {
         name: 'Arduino Uno',
         boardId: 'arduino:avr:uno',

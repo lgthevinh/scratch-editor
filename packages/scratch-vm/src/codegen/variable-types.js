@@ -63,8 +63,13 @@ const classifyKind = (blocks, types, blockId) => {
 // A variable is `String` if any `set` assigns a string value, else `float` if any assigned
 // value is fractional, else `int`. The fixpoint loop lets variable-to-variable assignments
 // (`set a to b`) propagate. Returns a map of sanitized variable name -> kind.
-const inferVariableTypes = blocks => {
-    const types = Object.create(null);
+//
+// `explicitTypes` (sanitized name -> type) seeds the map and locks those variables: their type is
+// never overwritten by assignments, but it still propagates through `data_variable` references so
+// dependent variables (`set b to a`) pick it up.
+const inferVariableTypes = (blocks, explicitTypes) => {
+    const locked = explicitTypes || Object.create(null);
+    const types = Object.assign(Object.create(null), locked);
     const maxIterations = Object.keys(blocks._blocks).length + 1;
     let changed = true;
     let guard = 0;
@@ -76,6 +81,7 @@ const inferVariableTypes = blocks => {
             const block = blocks._blocks[id];
             if (block.opcode !== 'data_setvariableto') continue;
             const name = variableName(block, 'VARIABLE', 'variable');
+            if (name in locked) continue;
             const kind = classifyKind(blocks, types, inputBlockId(block, 'VALUE'));
             const next = combine(types[name] || 'int', kind);
             if (types[name] !== next) {

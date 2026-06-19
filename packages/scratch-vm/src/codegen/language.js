@@ -1,5 +1,4 @@
 const Language = {
-    JAVASCRIPT: 'js',
     ARDUINO_CPP: 'arduino-cpp'
 };
 

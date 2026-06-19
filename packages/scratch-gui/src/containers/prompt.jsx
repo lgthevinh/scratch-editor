@@ -2,24 +2,20 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import bindAll from 'lodash.bindall';
 import PromptComponent from '../components/prompt/prompt.jsx';
-import VM from '@scratch/scratch-vm';
 
 class Prompt extends React.Component {
     constructor (props) {
         super(props);
         bindAll(this, [
             'handleOk',
-            'handleScopeOptionSelection',
+            'handleTypeOptionSelection',
             'handleCancel',
             'handleChange',
-            'handleKeyPress',
-            'handleCloudVariableOptionChange'
+            'handleKeyPress'
         ]);
         this.state = {
             inputValue: '',
-            globalSelected: true,
-            cloudSelected: false,
-            canAddCloudVariable: (props.vm && props.vm.runtime.canAddCloudVariable()) || false
+            selectedType: 'int'
         };
     }
     handleKeyPress (event) {
@@ -30,8 +26,9 @@ class Prompt extends React.Component {
     }
     handleOk () {
         this.props.onOk(this.state.inputValue, {
-            scope: this.state.globalSelected ? 'global' : 'local',
-            isCloud: this.state.cloudSelected
+            // There is a single implicit device target, so every variable is global.
+            scope: 'global',
+            dataType: this.props.showTypeOption ? this.state.selectedType : ''
         });
     }
     handleCancel () {
@@ -40,38 +37,23 @@ class Prompt extends React.Component {
     handleChange (e) {
         this.setState({inputValue: e.target.value});
     }
-    handleScopeOptionSelection (e) {
-        this.setState({globalSelected: (e.target.value === 'global')});
-    }
-    handleCloudVariableOptionChange (e) {
-        if (!this.props.showCloudOption) return;
-
-        const checked = e.target.checked;
-        this.setState({cloudSelected: checked});
-        if (checked) {
-            this.setState({globalSelected: true});
-        }
+    handleTypeOptionSelection (e) {
+        this.setState({selectedType: e.target.value});
     }
     render () {
         return (
             <PromptComponent
-                canAddCloudVariable={this.state.canAddCloudVariable}
-                cloudSelected={this.state.cloudSelected}
                 defaultValue={this.props.defaultValue}
-                globalSelected={this.state.globalSelected}
-                isStage={this.props.isStage}
-                showListMessage={this.props.showListMessage}
                 label={this.props.label}
-                showCloudOption={this.props.showCloudOption}
-                showVariableOptions={this.props.showVariableOptions}
+                selectedType={this.state.selectedType}
+                showTypeOption={this.props.showTypeOption}
                 title={this.props.title}
                 onCancel={this.handleCancel}
                 onChange={this.handleChange}
-                onCloudVarOptionChange={this.handleCloudVariableOptionChange}
                 onFocus={this.handleFocus}
                 onKeyPress={this.handleKeyPress}
                 onOk={this.handleOk}
-                onScopeOptionSelection={this.handleScopeOptionSelection}
+                onTypeOptionSelection={this.handleTypeOptionSelection}
             />
         );
     }
@@ -79,15 +61,11 @@ class Prompt extends React.Component {
 
 Prompt.propTypes = {
     defaultValue: PropTypes.string,
-    isStage: PropTypes.bool.isRequired,
-    showListMessage: PropTypes.bool.isRequired,
     label: PropTypes.string.isRequired,
     onCancel: PropTypes.func.isRequired,
     onOk: PropTypes.func.isRequired,
-    showCloudOption: PropTypes.bool.isRequired,
-    showVariableOptions: PropTypes.bool.isRequired,
-    title: PropTypes.string.isRequired,
-    vm: PropTypes.instanceOf(VM)
+    showTypeOption: PropTypes.bool.isRequired,
+    title: PropTypes.string.isRequired
 };
 
 export default Prompt;

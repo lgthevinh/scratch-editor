@@ -5,5 +5,4 @@
   <rect x="135" y="266" width="330" height="30" rx="9" fill="#0c5c61"/>
   <rect x="354" y="116" width="102" height="102" rx="9" fill="#1f2937"/>
   <circle cx="174" cy="173" r="27" fill="#cfe9eb"/>
-  <text x="300" y="340" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="bold" fill="#0c5c61" text-anchor="middle">UNO</text>
 </svg>

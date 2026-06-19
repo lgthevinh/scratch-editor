@@ -10,29 +10,23 @@ const {
     statement,
     variableName
 } = require('./code-generator-provider');
-const ThingBotTelemetrixExtension = require('../extensions/scratch3_thingbot_telemetrix');
 const Scratch3Arduino = require('../extensions/scratch3_arduino');
 
-const LANGUAGES = [Language.JAVASCRIPT, Language.ARDUINO_CPP];
+const ARDUINO = Language.ARDUINO_CPP;
 
 const procedureName = block => {
     const mutation = block.mutation || {};
     return sanitizeIdentifier(mutation.proccode || 'custom_block');
 };
 
-// Both JavaScript and Arduino C++ declare each scalar variable once, as a hoisted helper, using
-// its inferred type ('int' | 'float' | 'string'). Repeated set/change blocks then become plain
-// assignments. Surfacing the type in both languages helps learners reason about variable types.
+// Each scalar variable is declared once, as a hoisted helper, using its inferred type
+// ('int' | 'float' | 'string'). Repeated set/change blocks then become plain assignments.
 const ensureVariable = (ctx, block) => {
     const name = variableName(block, 'VARIABLE', 'variable');
     const type = ctx.variableType(name);
     const init = type === 'string' ? '""' : '0';
-    if (ctx.language === Language.JAVASCRIPT) {
-        ctx.addHelper(`let ${name} = ${init};`);
-    } else {
-        const cppType = type === 'string' ? 'String' : type;
-        ctx.addHelper(`${cppType} ${name} = ${init};`);
-    }
+    const cppType = type === 'string' ? 'String' : type;
+    ctx.addHelper(`${cppType} ${name} = ${init};`);
     return name;
 };
 
@@ -53,14 +47,8 @@ const checkAssignment = (ctx, block, name, type) => {
     }
 };
 
-// Lists keep the JavaScript-array preview in both languages (C++ array support is a follow-up).
-const listName = (ctx, block) => {
-    const list = variableName(block, 'LIST', 'list');
-    if (ctx.language === Language.JAVASCRIPT) {
-        ctx.addHelper(`let ${list} = [];`);
-    }
-    return list;
-};
+// Lists keep the JavaScript-array preview (C++ array support is a follow-up).
+const listName = (ctx, block) => variableName(block, 'LIST', 'list');
 
 const emptyBody = (ctx, indentLevel) => line(ctx, indentLevel, '/* no blocks */');
 
@@ -68,10 +56,7 @@ const bodyOrEmpty = (ctx, block, branchName, indentLevel) => (
     ctx.generateSubstack(block, branchName, indentLevel) || emptyBody(ctx, indentLevel)
 );
 
-const registerBoth = (registry, opcode, jsGenerator, arduinoGenerator) => {
-    registry.register(opcode, Language.JAVASCRIPT, jsGenerator);
-    registry.register(opcode, Language.ARDUINO_CPP, arduinoGenerator);
-};
+const register = (registry, opcode, generator) => registry.register(opcode, ARDUINO, generator);
 
 const binaryExpression = (leftName, operator, rightName, fallback) => expression((ctx, block) => {
     const left = input(ctx, block, leftName, fallback);
@@ -84,321 +69,187 @@ const noOpStatement = label => statement((ctx, block, indentLevel) => (
 ));
 
 const registerSharedExpressions = registry => {
-    for (const language of LANGUAGES) {
-        registry.register('math_number', language, expression((ctx, block) => field(ctx, block, 'NUM', '0')));
-        registry.register('math_integer', language, expression((ctx, block) => field(ctx, block, 'NUM', '0')));
-        registry.register('math_whole_number', language, expression((ctx, block) => field(ctx, block, 'NUM', '0')));
-        registry.register('math_positive_number', language, expression((ctx, block) => field(ctx, block, 'NUM', '0')));
-        registry.register('text', language, expression((ctx, block) => quote(field(ctx, block, 'TEXT', ''))));
-        registry.register('data_listindexall', language, expression((ctx, block) => (
-            quote(field(ctx, block, 'INDEX', 'all'))
-        )));
-        registry.register('data_listindexrandom', language, expression((ctx, block) => (
-            quote(field(ctx, block, 'INDEX', 'random'))
-        )));
+    register(registry, 'math_number', expression((ctx, block) => field(ctx, block, 'NUM', '0')));
+    register(registry, 'math_integer', expression((ctx, block) => field(ctx, block, 'NUM', '0')));
+    register(registry, 'math_whole_number', expression((ctx, block) => field(ctx, block, 'NUM', '0')));
+    register(registry, 'math_positive_number', expression((ctx, block) => field(ctx, block, 'NUM', '0')));
+    register(registry, 'text', expression((ctx, block) => quote(field(ctx, block, 'TEXT', ''))));
+    register(registry, 'data_listindexall', expression((ctx, block) => quote(field(ctx, block, 'INDEX', 'all'))));
+    register(registry, 'data_listindexrandom', expression((ctx, block) => (
+        quote(field(ctx, block, 'INDEX', 'random'))
+    )));
 
-        registry.register('operator_add', language, binaryExpression('NUM1', '+', 'NUM2', '0'));
-        registry.register('operator_subtract', language, binaryExpression('NUM1', '-', 'NUM2', '0'));
-        registry.register('operator_multiply', language, binaryExpression('NUM1', '*', 'NUM2', '0'));
-        registry.register('operator_divide', language, binaryExpression('NUM1', '/', 'NUM2', '0'));
-        registry.register('operator_lt', language, binaryExpression('OPERAND1', '<', 'OPERAND2', '0'));
-        registry.register('operator_gt', language, binaryExpression('OPERAND1', '>', 'OPERAND2', '0'));
-        registry.register('operator_equals', language, binaryExpression('OPERAND1', '==', 'OPERAND2', '0'));
-        registry.register('operator_and', language, binaryExpression('OPERAND1', '&&', 'OPERAND2', 'false'));
-        registry.register('operator_or', language, binaryExpression('OPERAND1', '||', 'OPERAND2', 'false'));
-        registry.register('operator_not', language, expression((ctx, block) => (
-            `(!${input(ctx, block, 'OPERAND', 'false')})`
-        )));
-    }
+    register(registry, 'operator_add', binaryExpression('NUM1', '+', 'NUM2', '0'));
+    register(registry, 'operator_subtract', binaryExpression('NUM1', '-', 'NUM2', '0'));
+    register(registry, 'operator_multiply', binaryExpression('NUM1', '*', 'NUM2', '0'));
+    register(registry, 'operator_divide', binaryExpression('NUM1', '/', 'NUM2', '0'));
+    register(registry, 'operator_lt', binaryExpression('OPERAND1', '<', 'OPERAND2', '0'));
+    register(registry, 'operator_gt', binaryExpression('OPERAND1', '>', 'OPERAND2', '0'));
+    register(registry, 'operator_equals', binaryExpression('OPERAND1', '==', 'OPERAND2', '0'));
+    register(registry, 'operator_and', binaryExpression('OPERAND1', '&&', 'OPERAND2', 'false'));
+    register(registry, 'operator_or', binaryExpression('OPERAND1', '||', 'OPERAND2', 'false'));
+    register(registry, 'operator_not', expression((ctx, block) => `(!${input(ctx, block, 'OPERAND', 'false')})`));
 };
 
 const registerOperators = registry => {
-    registerBoth(
-        registry,
-        'operator_random',
-        expression((ctx, block) => {
-            const from = input(ctx, block, 'FROM', '0');
-            const to = input(ctx, block, 'TO', '1');
-            return `(${from} + (Math.random() * (${to} - ${from})))`;
-        }),
-        expression((ctx, block) => {
-            const from = input(ctx, block, 'FROM', '0');
-            const to = input(ctx, block, 'TO', '1');
-            return `random(${from}, ${to} + 1)`;
-        })
-    );
-    registerBoth(
-        registry,
-        'operator_join',
-        expression((ctx, block) => {
-            const first = input(ctx, block, 'STRING1', '""');
-            const second = input(ctx, block, 'STRING2', '""');
-            return `(String(${first}) + String(${second}))`;
-        }),
-        expression((ctx, block) => {
-            const first = input(ctx, block, 'STRING1', '""');
-            const second = input(ctx, block, 'STRING2', '""');
-            return `(String(${first}) + String(${second}))`;
-        })
-    );
-    registerBoth(
-        registry,
-        'operator_letter_of',
-        expression((ctx, block) => {
-            const index = input(ctx, block, 'LETTER', '1');
-            const string = input(ctx, block, 'STRING', '""');
-            return `String(${string}).charAt(${index} - 1)`;
-        }),
-        expression((ctx, block) => {
-            const index = input(ctx, block, 'LETTER', '1');
-            const string = input(ctx, block, 'STRING', '""');
-            return `String(${string}).charAt(${index} - 1)`;
-        })
-    );
-    registerBoth(
-        registry,
-        'operator_length',
-        expression((ctx, block) => `String(${input(ctx, block, 'STRING', '""')}).length`),
-        expression((ctx, block) => `String(${input(ctx, block, 'STRING', '""')}).length()`)
-    );
-    registerBoth(
-        registry,
-        'operator_contains',
-        expression((ctx, block) => {
-            const string = input(ctx, block, 'STRING1', '""');
-            const search = input(ctx, block, 'STRING2', '""');
-            return `String(${string}).includes(String(${search}))`;
-        }),
-        expression((ctx, block) => {
-            const string = input(ctx, block, 'STRING1', '""');
-            const search = input(ctx, block, 'STRING2', '""');
-            return `(String(${string}).indexOf(String(${search})) >= 0)`;
-        })
-    );
-    registerBoth(
-        registry,
-        'operator_mod',
-        expression((ctx, block) => {
-            const number = input(ctx, block, 'NUM1', '0');
-            const modulus = input(ctx, block, 'NUM2', '1');
-            return `(((${number} % ${modulus}) + ${modulus}) % ${modulus})`;
-        }),
-        expression((ctx, block) => {
-            const number = input(ctx, block, 'NUM1', '0');
-            const modulus = input(ctx, block, 'NUM2', '1');
-            return `(((${number} % ${modulus}) + ${modulus}) % ${modulus})`;
-        })
-    );
-    registerBoth(
-        registry,
-        'operator_round',
-        expression((ctx, block) => `Math.round(${input(ctx, block, 'NUM', '0')})`),
-        expression((ctx, block) => `round(${input(ctx, block, 'NUM', '0')})`)
-    );
-    registerBoth(
-        registry,
-        'operator_mathop',
-        expression((ctx, block) => {
-            const operator = String(field(ctx, block, 'OPERATOR', 'abs')).toLowerCase();
-            const number = input(ctx, block, 'NUM', '0');
-            const jsOperators = {
-                abs: 'abs',
-                floor: 'floor',
-                ceiling: 'ceil',
-                sqrt: 'sqrt',
-                sin: 'sin',
-                cos: 'cos',
-                tan: 'tan',
-                asin: 'asin',
-                acos: 'acos',
-                atan: 'atan',
-                ln: 'log',
-                log: 'log10'
-            };
-            if (operator === 'e ^') return `Math.exp(${number})`;
-            if (operator === '10 ^') return `Math.pow(10, ${number})`;
-            return `Math.${jsOperators[operator] || 'abs'}(${number})`;
-        }),
-        expression((ctx, block) => {
-            const operator = String(field(ctx, block, 'OPERATOR', 'abs')).toLowerCase();
-            const number = input(ctx, block, 'NUM', '0');
-            const cppOperators = {
-                abs: 'abs',
-                floor: 'floor',
-                ceiling: 'ceil',
-                sqrt: 'sqrt',
-                sin: 'sin',
-                cos: 'cos',
-                tan: 'tan',
-                asin: 'asin',
-                acos: 'acos',
-                atan: 'atan',
-                ln: 'log',
-                log: 'log10'
-            };
-            if (operator === 'e ^') return `exp(${number})`;
-            if (operator === '10 ^') return `pow(10, ${number})`;
-            return `${cppOperators[operator] || 'abs'}(${number})`;
-        })
-    );
-    registerBoth(
-        registry,
-        'operator_tonumber',
-        expression((ctx, block) => `Number(${input(ctx, block, 'VALUE', '0')})`),
-        expression((ctx, block) => `String(${input(ctx, block, 'VALUE', '0')}).toFloat()`)
-    );
-    registerBoth(
-        registry,
-        'operator_totext',
-        expression((ctx, block) => `String(${input(ctx, block, 'VALUE', '""')})`),
-        expression((ctx, block) => `String(${input(ctx, block, 'VALUE', '""')})`)
-    );
+    register(registry, 'operator_random', expression((ctx, block) => {
+        const from = input(ctx, block, 'FROM', '0');
+        const to = input(ctx, block, 'TO', '1');
+        return `random(${from}, ${to} + 1)`;
+    }));
+    register(registry, 'operator_join', expression((ctx, block) => {
+        const first = input(ctx, block, 'STRING1', '""');
+        const second = input(ctx, block, 'STRING2', '""');
+        return `(String(${first}) + String(${second}))`;
+    }));
+    register(registry, 'operator_letter_of', expression((ctx, block) => {
+        const index = input(ctx, block, 'LETTER', '1');
+        const string = input(ctx, block, 'STRING', '""');
+        return `String(${string}).charAt(${index} - 1)`;
+    }));
+    register(registry, 'operator_length', expression((ctx, block) => (
+        `String(${input(ctx, block, 'STRING', '""')}).length()`
+    )));
+    register(registry, 'operator_contains', expression((ctx, block) => {
+        const string = input(ctx, block, 'STRING1', '""');
+        const search = input(ctx, block, 'STRING2', '""');
+        return `(String(${string}).indexOf(String(${search})) >= 0)`;
+    }));
+    register(registry, 'operator_mod', expression((ctx, block) => {
+        const number = input(ctx, block, 'NUM1', '0');
+        const modulus = input(ctx, block, 'NUM2', '1');
+        return `(((${number} % ${modulus}) + ${modulus}) % ${modulus})`;
+    }));
+    register(registry, 'operator_round', expression((ctx, block) => `round(${input(ctx, block, 'NUM', '0')})`));
+    register(registry, 'operator_mathop', expression((ctx, block) => {
+        const operator = String(field(ctx, block, 'OPERATOR', 'abs')).toLowerCase();
+        const number = input(ctx, block, 'NUM', '0');
+        const cppOperators = {
+            abs: 'abs',
+            floor: 'floor',
+            ceiling: 'ceil',
+            sqrt: 'sqrt',
+            sin: 'sin',
+            cos: 'cos',
+            tan: 'tan',
+            asin: 'asin',
+            acos: 'acos',
+            atan: 'atan',
+            ln: 'log',
+            log: 'log10'
+        };
+        if (operator === 'e ^') return `exp(${number})`;
+        if (operator === '10 ^') return `pow(10, ${number})`;
+        return `${cppOperators[operator] || 'abs'}(${number})`;
+    }));
+    register(registry, 'operator_tonumber', expression((ctx, block) => (
+        `String(${input(ctx, block, 'VALUE', '0')}).toFloat()`
+    )));
+    register(registry, 'operator_totext', expression((ctx, block) => (
+        `String(${input(ctx, block, 'VALUE', '""')})`
+    )));
 };
 
 const registerEvents = registry => {
-    registry.register('event_whenflagclicked', Language.JAVASCRIPT, statement((ctx, block) => {
-        const body = ctx.generateStack(block.next, 1);
-        return `async function whenGreenFlagClicked () {\n${body}\n}\n\nwhenGreenFlagClicked();`;
-    }));
-    registry.register('event_whenflagclicked', Language.ARDUINO_CPP, statement((ctx, block) => (
-        ctx.generateStack(block.next, 1)
-    )));
-
-    registry.register('event_whenkeypressed', Language.JAVASCRIPT, statement((ctx, block) => {
-        const key = quote(field(ctx, block, 'KEY_OPTION', 'space'));
-        const body = ctx.generateStack(block.next, 2);
-        return [
-            'window.addEventListener("keydown", async event => {',
-            `    if (event.key === ${key}) {`,
-            body || '        /* no blocks */',
-            '    }',
-            '});'
-        ].join('\n');
-    }));
-    registry.register('event_whenkeypressed', Language.ARDUINO_CPP, statement((ctx, block) => (
+    register(registry, 'event_whenflagclicked', statement((ctx, block) => ctx.generateStack(block.next, 1)));
+    register(registry, 'event_whenkeypressed', statement((ctx, block) => (
         [
             '    /* Keyboard events are not available on Arduino boards. */',
             ctx.generateStack(block.next, 1)
         ].filter(Boolean).join('\n')
     )));
 
-    // Board-only hats: route their bodies to the Arduino setup()/loop() functions. No js generators,
-    // so opening them in host mode produces an "unsupported" diagnostic.
-    registry.register('event_whenarduinobegin', Language.ARDUINO_CPP, statement((ctx, block) => {
+    // Board-only hats: route their bodies to the Arduino setup()/loop() functions.
+    register(registry, 'event_whenarduinobegin', statement((ctx, block) => {
         ctx.addSetupBlock(ctx.generateStack(block.next, 1));
         return '';
     }));
-    registry.register('event_whenarduinoloop', Language.ARDUINO_CPP, statement((ctx, block) => (
-        ctx.generateStack(block.next, 1)
-    )));
+    register(registry, 'event_whenarduinoloop', statement((ctx, block) => ctx.generateStack(block.next, 1)));
 };
 
 const registerControl = registry => {
-    for (const language of LANGUAGES) {
-        registry.register('control_repeat', language, statement((ctx, block, indentLevel) => {
-            const times = input(ctx, block, 'TIMES', '0');
-            const iterator = `i${indentLevel || 0}`;
-            const variableType = language === Language.ARDUINO_CPP ? 'int ' : 'let ';
-            const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
-            return [
-                line(ctx, indentLevel, `for (${variableType}${iterator} = 0; ${iterator} < ${times}; ${iterator}++) {`),
-                body,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('control_forever', language, statement((ctx, block, indentLevel) => {
-            const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
-            return [
-                line(ctx, indentLevel, 'while (true) {'),
-                body,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('control_repeat_until', language, statement((ctx, block, indentLevel) => {
-            const condition = input(ctx, block, 'CONDITION', 'false');
-            const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
-            return [
-                line(ctx, indentLevel, `while (!(${condition})) {`),
-                body,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('control_while', language, statement((ctx, block, indentLevel) => {
-            const condition = input(ctx, block, 'CONDITION', 'false');
-            const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
-            return [
-                line(ctx, indentLevel, `while (${condition}) {`),
-                body,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('control_if', language, statement((ctx, block, indentLevel) => {
-            const condition = input(ctx, block, 'CONDITION', 'false');
-            const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
-            return [
-                line(ctx, indentLevel, `if (${condition}) {`),
-                body,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('control_if_else', language, statement((ctx, block, indentLevel) => {
-            const condition = input(ctx, block, 'CONDITION', 'false');
-            const thenBody = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
-            const elseBody = bodyOrEmpty(ctx, block, ctx.branchInputName(2), indentLevel + 1);
-            return [
-                line(ctx, indentLevel, `if (${condition}) {`),
-                thenBody,
-                line(ctx, indentLevel, '} else {'),
-                elseBody,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('control_all_at_once', language, statement((ctx, block, indentLevel) => (
-            ctx.generateSubstack(block, ctx.branchInputName(1), indentLevel) ||
-            line(ctx, indentLevel, '/* no blocks */')
-        )));
-        registry.register('control_stop', language, statement((ctx, block, indentLevel) => {
-            const option = field(ctx, block, 'STOP_OPTION', 'this script');
-            return line(ctx, indentLevel, `return; /* stop ${option} */`);
-        }));
-        registry.register('control_clear_counter', language, statement((ctx, block, indentLevel) => (
-            line(ctx, indentLevel, '__scratchCounter = 0;')
-        )));
-        registry.register('control_incr_counter', language, statement((ctx, block, indentLevel) => (
-            line(ctx, indentLevel, '__scratchCounter++;')
-        )));
-        registry.register('control_get_counter', language, expression(() => '__scratchCounter'));
-    }
-
-    registry.register('control_wait', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        ctx.addHelper('const delay = ms => new Promise(resolve => setTimeout(resolve, ms));');
-        const duration = input(ctx, block, 'DURATION', '0');
-        return line(ctx, indentLevel, `await delay(1000 * ${duration});`);
-    }));
-    registry.register('control_wait', Language.ARDUINO_CPP, statement((ctx, block, indentLevel) => {
-        const duration = input(ctx, block, 'DURATION', '0');
-        return line(ctx, indentLevel, `delay(1000 * ${duration});`);
-    }));
-    registry.register('control_wait_until', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        ctx.addHelper('const delay = ms => new Promise(resolve => setTimeout(resolve, ms));');
-        const condition = input(ctx, block, 'CONDITION', 'false');
-        return line(ctx, indentLevel, `while (!(${condition})) await delay(16);`);
-    }));
-    registry.register('control_wait_until', Language.ARDUINO_CPP, statement((ctx, block, indentLevel) => {
-        const condition = input(ctx, block, 'CONDITION', 'false');
-        return line(ctx, indentLevel, `while (!(${condition})) { delay(16); }`);
-    }));
-    registry.register('control_for_each', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        const variable = variableName(block, 'VARIABLE', 'item');
-        const value = input(ctx, block, 'VALUE', '0');
+    register(registry, 'control_repeat', statement((ctx, block, indentLevel) => {
+        const times = input(ctx, block, 'TIMES', '0');
+        const iterator = `i${indentLevel || 0}`;
         const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
         return [
-            line(ctx, indentLevel, `for (let ${variable} = 1; ${variable} <= ${value}; ${variable}++) {`),
+            line(ctx, indentLevel, `for (int ${iterator} = 0; ${iterator} < ${times}; ${iterator}++) {`),
             body,
             line(ctx, indentLevel, '}')
         ].join('\n');
     }));
-    registry.register('control_for_each', Language.ARDUINO_CPP, statement((ctx, block, indentLevel) => {
+    register(registry, 'control_forever', statement((ctx, block, indentLevel) => {
+        const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
+        return [
+            line(ctx, indentLevel, 'while (true) {'),
+            body,
+            line(ctx, indentLevel, '}')
+        ].join('\n');
+    }));
+    register(registry, 'control_repeat_until', statement((ctx, block, indentLevel) => {
+        const condition = input(ctx, block, 'CONDITION', 'false');
+        const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
+        return [
+            line(ctx, indentLevel, `while (!(${condition})) {`),
+            body,
+            line(ctx, indentLevel, '}')
+        ].join('\n');
+    }));
+    register(registry, 'control_while', statement((ctx, block, indentLevel) => {
+        const condition = input(ctx, block, 'CONDITION', 'false');
+        const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
+        return [
+            line(ctx, indentLevel, `while (${condition}) {`),
+            body,
+            line(ctx, indentLevel, '}')
+        ].join('\n');
+    }));
+    register(registry, 'control_if', statement((ctx, block, indentLevel) => {
+        const condition = input(ctx, block, 'CONDITION', 'false');
+        const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
+        return [
+            line(ctx, indentLevel, `if (${condition}) {`),
+            body,
+            line(ctx, indentLevel, '}')
+        ].join('\n');
+    }));
+    register(registry, 'control_if_else', statement((ctx, block, indentLevel) => {
+        const condition = input(ctx, block, 'CONDITION', 'false');
+        const thenBody = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
+        const elseBody = bodyOrEmpty(ctx, block, ctx.branchInputName(2), indentLevel + 1);
+        return [
+            line(ctx, indentLevel, `if (${condition}) {`),
+            thenBody,
+            line(ctx, indentLevel, '} else {'),
+            elseBody,
+            line(ctx, indentLevel, '}')
+        ].join('\n');
+    }));
+    register(registry, 'control_all_at_once', statement((ctx, block, indentLevel) => (
+        ctx.generateSubstack(block, ctx.branchInputName(1), indentLevel) ||
+        line(ctx, indentLevel, '/* no blocks */')
+    )));
+    register(registry, 'control_stop', statement((ctx, block, indentLevel) => {
+        const option = field(ctx, block, 'STOP_OPTION', 'this script');
+        return line(ctx, indentLevel, `return; /* stop ${option} */`);
+    }));
+    register(registry, 'control_clear_counter', statement((ctx, block, indentLevel) => (
+        line(ctx, indentLevel, '__scratchCounter = 0;')
+    )));
+    register(registry, 'control_incr_counter', statement((ctx, block, indentLevel) => (
+        line(ctx, indentLevel, '__scratchCounter++;')
+    )));
+    register(registry, 'control_get_counter', expression(() => '__scratchCounter'));
+
+    register(registry, 'control_wait', statement((ctx, block, indentLevel) => {
+        const duration = input(ctx, block, 'DURATION', '0');
+        return line(ctx, indentLevel, `delay(1000 * ${duration});`);
+    }));
+    register(registry, 'control_wait_until', statement((ctx, block, indentLevel) => {
+        const condition = input(ctx, block, 'CONDITION', 'false');
+        return line(ctx, indentLevel, `while (!(${condition})) { delay(16); }`);
+    }));
+    register(registry, 'control_for_each', statement((ctx, block, indentLevel) => {
         const variable = variableName(block, 'VARIABLE', 'item');
         const value = input(ctx, block, 'VALUE', '0');
         const body = bodyOrEmpty(ctx, block, ctx.branchInputName(1), indentLevel + 1);
@@ -408,11 +259,7 @@ const registerControl = registry => {
             line(ctx, indentLevel, '}')
         ].join('\n');
     }));
-    registry.register('control_print', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        const value = input(ctx, block, 'STRING', '""');
-        return line(ctx, indentLevel, `console.log(${value});`);
-    }));
-    registry.register('control_print', Language.ARDUINO_CPP, statement((ctx, block, indentLevel) => {
+    register(registry, 'control_print', statement((ctx, block, indentLevel) => {
         ctx.addSetup('Serial.begin(9600);');
         const value = input(ctx, block, 'STRING', '""');
         return line(ctx, indentLevel, `Serial.println(${value});`);
@@ -420,153 +267,106 @@ const registerControl = registry => {
 };
 
 const registerData = registry => {
-    for (const language of LANGUAGES) {
-        registry.register('data_variable', language, expression((ctx, block) => ensureVariable(ctx, block)));
-        registry.register('data_setvariableto', language, statement((ctx, block, indentLevel) => {
-            const variable = ensureVariable(ctx, block);
-            const type = ctx.variableType(variable);
-            checkAssignment(ctx, block, variable, type);
-            const value = input(ctx, block, 'VALUE', type === 'string' ? '""' : '0');
-            return line(ctx, indentLevel, `${variable} = ${value};`);
-        }));
-        registry.register('data_changevariableby', language, statement((ctx, block, indentLevel) => {
-            const variable = ensureVariable(ctx, block);
-            if (ctx.variableType(variable) === 'string') {
-                ctx.addDiagnostic(
-                    'warning',
-                    `Cannot change text variable '${variable}' by a number`,
-                    block
-                );
-            }
-            return line(ctx, indentLevel, `${variable} += ${input(ctx, block, 'VALUE', '0')};`);
-        }));
-        registry.register('data_listcontents', language, expression((ctx, block) => (
-            listName(ctx, block)
-        )));
-        registry.register('data_addtolist', language, statement((ctx, block, indentLevel) => {
-            const list = listName(ctx, block);
-            return line(ctx, indentLevel, `${list}.push(${input(ctx, block, 'ITEM', '0')});`);
-        }));
-        registry.register('data_deleteoflist', language, statement((ctx, block, indentLevel) => {
-            const list = listName(ctx, block);
-            return line(ctx, indentLevel, `${list}.splice(${input(ctx, block, 'INDEX', '1')} - 1, 1);`);
-        }));
-        registry.register('data_deletealloflist', language, statement((ctx, block, indentLevel) => {
-            const list = listName(ctx, block);
-            return line(ctx, indentLevel, `${list}.length = 0;`);
-        }));
-        registry.register('data_insertatlist', language, statement((ctx, block, indentLevel) => {
-            const list = listName(ctx, block);
-            const index = input(ctx, block, 'INDEX', '1');
-            const item = input(ctx, block, 'ITEM', '0');
-            return line(ctx, indentLevel, `${list}.splice(${index} - 1, 0, ${item});`);
-        }));
-        registry.register('data_replaceitemoflist', language, statement((ctx, block, indentLevel) => {
-            const list = listName(ctx, block);
-            const index = input(ctx, block, 'INDEX', '1');
-            const item = input(ctx, block, 'ITEM', '0');
-            return line(ctx, indentLevel, `${list}[${index} - 1] = ${item};`);
-        }));
-        registry.register('data_itemoflist', language, expression((ctx, block) => {
-            const list = listName(ctx, block);
-            return `${list}[${input(ctx, block, 'INDEX', '1')} - 1]`;
-        }));
-        registry.register('data_itemnumoflist', language, expression((ctx, block) => {
-            const list = listName(ctx, block);
-            return `(${list}.indexOf(${input(ctx, block, 'ITEM', '0')}) + 1)`;
-        }));
-        registry.register('data_lengthoflist', language, expression((ctx, block) => {
-            const list = listName(ctx, block);
-            return `${list}.length`;
-        }));
-        registry.register('data_listcontainsitem', language, expression((ctx, block) => {
-            const list = listName(ctx, block);
-            return `${list}.includes(${input(ctx, block, 'ITEM', '0')})`;
-        }));
-        registry.register('data_showvariable', language, noOpStatement('show variable monitor'));
-        registry.register('data_hidevariable', language, noOpStatement('hide variable monitor'));
-        registry.register('data_showlist', language, noOpStatement('show list monitor'));
-        registry.register('data_hidelist', language, noOpStatement('hide list monitor'));
-    }
+    register(registry, 'data_variable', expression((ctx, block) => ensureVariable(ctx, block)));
+    register(registry, 'data_setvariableto', statement((ctx, block, indentLevel) => {
+        const variable = ensureVariable(ctx, block);
+        const type = ctx.variableType(variable);
+        checkAssignment(ctx, block, variable, type);
+        const value = input(ctx, block, 'VALUE', type === 'string' ? '""' : '0');
+        return line(ctx, indentLevel, `${variable} = ${value};`);
+    }));
+    register(registry, 'data_changevariableby', statement((ctx, block, indentLevel) => {
+        const variable = ensureVariable(ctx, block);
+        if (ctx.variableType(variable) === 'string') {
+            ctx.addDiagnostic(
+                'warning',
+                `Cannot change text variable '${variable}' by a number`,
+                block
+            );
+        }
+        return line(ctx, indentLevel, `${variable} += ${input(ctx, block, 'VALUE', '0')};`);
+    }));
+    register(registry, 'data_listcontents', expression((ctx, block) => listName(ctx, block)));
+    register(registry, 'data_addtolist', statement((ctx, block, indentLevel) => {
+        const list = listName(ctx, block);
+        return line(ctx, indentLevel, `${list}.push(${input(ctx, block, 'ITEM', '0')});`);
+    }));
+    register(registry, 'data_deleteoflist', statement((ctx, block, indentLevel) => {
+        const list = listName(ctx, block);
+        return line(ctx, indentLevel, `${list}.splice(${input(ctx, block, 'INDEX', '1')} - 1, 1);`);
+    }));
+    register(registry, 'data_deletealloflist', statement((ctx, block, indentLevel) => {
+        const list = listName(ctx, block);
+        return line(ctx, indentLevel, `${list}.length = 0;`);
+    }));
+    register(registry, 'data_insertatlist', statement((ctx, block, indentLevel) => {
+        const list = listName(ctx, block);
+        const index = input(ctx, block, 'INDEX', '1');
+        const item = input(ctx, block, 'ITEM', '0');
+        return line(ctx, indentLevel, `${list}.splice(${index} - 1, 0, ${item});`);
+    }));
+    register(registry, 'data_replaceitemoflist', statement((ctx, block, indentLevel) => {
+        const list = listName(ctx, block);
+        const index = input(ctx, block, 'INDEX', '1');
+        const item = input(ctx, block, 'ITEM', '0');
+        return line(ctx, indentLevel, `${list}[${index} - 1] = ${item};`);
+    }));
+    register(registry, 'data_itemoflist', expression((ctx, block) => {
+        const list = listName(ctx, block);
+        return `${list}[${input(ctx, block, 'INDEX', '1')} - 1]`;
+    }));
+    register(registry, 'data_itemnumoflist', expression((ctx, block) => {
+        const list = listName(ctx, block);
+        return `(${list}.indexOf(${input(ctx, block, 'ITEM', '0')}) + 1)`;
+    }));
+    register(registry, 'data_lengthoflist', expression((ctx, block) => {
+        const list = listName(ctx, block);
+        return `${list}.length`;
+    }));
+    register(registry, 'data_listcontainsitem', expression((ctx, block) => {
+        const list = listName(ctx, block);
+        return `${list}.includes(${input(ctx, block, 'ITEM', '0')})`;
+    }));
+    register(registry, 'data_showvariable', noOpStatement('show variable monitor'));
+    register(registry, 'data_hidevariable', noOpStatement('hide variable monitor'));
+    register(registry, 'data_showlist', noOpStatement('show list monitor'));
+    register(registry, 'data_hidelist', noOpStatement('hide list monitor'));
 };
 
 const registerSensing = registry => {
-    registry.register('sensing_askandwait', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        ctx.addHelper('let __scratchAnswer = "";');
-        const question = input(ctx, block, 'QUESTION', '""');
-        return line(ctx, indentLevel, `__scratchAnswer = window.prompt(${question}) || "";`);
-    }));
-    registry.register('sensing_askandwait', Language.ARDUINO_CPP, statement((ctx, block, indentLevel) => (
+    register(registry, 'sensing_askandwait', statement((ctx, block, indentLevel) => (
         line(ctx, indentLevel, `/* ask ${input(ctx, block, 'QUESTION', '""')} and wait */`)
     )));
-    registry.register('sensing_answer', Language.JAVASCRIPT, expression(ctx => {
-        ctx.addHelper('let __scratchAnswer = "";');
-        return '__scratchAnswer';
-    }));
-    registry.register('sensing_answer', Language.ARDUINO_CPP, expression(() => '""'));
-    registry.register('sensing_timer', Language.JAVASCRIPT, expression(ctx => {
-        ctx.addHelper('let __scratchTimerStart = performance.now();');
-        return '((performance.now() - __scratchTimerStart) / 1000)';
-    }));
-    registry.register('sensing_timer', Language.ARDUINO_CPP, expression(() => '(millis() / 1000.0)'));
-    registry.register('sensing_resettimer', Language.JAVASCRIPT, statement((ctx, block, indentLevel) => {
-        ctx.addHelper('let __scratchTimerStart = performance.now();');
-        return line(ctx, indentLevel, '__scratchTimerStart = performance.now();');
-    }));
-    registry.register('sensing_resettimer', Language.ARDUINO_CPP, noOpStatement('reset timer'));
-    registry.register('sensing_mousex', Language.JAVASCRIPT, expression(() => '__scratchMouseX'));
-    registry.register('sensing_mousey', Language.JAVASCRIPT, expression(() => '__scratchMouseY'));
-    registry.register('sensing_mousedown', Language.JAVASCRIPT, expression(() => '__scratchMouseDown'));
-    registry.register('sensing_keypressed', Language.JAVASCRIPT, expression((ctx, block) => (
-        `Boolean(__scratchKeys && __scratchKeys[${quote(field(ctx, block, 'KEY_OPTION', 'space'))}])`
-    )));
-    registry.register('sensing_mousex', Language.ARDUINO_CPP, expression(() => '0'));
-    registry.register('sensing_mousey', Language.ARDUINO_CPP, expression(() => '0'));
-    registry.register('sensing_mousedown', Language.ARDUINO_CPP, expression(() => 'false'));
-    registry.register('sensing_keypressed', Language.ARDUINO_CPP, expression(() => 'false'));
-    registry.register('sensing_current', Language.JAVASCRIPT, expression((ctx, block) => {
-        const option = String(field(ctx, block, 'CURRENTMENU', 'year')).toLowerCase();
-        const values = {
-            year: 'new Date().getFullYear()',
-            month: '(new Date().getMonth() + 1)',
-            date: 'new Date().getDate()',
-            dayofweek: '(new Date().getDay() + 1)',
-            hour: 'new Date().getHours()',
-            minute: 'new Date().getMinutes()',
-            second: 'new Date().getSeconds()'
-        };
-        return values[option] || '0';
-    }));
-    registry.register('sensing_current', Language.ARDUINO_CPP, expression(() => '0'));
-    registry.register('sensing_dayssince2000', Language.JAVASCRIPT, expression(() => (
-        '((Date.now() - new Date(2000, 0, 1).valueOf()) / 86400000)'
-    )));
-    registry.register('sensing_dayssince2000', Language.ARDUINO_CPP, expression(() => '0'));
-    registry.register('sensing_online', Language.JAVASCRIPT, expression(() => 'navigator.onLine'));
-    registry.register('sensing_online', Language.ARDUINO_CPP, expression(() => 'false'));
+    register(registry, 'sensing_answer', expression(() => '""'));
+    register(registry, 'sensing_timer', expression(() => '(millis() / 1000.0)'));
+    register(registry, 'sensing_resettimer', noOpStatement('reset timer'));
+    register(registry, 'sensing_mousex', expression(() => '0'));
+    register(registry, 'sensing_mousey', expression(() => '0'));
+    register(registry, 'sensing_mousedown', expression(() => 'false'));
+    register(registry, 'sensing_keypressed', expression(() => 'false'));
+    register(registry, 'sensing_current', expression(() => '0'));
+    register(registry, 'sensing_dayssince2000', expression(() => '0'));
+    register(registry, 'sensing_online', expression(() => 'false'));
 };
 
 const registerProcedures = registry => {
-    for (const language of LANGUAGES) {
-        registry.register('procedures_definition', language, statement((ctx, block, indentLevel) => {
-            const body = ctx.generateStack(block.next, indentLevel + 1) || emptyBody(ctx, indentLevel + 1);
-            const keyword = language === Language.ARDUINO_CPP ? 'void ' : 'async function ';
-            return [
-                line(ctx, indentLevel, `${keyword}${procedureName(block)} () {`),
-                body,
-                line(ctx, indentLevel, '}')
-            ].join('\n');
-        }));
-        registry.register('procedures_call', language, statement((ctx, block, indentLevel) => (
-            line(ctx, indentLevel, `${procedureName(block)}();`)
-        )));
-        registry.register('argument_reporter_string_number', language, expression((ctx, block) => (
-            sanitizeIdentifier(field(ctx, block, 'VALUE', 'argument'))
-        )));
-        registry.register('argument_reporter_boolean', language, expression((ctx, block) => (
-            sanitizeIdentifier(field(ctx, block, 'VALUE', 'argument'))
-        )));
-    }
+    register(registry, 'procedures_definition', statement((ctx, block, indentLevel) => {
+        const body = ctx.generateStack(block.next, indentLevel + 1) || emptyBody(ctx, indentLevel + 1);
+        return [
+            line(ctx, indentLevel, `void ${procedureName(block)} () {`),
+            body,
+            line(ctx, indentLevel, '}')
+        ].join('\n');
+    }));
+    register(registry, 'procedures_call', statement((ctx, block, indentLevel) => (
+        line(ctx, indentLevel, `${procedureName(block)}();`)
+    )));
+    register(registry, 'argument_reporter_string_number', expression((ctx, block) => (
+        sanitizeIdentifier(field(ctx, block, 'VALUE', 'argument'))
+    )));
+    register(registry, 'argument_reporter_boolean', expression((ctx, block) => (
+        sanitizeIdentifier(field(ctx, block, 'VALUE', 'argument'))
+    )));
 };
 
 const createDefaultRegistry = () => {
@@ -578,7 +378,6 @@ const createDefaultRegistry = () => {
     registerData(registry);
     registerSensing(registry);
     registerProcedures(registry);
-    registry.registerProvider(ThingBotTelemetrixExtension);
     registry.registerProvider(Scratch3Arduino);
     return registry;
 };

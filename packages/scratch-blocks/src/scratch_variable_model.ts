@@ -15,6 +15,7 @@ export class ScratchVariableModel extends Blockly.VariableModel {
     id?: string,
     public isLocal = false,
     public isCloud = false,
+    public dataType = '',
   ) {
     super(workspace, name, type, id)
   }

@@ -1,14 +1,33 @@
 const Blocks = require('../engine/blocks');
+const Variable = require('../engine/variable');
+const {sanitizeIdentifier} = require('./code-generator-provider');
 const {classifyKind, inferVariableTypes} = require('./variable-types');
 
 const DEFAULT_EXPRESSION = '0';
 
+// Build a map of variable name -> explicit value type for variables that carry a valid one.
+// Keyed by the sanitized identifier so it matches the names code generators emit. Unrecognized
+// types are dropped (falling back to inference) so codegen never emits an arbitrary type string.
+const explicitVariableTypes = variables => {
+    const types = Object.create(null);
+    if (!variables) return types;
+    for (const varId in variables) {
+        const variable = variables[varId];
+        if (variable && Variable.DATA_TYPES.includes(variable.dataType)) {
+            types[sanitizeIdentifier(variable.name)] = variable.dataType;
+        }
+    }
+    return types;
+};
+
 class CodeGenerationContext {
-    constructor (blockContainer, registry, language) {
+    constructor (blockContainer, registry, language, variables) {
         this.blockContainer = blockContainer;
         this.registry = registry;
         this.language = language;
-        this.variableTypes = inferVariableTypes(blockContainer);
+        // Explicit types chosen in the variable dialog seed inference: they are locked (never
+        // overwritten by assignments) and propagate through `data_variable` references.
+        this.variableTypes = inferVariableTypes(blockContainer, explicitVariableTypes(variables));
         this.diagnostics = [];
         this.helpers = [];
         this.includes = [];

@@ -2,13 +2,7 @@ const CodeGenerationContext = require('./context');
 const createDefaultRegistry = require('./default-registry');
 const Language = require('./language');
 
-const supportedLanguages = [Language.JAVASCRIPT, Language.ARDUINO_CPP];
-
-const finalizeJavaScript = (scripts, context) => {
-    const helperCode = context.helpers.join('\n');
-    const scriptCode = scripts.filter(Boolean).join('\n\n');
-    return [helperCode, scriptCode].filter(Boolean).join('\n\n');
-};
+const supportedLanguages = [Language.ARDUINO_CPP];
 
 const finalizeArduinoCpp = (scripts, context) => {
     const includes = context.includes.join('\n');
@@ -27,9 +21,6 @@ const finalizeArduinoCpp = (scripts, context) => {
 };
 
 const finalize = (language, scripts, context) => {
-    if (language === Language.JAVASCRIPT) {
-        return finalizeJavaScript(scripts, context);
-    }
     if (language === Language.ARDUINO_CPP) {
         return finalizeArduinoCpp(scripts, context);
     }
@@ -60,7 +51,7 @@ const generateCode = (target, language, optRegistry) => {
     }
 
     const registry = optRegistry || createDefaultRegistry();
-    const context = new CodeGenerationContext(target.blocks, registry, language);
+    const context = new CodeGenerationContext(target.blocks, registry, language, target.variables);
     const scripts = target.blocks.getScripts().map(topBlockId => context.generateTopScript(topBlockId));
 
     return {

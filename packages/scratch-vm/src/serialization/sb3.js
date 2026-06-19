@@ -484,6 +484,9 @@ const serializeVariables = function (variables) {
     obj.variables = Object.create(null);
     obj.lists = Object.create(null);
     obj.broadcasts = Object.create(null);
+    // Explicit code-generation value types kept in a sidecar map so the positional
+    // `variables` entries stay compatible with the standard sb3 format.
+    obj.variableTypes = Object.create(null);
     for (const varId in variables) {
         const v = variables[varId];
         if (v.type === Variable.BROADCAST_MESSAGE_TYPE) {
@@ -499,6 +502,7 @@ const serializeVariables = function (variables) {
         obj.variables[varId] = [v.name, v.value];
         // only scalar vars have the potential to be cloud vars
         if (v.isCloud) obj.variables[varId].push(true);
+        if (v.dataType) obj.variableTypes[varId] = v.dataType;
     }
     return obj;
 };
@@ -539,6 +543,7 @@ const serializeTarget = function (target, extensions) {
     obj.variables = vars.variables;
     obj.lists = vars.lists;
     obj.broadcasts = vars.broadcasts;
+    if (Object.keys(vars.variableTypes).length > 0) obj.variableTypes = vars.variableTypes;
     [obj.blocks, targetExtensions] = serializeBlocks(target.blocks);
     obj.comments = serializeComments(target.comments);
 
@@ -1201,6 +1206,9 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
             );
             if (isCloud) runtime.addCloudVariable();
             newVariable.value = variable[1];
+            if (object.variableTypes) {
+                newVariable.dataType = Variable.normalizeDataType(object.variableTypes[varId]);
+            }
             target.variables[newVariable.id] = newVariable;
         }
     }

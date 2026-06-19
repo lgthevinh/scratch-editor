@@ -1,20 +1,16 @@
 # Scratch VM Codegen
 
-This module generates source code from the VM's current block graph. It is used by the GUI `CodeView` to show either JavaScript host-run code or Arduino C++ firmware-style code.
+This module generates source code from the VM's current block graph. It is used by the GUI `CodeView` to show Arduino C++ firmware-style code when a board is selected.
 
 ## Supported Languages
 
 Language IDs are defined in `language.js`:
 
-- `js`: JavaScript host-run mode. Used when no board is selected.
 - `arduino-cpp`: Arduino C++ mode. Used when a board is selected.
 
-The GUI currently chooses the language from board state:
+The codegen pipeline is structured around a `language` dimension so additional targets can be added later, but Arduino C++ is currently the only supported language. The GUI calls `vm.generateCode('arduino-cpp')`. In host mode (no board selected) the GUI does not generate code at all; the project runs through the VM interpreter.
 
-- no board selected: `vm.generateCode('js')`
-- board selected: `vm.generateCode('arduino-cpp')`
-
-Codegen can support a block in one language and intentionally leave it unsupported in another. Unsupported block/language pairs produce a warning diagnostic and an `/* Unsupported block: ... */` statement placeholder.
+A block can be intentionally left unsupported. Unsupported blocks produce a warning diagnostic and an `/* Unsupported block: ... */` statement placeholder. Requesting an unsupported language returns an error diagnostic and empty code.
 
 ## High-Level Flow
 
@@ -25,15 +21,13 @@ Codegen can support a block in one language and intentionally leave it unsupport
 5. `CodeGenerationContext` walks top-level scripts from `target.blocks.getScripts()`.
 6. Each block opcode is looked up by `(opcode, language)`.
 7. Statement generators emit source lines; expression generators emit source fragments.
-8. `generate-code.js` finalizes the result:
-   - JavaScript joins helpers and scripts.
-   - Arduino C++ joins includes, helpers, `setup()`, and `loop()`.
+8. `generate-code.js` finalizes the result by joining includes, helpers, `setup()`, and `loop()`.
 
 The public result shape is:
 
 ```js
 {
-    language: 'js',
+    language: 'arduino-cpp',
     code: '...',
     diagnostics: []
 }
@@ -44,9 +38,9 @@ Diagnostics use this shape:
 ```js
 {
     severity: 'warning',
-    message: 'No arduino-cpp generator registered for thingbotTelemetrix_digitalWrite',
-    blockId: 'thingbot',
-    opcode: 'thingbotTelemetrix_digitalWrite'
+    message: 'No arduino-cpp generator registered for someExtension_doThing',
+    blockId: 'block1',
+    opcode: 'someExtension_doThing'
 }
 ```
 
@@ -66,7 +60,7 @@ A generator is either a statement generator or an expression generator:
 ```js
 const statementGenerator = {
     type: 'statement',
-    generate: (ctx, block, indentLevel) => '    console.log("hello");'
+    generate: (ctx, block, indentLevel) => '    Serial.println("hello");'
 };
 
 const expressionGenerator = {
@@ -87,13 +81,13 @@ const {
 
 const getCodeGenerators = () => ([{
     opcode: 'myExtension_doThing',
-    language: Language.JAVASCRIPT,
+    language: Language.ARDUINO_CPP,
     generator: statement((ctx, block, indentLevel) => (
         line(ctx, indentLevel, 'myExtension.doThing();')
     ))
 }, {
     opcode: 'myExtension_value',
-    language: Language.JAVASCRIPT,
+    language: Language.ARDUINO_CPP,
     generator: expression(() => 'myExtension.value()')
 }]);
 
@@ -111,8 +105,8 @@ Extensions or block packages can expose codegen with `getCodeGenerators()`.
 ```js
 {
     getCodeGenerators: () => [{
-        opcode: 'thingbotTelemetrix_digitalWrite',
-        language: Language.JAVASCRIPT,
+        opcode: 'arduino_digitalWrite',
+        language: Language.ARDUINO_CPP,
         generator: statement(...)
     }]
 }
@@ -120,7 +114,7 @@ Extensions or block packages can expose codegen with `getCodeGenerators()`.
 
 Each registration has:
 
-- `opcode`: full VM opcode. Extension block opcodes include the extension prefix, for example `thingbotTelemetrix_digitalWrite`.
+- `opcode`: full VM opcode. Extension block opcodes include the extension prefix, for example `arduino_digitalWrite`.
 - `language`: one of the IDs from `language.js`.
 - `generator`: a statement or expression generator.
 
@@ -128,11 +122,9 @@ The central registry should not own extension opcode behavior. Instead, put exte
 
 Current example:
 
-- `extensions/scratch3_thingbot_telemetrix/codegen.js` owns ThingBot Telemetrix codegen.
-- `extensions/scratch3_thingbot_telemetrix/index.js` exposes `getCodeGenerators()`.
-- `default-registry.js` calls `registry.registerProvider(ThingBotTelemetrixExtension)`.
-
-ThingBot Telemetrix currently supports only `js` because it is a host-run Telemetrix extension. It intentionally does not register `arduino-cpp` generators.
+- `extensions/scratch3_arduino/codegen.js` owns the Arduino board codegen.
+- `extensions/scratch3_arduino/index.js` exposes `getCodeGenerators()`.
+- `default-registry.js` calls `registry.registerProvider(Scratch3Arduino)`.
 
 ## Context API
 
@@ -157,13 +149,13 @@ Useful methods:
 - `input(ctx, block, name, fallback)`: generate an input expression.
 - `field(ctx, block, name, fallback)`: read a field.
 - `line(ctx, indentLevel, code)`: prefix code with indentation.
-- `quote(value)`: JSON-stringify a value for JavaScript-style strings.
+- `quote(value)`: JSON-stringify a value for string literals.
 
 ## Adding Codegen For A New Extension
 
 1. Add `codegen.js` next to the extension implementation.
 2. Export `getCodeGenerators()`.
-3. Register only the languages the extension actually supports.
+3. Register the languages the extension supports.
 4. Expose `getCodeGenerators()` from the extension class or constructor export.
 5. Add the provider to `default-registry.js`.
 6. Add or update focused tests in `test/unit/codegen.js`.
@@ -182,7 +174,7 @@ const PREFIX = 'example_';
 
 const getCodeGenerators = () => ([{
     opcode: `${PREFIX}doThing`,
-    language: Language.JAVASCRIPT,
+    language: Language.ARDUINO_CPP,
     generator: statement((ctx, block, indentLevel) => (
         line(ctx, indentLevel, 'example.doThing();')
     ))

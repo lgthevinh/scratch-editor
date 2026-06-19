@@ -187,16 +187,17 @@ const GUIComponent = props => {
     const [generatedCode, setGeneratedCode] = useState('');
     const [serialLogs, setSerialLogs] = useState([]);
     const [monitorPrompt, setMonitorPrompt] = useState(null);
-    const codeLanguage = selectedBoardId ? 'arduino-cpp' : 'js';
-    const prismLanguage = selectedBoardId ? 'arduino' : 'javascript';
+    const codeLanguage = 'arduino-cpp';
+    const prismLanguage = 'arduino';
 
     const updateGeneratedCode = useCallback(() => {
-        if (typeof vm.generateCode !== 'function') {
+        // Code generation only applies in board mode; host mode has no code view.
+        if (!selectedBoardId || typeof vm.generateCode !== 'function') {
             setGeneratedCode('');
             return;
         }
         setGeneratedCode(vm.generateCode(codeLanguage).code);
-    }, [codeLanguage, vm]);
+    }, [codeLanguage, selectedBoardId, vm]);
 
     useEffect(() => {
         updateGeneratedCode();
@@ -473,9 +474,12 @@ const GUIComponent = props => {
                             style={{flex: `0 0 ${devicePanelWidth}px`}}
                         >
                             <DeviceControls />
-                            <CodeView code={generatedCode} language={prismLanguage} />
+                            {selectedBoardId && (
+                                <CodeView code={generatedCode} language={prismLanguage} />
+                            )}
                             <SerialLog
                                 logs={serialLogs}
+                                fill={!selectedBoardId}
                                 onClear={handleClearMonitor}
                                 onSend={handleMonitorSend}
                                 prompt={monitorPrompt}

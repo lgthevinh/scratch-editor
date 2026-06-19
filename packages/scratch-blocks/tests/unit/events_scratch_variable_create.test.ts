@@ -11,7 +11,8 @@ import { ScratchVariableModel } from '../../src/scratch_variable_model'
 type ScratchVarCreateCtor = new (v?: ScratchVariableModel) => {
   isLocal: boolean
   isCloud: boolean
-  toJson(): { isLocal: boolean; isCloud: boolean }
+  dataType: string
+  toJson(): { isLocal: boolean; isCloud: boolean; dataType: string }
   run(forward: boolean): void
 }
 
@@ -28,8 +29,8 @@ afterEach(() => {
   workspace.dispose()
 })
 
-function makeScratchVar(name: string, isLocal = false, isCloud = false): ScratchVariableModel {
-  return new ScratchVariableModel(workspace, name, '', Blockly.utils.idGenerator.genUid(), isLocal, isCloud)
+function makeScratchVar(name: string, isLocal = false, isCloud = false, dataType = ''): ScratchVariableModel {
+  return new ScratchVariableModel(workspace, name, '', Blockly.utils.idGenerator.genUid(), isLocal, isCloud, dataType)
 }
 
 describe('ScratchVariableCreate constructor', () => {
@@ -59,6 +60,24 @@ describe('ScratchVariableCreate.toJson', () => {
     const json = event.toJson()
     expect(json.isLocal).toBe(true)
     expect(json.isCloud).toBe(false)
+  })
+
+  it('carries the explicit dataType through the event and into a re-created variable', () => {
+    const variable = makeScratchVar('ratio', false, false, 'float')
+    const EventClass = Blockly.Events.get(Blockly.Events.VAR_CREATE) as ScratchVarCreateCtor
+    const event = new EventClass(variable)
+    expect(event.dataType).toBe('float')
+    expect(event.toJson().dataType).toBe('float')
+
+    workspace.getVariableMap().deleteVariable(variable)
+    Blockly.Events.disable()
+    try {
+      event.run(true)
+    } finally {
+      Blockly.Events.enable()
+    }
+    const created = workspace.getVariableMap().getVariableById(variable.getId()) as ScratchVariableModel
+    expect(created.dataType).toBe('float')
   })
 })
 

@@ -6,7 +6,7 @@ const VirtualMachine = require('../../src/virtual-machine');
 const generateCode = require('../../src/codegen/generate-code');
 const Language = require('../../src/codegen/language');
 const Scratch3ControlBlocks = require('../../src/blocks/scratch3_control');
-const ThingBotTelemetrixExtension = require('../../src/extensions/scratch3_thingbot_telemetrix');
+const Scratch3Arduino = require('../../src/extensions/scratch3_arduino');
 
 const getOpcodeNames = primitiveClass => Object.keys(
     new primitiveClass(new Runtime()).getPrimitives()
@@ -98,23 +98,6 @@ const createRepeatPrintTarget = () => {
     return {blocks};
 };
 
-test('generateCode emits JavaScript for an existing event/control stack', t => {
-    const target = createRepeatPrintTarget();
-    const result = generateCode(target, Language.JAVASCRIPT);
-
-    t.same(result.diagnostics, []);
-    t.equal(result.code, [
-        'async function whenGreenFlagClicked () {',
-        '    for (let i1 = 0; i1 < 3; i1++) {',
-        '        console.log("hello");',
-        '    }',
-        '}',
-        '',
-        'whenGreenFlagClicked();'
-    ].join('\n'));
-    t.end();
-});
-
 test('generateCode emits Arduino C++ for an existing event/control stack', t => {
     const target = createRepeatPrintTarget();
     const result = generateCode(target, Language.ARDUINO_CPP);
@@ -134,6 +117,17 @@ test('generateCode emits Arduino C++ for an existing event/control stack', t => 
     t.end();
 });
 
+test('generateCode reports an unsupported language diagnostic', t => {
+    const target = createRepeatPrintTarget();
+    const result = generateCode(target, 'js');
+
+    t.equal(result.code, '');
+    t.equal(result.diagnostics.length, 1);
+    t.equal(result.diagnostics[0].severity, 'error');
+    t.match(result.diagnostics[0].message, 'Unsupported code generation language');
+    t.end();
+});
+
 test('generateCode reports unsupported block diagnostics', t => {
     const blocks = createBlockContainer();
     blocks.createBlock({
@@ -146,8 +140,8 @@ test('generateCode reports unsupported block diagnostics', t => {
         topLevel: true
     });
 
-    const result = generateCode({blocks}, Language.JAVASCRIPT);
-    t.equal(result.code, '/* Unsupported block: unsupported_block */');
+    const result = generateCode({blocks}, Language.ARDUINO_CPP);
+    t.match(result.code, '/* Unsupported block: unsupported_block */');
     t.equal(result.diagnostics.length, 1);
     t.match(result.diagnostics[0], {
         severity: 'warning',
@@ -161,8 +155,8 @@ test('VirtualMachine.generateCode uses the editing target by default', t => {
     const vm = new VirtualMachine();
     vm.editingTarget = createRepeatPrintTarget();
 
-    const result = vm.generateCode(Language.JAVASCRIPT);
-    t.match(result.code, 'whenGreenFlagClicked');
+    const result = vm.generateCode(Language.ARDUINO_CPP);
+    t.match(result.code, 'Serial.println("hello");');
     t.same(result.diagnostics, []);
     t.end();
 });
@@ -170,7 +164,7 @@ test('VirtualMachine.generateCode uses the editing target by default', t => {
 test('VirtualMachine.generateCode returns a diagnostic without an editing target', t => {
     const vm = new VirtualMachine();
 
-    const result = vm.generateCode(Language.JAVASCRIPT);
+    const result = vm.generateCode(Language.ARDUINO_CPP);
     t.equal(result.code, '');
     t.equal(result.diagnostics.length, 1);
     t.equal(result.diagnostics[0].severity, 'error');
@@ -190,14 +184,13 @@ test('control primitives no longer include clone blocks', t => {
 test('GeneratorRegistry registers extension codegen providers', t => {
     const registry = new GeneratorRegistry();
 
-    registry.registerProvider(ThingBotTelemetrixExtension);
+    registry.registerProvider(Scratch3Arduino);
 
-    t.ok(registry.get('thingbotTelemetrix_digitalWrite', Language.JAVASCRIPT));
-    t.notOk(registry.get('thingbotTelemetrix_digitalWrite', Language.ARDUINO_CPP));
+    t.ok(registry.get('arduino_digitalWrite', Language.ARDUINO_CPP));
     t.end();
 });
 
-test('generateCode covers data, sensing, operator, procedure, and ThingBot opcodes', t => {
+test('generateCode covers data, sensing, operator, and procedure opcodes', t => {
     const blocks = createBlockContainer();
     blocks.createBlock({
         id: 'flag',
@@ -254,7 +247,7 @@ test('generateCode covers data, sensing, operator, procedure, and ThingBot opcod
     blocks.createBlock({
         id: 'ask',
         opcode: 'sensing_askandwait',
-        next: 'thingbot',
+        next: 'call',
         parent: 'setVariable',
         inputs: {
             QUESTION: {
@@ -268,31 +261,10 @@ test('generateCode covers data, sensing, operator, procedure, and ThingBot opcod
     });
     addTextBlock(blocks, 'question', 'Ready?');
     blocks.createBlock({
-        id: 'thingbot',
-        opcode: 'thingbotTelemetrix_digitalWrite',
-        next: 'call',
-        parent: 'ask',
-        inputs: {
-            PIN: {
-                name: 'PIN',
-                block: 'pin',
-                shadow: 'pin'
-            }
-        },
-        fields: {
-            LEVEL: {
-                name: 'LEVEL',
-                value: 'HIGH'
-            }
-        },
-        topLevel: false
-    });
-    addNumberBlock(blocks, 'pin', 13);
-    blocks.createBlock({
         id: 'call',
         opcode: 'procedures_call',
         next: null,
-        parent: 'thingbot',
+        parent: 'ask',
         inputs: {},
         fields: {},
         mutation: {
@@ -301,22 +273,13 @@ test('generateCode covers data, sensing, operator, procedure, and ThingBot opcod
         topLevel: false
     });
 
-    const js = generateCode({blocks}, Language.JAVASCRIPT);
     const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
 
-    t.same(js.diagnostics, []);
-    t.same(arduinoCpp.diagnostics, [{
-        severity: 'warning',
-        message: 'No arduino-cpp generator registered for thingbotTelemetrix_digitalWrite',
-        blockId: 'thingbot',
-        opcode: 'thingbotTelemetrix_digitalWrite'
-    }]);
-    t.match(js.code, 'let score = 0;');
-    t.match(js.code, 'score = (1 + 2);');
-    t.match(js.code, 'thingbot.digitalWrite(13, "HIGH");');
+    t.same(arduinoCpp.diagnostics, []);
     t.match(arduinoCpp.code, 'int score = 0;');
     t.match(arduinoCpp.code, 'score = (1 + 2);');
-    t.match(arduinoCpp.code, '/* Unsupported block: thingbotTelemetrix_digitalWrite */');
+    t.match(arduinoCpp.code, '/* ask "Ready?" and wait */');
+    t.match(arduinoCpp.code, 'do_work();');
     t.end();
 });
 
@@ -344,6 +307,40 @@ test('generateCode infers int/float/String variable types and warns on mismatche
     t.match(arduinoCpp.code, 'float ratio = 0;');
     t.match(arduinoCpp.code, 'String name = "";');
     t.match(arduinoCpp.code, 'name = "Ada";');
+    t.end();
+});
+
+test('generateCode lets an explicit variable dataType override the inferred type', t => {
+    const blocks = createBlockContainer();
+    const setBlock = (id, next, varName, valueId, topLevel) => blocks.createBlock({
+        id,
+        opcode: 'data_setvariableto',
+        next,
+        parent: null,
+        inputs: {VALUE: {name: 'VALUE', block: valueId, shadow: valueId}},
+        fields: {VARIABLE: {id: `${varName} id`, name: 'VARIABLE', value: varName}},
+        topLevel
+    });
+    // `temp` is assigned an integer (would infer `int`) but is declared `float` explicitly.
+    setBlock('setTemp', 'setNote', 'temp', 'tempVal', true);
+    setBlock('setNote', null, 'note', 'noteVal', false);
+    addNumberBlock(blocks, 'tempVal', 5);
+    addTextBlock(blocks, 'noteVal', 'ok');
+
+    const variables = {
+        'temp id': {name: 'temp', dataType: 'float'},
+        'note id': {name: 'note', dataType: 'string'}
+    };
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'float temp = 0;');
+    t.match(arduinoCpp.code, 'String note = "";');
+    t.notMatch(arduinoCpp.code, 'int temp = 0;');
+
+    // Without an explicit dataType the value-based inference still applies (`temp` -> int).
+    const inferred = generateCode({blocks}, Language.ARDUINO_CPP);
+    t.match(inferred.code, 'int temp = 0;');
     t.end();
 });
 
@@ -385,7 +382,7 @@ test('generateCode warns when assigning text to a number variable and a convert 
     };
 
     const blocks = mismatchTarget();
-    const result = generateCode({blocks}, Language.JAVASCRIPT);
+    const result = generateCode({blocks}, Language.ARDUINO_CPP);
     t.equal(result.diagnostics.length, 1);
     t.match(result.diagnostics[0], {severity: 'warning', blockId: 'setLabel'});
     t.match(result.diagnostics[0].message, 'to text');
@@ -402,13 +399,13 @@ test('generateCode warns when assigning text to a number variable and a convert 
         topLevel: false
     });
     fixed.getBlock('setLabel').inputs.VALUE = {name: 'VALUE', block: 'convert', shadow: 'count'};
-    const fixedResult = generateCode({blocks: fixed}, Language.JAVASCRIPT);
+    const fixedResult = generateCode({blocks: fixed}, Language.ARDUINO_CPP);
     t.same(fixedResult.diagnostics, []);
     t.match(fixedResult.code, 'label = String(7);');
     t.end();
 });
 
-test('generateCode declares a JavaScript variable once when set multiple times', t => {
+test('generateCode declares a variable once when set multiple times', t => {
     const blocks = createBlockContainer();
     blocks.createBlock({
         id: 'flag',
@@ -440,18 +437,18 @@ test('generateCode declares a JavaScript variable once when set multiple times',
     addNumberBlock(blocks, 'v1', 1);
     addNumberBlock(blocks, 'v2', 2);
 
-    const js = generateCode({blocks}, Language.JAVASCRIPT);
+    const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
 
-    t.same(js.diagnostics, []);
-    const declarations = js.code.match(/let score = 0;/g) || [];
+    t.same(arduinoCpp.diagnostics, []);
+    const declarations = arduinoCpp.code.match(/int score = 0;/g) || [];
     t.equal(declarations.length, 1, 'variable is declared exactly once');
-    t.match(js.code, 'score = 1;');
-    t.match(js.code, 'score = 2;');
-    t.notMatch(js.code, 'let score = 1;', 'set does not re-declare the variable');
+    t.match(arduinoCpp.code, 'score = 1;');
+    t.match(arduinoCpp.code, 'score = 2;');
+    t.notMatch(arduinoCpp.code, 'int score = 1;', 'set does not re-declare the variable');
     t.end();
 });
 
-test('generateCode initializes a JavaScript list before use', t => {
+test('generateCode emits list operations', t => {
     const blocks = createBlockContainer();
     blocks.createBlock({
         id: 'flag',
@@ -473,10 +470,81 @@ test('generateCode initializes a JavaScript list before use', t => {
     });
     addNumberBlock(blocks, 'item', 7);
 
-    const js = generateCode({blocks}, Language.JAVASCRIPT);
+    const arduinoCpp = generateCode({blocks}, Language.ARDUINO_CPP);
 
-    t.same(js.diagnostics, []);
-    t.match(js.code, 'let queue = [];');
-    t.match(js.code, 'queue.push(7);');
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'queue.push(7);');
+    t.end();
+});
+
+// `set b to (a)`, where `a` carries an explicit dataType. Used to check that explicit types seed
+// inference and flow through `data_variable` references into dependent variables.
+const createVariableCopyTarget = () => {
+    const blocks = createBlockContainer();
+    blocks.createBlock({
+        id: 'setB',
+        opcode: 'data_setvariableto',
+        next: null,
+        parent: null,
+        inputs: {VALUE: {name: 'VALUE', block: 'aRef', shadow: null}},
+        fields: {VARIABLE: {id: 'b id', name: 'VARIABLE', value: 'b'}},
+        topLevel: true
+    });
+    blocks.createBlock({
+        id: 'aRef',
+        opcode: 'data_variable',
+        next: null,
+        parent: 'setB',
+        inputs: {},
+        fields: {VARIABLE: {id: 'a id', name: 'VARIABLE', value: 'a'}},
+        topLevel: false
+    });
+    return {blocks};
+};
+
+test('an explicit String type propagates through a variable reference to dependent variables', t => {
+    const {blocks} = createVariableCopyTarget();
+    const variables = {'a id': {name: 'a', dataType: 'string'}};
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'String a = "";');
+    t.match(arduinoCpp.code, 'String b = "";');
+    t.match(arduinoCpp.code, 'b = a;');
+    t.notMatch(arduinoCpp.code, 'int b = 0;');
+    t.end();
+});
+
+test('an explicit float type propagates precision through a variable reference', t => {
+    const {blocks} = createVariableCopyTarget();
+    const variables = {'a id': {name: 'a', dataType: 'float'}};
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'float a = 0;');
+    t.match(arduinoCpp.code, 'float b = 0;');
+    t.notMatch(arduinoCpp.code, 'int b = 0;');
+    t.end();
+});
+
+test('codegen ignores an unrecognized explicit dataType and falls back to inference', t => {
+    const blocks = createBlockContainer();
+    blocks.createBlock({
+        id: 'setX',
+        opcode: 'data_setvariableto',
+        next: null,
+        parent: null,
+        inputs: {VALUE: {name: 'VALUE', block: 'val', shadow: 'val'}},
+        fields: {VARIABLE: {id: 'x id', name: 'VARIABLE', value: 'x'}},
+        topLevel: true
+    });
+    addNumberBlock(blocks, 'val', 5);
+    // A crafted/corrupt project could carry an arbitrary type string; it must never reach output.
+    const variables = {'x id': {name: 'x', dataType: 'int x = 1; int'}};
+
+    const arduinoCpp = generateCode({blocks, variables}, Language.ARDUINO_CPP);
+    t.same(arduinoCpp.diagnostics, []);
+    t.match(arduinoCpp.code, 'int x = 0;');
+    t.notMatch(arduinoCpp.code, 'int x = 1;');
     t.end();
 });

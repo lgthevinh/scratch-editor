@@ -8,6 +8,7 @@ import { ScratchVariableModel } from '../scratch_variable_model'
 class ScratchVariableCreate extends Blockly.Events.VarCreate {
   isLocal!: boolean
   isCloud!: boolean
+  dataType!: string
 
   constructor(variable?: ScratchVariableModel) {
     super(variable)
@@ -15,6 +16,7 @@ class ScratchVariableCreate extends Blockly.Events.VarCreate {
 
     this.isLocal = variable.isLocal
     this.isCloud = variable.isCloud
+    this.dataType = variable.dataType
   }
 
   toJson(): ScratchVariableCreateJson {
@@ -22,6 +24,7 @@ class ScratchVariableCreate extends Blockly.Events.VarCreate {
       ...super.toJson(),
       isLocal: this.isLocal,
       isCloud: this.isCloud,
+      dataType: this.dataType,
     }
   }
 
@@ -33,6 +36,7 @@ class ScratchVariableCreate extends Blockly.Events.VarCreate {
     const newEvent = super.fromJson(json, workspace, event ?? new ScratchVariableCreate()) as ScratchVariableCreate
     newEvent.isLocal = json.isLocal
     newEvent.isCloud = json.isCloud
+    newEvent.dataType = json.dataType
     return newEvent
   }
 
@@ -55,6 +59,7 @@ class ScratchVariableCreate extends Blockly.Events.VarCreate {
         this.varId,
         this.isLocal,
         this.isCloud,
+        this.dataType,
       )
       variableMap.addVariable(variable)
       Blockly.Events.fire(new (Blockly.Events.get(Blockly.Events.VAR_CREATE))(variable))
@@ -74,6 +79,7 @@ class ScratchVariableCreate extends Blockly.Events.VarCreate {
 interface ScratchVariableCreateJson extends Blockly.Events.VarCreateJson {
   isCloud: boolean
   isLocal: boolean
+  dataType: string
 }
 
 Blockly.registry.register(Blockly.registry.Type.EVENT, Blockly.Events.VAR_CREATE, ScratchVariableCreate, true)

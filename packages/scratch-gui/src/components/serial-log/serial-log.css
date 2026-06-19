@@ -15,6 +15,13 @@
     /* height controlled via inline style from JS */
 }
 
+/* Host mode has no code view, so the monitor fills the panel instead of using a fixed height. */
+.fill {
+    flex: 1;
+    min-height: 0;
+    margin-top: 0;
+}
+
 .resize-handle {
     position: absolute;
     top: -4px;
@@ -51,7 +58,7 @@
 
 .header {
     height: $stage-menu-height;
-    background-color: transparent;
+    background-color: $ui-primary;
     color: $text-primary;
     font-size: 0.75rem;
     font-weight: 600;
