@@ -120,11 +120,14 @@ Each registration has:
 
 The central registry should not own extension opcode behavior. Instead, put extension-specific generator logic near the extension and register the provider from `default-registry.js`.
 
-Current example:
+Codegen providers are layered (the order is a precedence chain — last-writer-wins, so a later layer
+may override an opcode from an earlier one):
 
-- `extensions/scratch3_arduino/codegen.js` owns the Arduino board codegen.
-- `extensions/scratch3_arduino/index.js` exposes `getCodeGenerators()`.
-- `default-registry.js` calls `registry.registerProvider(Scratch3Arduino)`.
+- `extensions/common/` — universal core blocks (control, operators, data, variables, procedures).
+- `extensions/common-host/` — board-mode degradation for host-only blocks (mouse, keyboard, sensing).
+- `extensions/common-board/` — the board execution model plus the standard Arduino API; also the
+  `arduino` block extension. Each layer exposes `getCodeGenerators()`.
+- `default-registry.js` registers the providers in order via `registry.registerProvider(...)`.
 
 ## Context API
 

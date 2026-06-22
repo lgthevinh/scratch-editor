@@ -26,7 +26,7 @@ const builtinExtensions = {
     gdxfor: () => require('../extensions/scratch3_gdx_for'),
     faceSensing: () => require('../extensions/scratch3_face_sensing'),
     thingbotTelemetrix: () => require('../extensions/scratch3_thingbot_telemetrix'),
-    arduino: () => require('../extensions/scratch3_arduino')
+    arduino: () => require('../extensions/common-board')
 };
 
 /**

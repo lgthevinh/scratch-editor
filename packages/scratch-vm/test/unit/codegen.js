@@ -6,7 +6,7 @@ const VirtualMachine = require('../../src/virtual-machine');
 const generateCode = require('../../src/codegen/generate-code');
 const Language = require('../../src/codegen/language');
 const Scratch3ControlBlocks = require('../../src/blocks/scratch3_control');
-const Scratch3Arduino = require('../../src/extensions/scratch3_arduino');
+const CommonBoard = require('../../src/extensions/common-board');
 
 const getOpcodeNames = primitiveClass => Object.keys(
     new primitiveClass(new Runtime()).getPrimitives()
@@ -184,7 +184,7 @@ test('control primitives no longer include clone blocks', t => {
 test('GeneratorRegistry registers extension codegen providers', t => {
     const registry = new GeneratorRegistry();
 
-    registry.registerProvider(Scratch3Arduino);
+    registry.registerProvider(CommonBoard);
 
     t.ok(registry.get('arduino_digitalWrite', Language.ARDUINO_CPP));
     t.end();
