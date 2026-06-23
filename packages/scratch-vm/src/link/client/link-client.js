@@ -15,8 +15,12 @@ const DEFAULT_URL = 'ws://localhost:3030/';
  *
  * One socket carries every operation. A request's `id` correlates it with its streamed responses
  * (`log` / `progress`) and its single terminal reply (`result` or `error`). Of the {@link Client}
- * contract, only `listBoards` is wired today; the helper answers the rest with `error{unimplemented}`
- * until their milestone lands, so those methods inherit the base throw for now.
+ * contract, `listBoards`, `connect`, and `disconnect` are wired today; the helper answers the rest
+ * with `error{unimplemented}` until their milestone lands, so those methods inherit the base throw.
+ *
+ * `connect` is helper-side session state — the helper records the selected port on its own socket,
+ * with no daemon round-trip — so a dropped socket means the helper has forgotten the port. The close
+ * handler treats that as a disconnect to keep `isConnected` honest.
  *
  * The WebSocket and its URL are injectable so the VM's tests can drive a fake socket with no server.
  */
@@ -42,6 +46,8 @@ class LinkClient extends Client {
         this._nextId = 1;
         /** @type {Map<string, {resolve: Function, reject: Function}>} in-flight requests by id. */
         this._pending = new Map();
+        /** @type {?ConnectionTarget} the open target; null when disconnected. */
+        this._connectedTarget = null;
     }
 
     /**
@@ -62,6 +68,36 @@ class LinkClient extends Client {
         const {pnpid = []} = device.getUploadConfig();
         const {targets} = await this._request('listBoards', {pnpid});
         return targets.map(target => ({id: target.port, name: target.label}));
+    }
+
+    /**
+     * Record the selected port with the helper. The helper stores it on this socket's session (no
+     * daemon round-trip — the port is validated later at upload/monitor time) and replies `result {}`.
+     * @param {ConnectionTarget} target - the target chosen from `listBoards()`; `id` is the port.
+     * @returns {Promise<void>} resolves once the helper has the selection.
+     */
+    async connect (target) {
+        await this._request('connect', {port: target.id});
+        this._connectedTarget = target;
+        this.runtime.emit(this.runtime.constructor.DEVICE_CONNECTED);
+    }
+
+    /**
+     * Clear the helper's selected port. Safe to call when already disconnected.
+     * @returns {Promise<void>} resolves once cleared.
+     */
+    async disconnect () {
+        if (!this._connectedTarget) return;
+        await this._request('disconnect', {});
+        this._connectedTarget = null;
+        this.runtime.emit(this.runtime.constructor.DEVICE_DISCONNECTED);
+    }
+
+    /**
+     * @returns {boolean} whether a target is currently selected with the helper.
+     */
+    get isConnected () {
+        return this._connectedTarget !== null;
     }
 
     /**
@@ -138,6 +174,8 @@ class LinkClient extends Client {
 
     /**
      * Reject every in-flight request when the socket closes, and reset so the next request reconnects.
+     * The helper's selected port is session state on this socket, so a close also drops the link —
+     * surface that as a disconnect.
      * @private
      */
     _handleClose () {
@@ -147,6 +185,10 @@ class LinkClient extends Client {
         }
         this._ws = null;
         this._openPromise = null;
+        if (this._connectedTarget) {
+            this._connectedTarget = null;
+            this.runtime.emit(this.runtime.constructor.DEVICE_DISCONNECTED);
+        }
     }
 
     /**

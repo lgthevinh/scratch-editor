@@ -38,13 +38,53 @@ class FakeWebSocket {
 FakeWebSocket.instances = [];
 
 /**
- * Build a LinkClient wired to a fresh FakeWebSocket registry.
- * @returns {{client: LinkClient, sockets: Array.<FakeWebSocket>}} the client and its sockets.
+ * A minimal runtime stand-in exposing the connection-event surface LinkClient emits on, and recording
+ * each emit so tests can assert lifecycle events. The static getters mirror the real Runtime class so
+ * `this.runtime.constructor.DEVICE_CONNECTED` resolves.
+ */
+class FakeRuntime {
+    constructor () {
+        this.emitted = [];
+    }
+    static get DEVICE_CONNECTED () {
+        return 'DEVICE_CONNECTED';
+    }
+    static get DEVICE_DISCONNECTED () {
+        return 'DEVICE_DISCONNECTED';
+    }
+    emit (event) {
+        this.emitted.push(event);
+    }
+}
+
+/**
+ * Build a LinkClient wired to a fresh FakeWebSocket registry and a recording runtime.
+ * @returns {{client: LinkClient, sockets: Array.<FakeWebSocket>, runtime: FakeRuntime}} the client,
+ *   its sockets, and its runtime.
  */
 const makeClient = () => {
     FakeWebSocket.instances = [];
-    const client = new LinkClient(null, {url: 'ws://test/', WebSocket: FakeWebSocket});
-    return {client, sockets: FakeWebSocket.instances};
+    const runtime = new FakeRuntime();
+    const client = new LinkClient(runtime, {url: 'ws://test/', WebSocket: FakeWebSocket});
+    return {client, sockets: FakeWebSocket.instances, runtime};
+};
+
+/** @returns {Promise<void>} resolves after the microtask queue (pending sends) drains. */
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+/**
+ * Drive a socket through one request/result round-trip: open it (if needed), reply `result` to the
+ * frame at `sentIndex`, and resolve once the queued send and reply have drained.
+ * @param {FakeWebSocket} socket - the client's socket.
+ * @param {number} sentIndex - index of the request frame to reply to.
+ * @param {object} [payload] - the `result` payload.
+ * @returns {Promise<void>} resolves once the request has settled.
+ */
+const roundTrip = async (socket, sentIndex, payload = {}) => {
+    socket.emitOpen();
+    await flush();
+    socket.emitMessage({id: socket.sent[sentIndex].id, type: 'result', payload});
+    await flush();
 };
 
 /**
@@ -143,6 +183,58 @@ test('closing the socket rejects in-flight requests', t => {
             t.end();
         }
     );
+});
+
+test('connect sends the port, marks connected, and emits DEVICE_CONNECTED', async t => {
+    const {client, sockets, runtime} = makeClient();
+    const promise = client.connect({id: '/dev/ttyACM0', name: 'Arduino Uno'});
+
+    await roundTrip(sockets[0], 0);
+    await promise;
+
+    const frame = sockets[0].sent[0];
+    t.equal(frame.type, 'connect');
+    t.same(frame.payload, {port: '/dev/ttyACM0'});
+    t.equal(client.isConnected, true, 'isConnected becomes true');
+    t.same(runtime.emitted, ['DEVICE_CONNECTED']);
+});
+
+test('disconnect clears the link and emits DEVICE_DISCONNECTED', async t => {
+    const {client, sockets, runtime} = makeClient();
+
+    const connecting = client.connect({id: '/dev/ttyACM0', name: 'Arduino Uno'});
+    await roundTrip(sockets[0], 0);
+    await connecting;
+
+    const disconnecting = client.disconnect();
+    await roundTrip(sockets[0], 1);
+    await disconnecting;
+
+    t.equal(sockets[0].sent[1].type, 'disconnect');
+    t.equal(client.isConnected, false, 'isConnected becomes false');
+    t.same(runtime.emitted, ['DEVICE_CONNECTED', 'DEVICE_DISCONNECTED']);
+});
+
+test('disconnect when not connected is a no-op', async t => {
+    const {client, sockets, runtime} = makeClient();
+
+    await client.disconnect();
+
+    t.equal(sockets.length, 0, 'opens no socket');
+    t.same(runtime.emitted, [], 'emits nothing');
+});
+
+test('a socket close while connected emits DEVICE_DISCONNECTED', async t => {
+    const {client, sockets, runtime} = makeClient();
+
+    const connecting = client.connect({id: '/dev/ttyACM0', name: 'Arduino Uno'});
+    await roundTrip(sockets[0], 0);
+    await connecting;
+
+    sockets[0].emitClose();
+
+    t.equal(client.isConnected, false, 'isConnected falls back to false');
+    t.same(runtime.emitted, ['DEVICE_CONNECTED', 'DEVICE_DISCONNECTED']);
 });
 
 test('concurrent requests share one lazily-opened socket', t => {

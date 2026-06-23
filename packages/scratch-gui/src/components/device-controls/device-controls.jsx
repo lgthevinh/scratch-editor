@@ -29,10 +29,16 @@ const messages = defineMessages({
         id: 'gui.deviceControls.connect',
         defaultMessage: 'Connect',
         description: 'Button to open the dialog that scans for connected boards'
+    },
+    disconnect: {
+        id: 'gui.deviceControls.disconnect',
+        defaultMessage: 'Disconnect',
+        description: 'Button to disconnect the currently connected board'
     }
 });
 
 const DeviceControls = ({
+    connectedBoard = null,
     hasSelectedDevice = false,
     projectRunning,
     dialogOpen = false,
@@ -45,6 +51,7 @@ const DeviceControls = ({
     onConnect,
     onScan,
     onConnectBoard,
+    onDisconnect,
     onCloseDialog
 }) => {
     const intl = useIntl();
@@ -55,7 +62,16 @@ const DeviceControls = ({
 
     return (
         <div className={styles.controlsHeader}>
-            {hasSelectedDevice && (
+            {hasSelectedDevice && (connectedBoard ? (
+                <button
+                    className={styles.connectButton}
+                    onClick={onDisconnect}
+                    aria-label={intl.formatMessage(messages.disconnect)}
+                    title={connectedBoard.name}
+                >
+                    {intl.formatMessage(messages.disconnect)}
+                </button>
+            ) : (
                 <button
                     className={styles.connectButton}
                     onClick={onConnect}
@@ -63,7 +79,7 @@ const DeviceControls = ({
                 >
                     {intl.formatMessage(messages.connect)}
                 </button>
-            )}
+            ))}
             <button
                 className={classNames(styles.primaryButton, {
                     [styles.uploadButton]: hasSelectedDevice,
@@ -100,12 +116,17 @@ DeviceControls.propTypes = {
         id: PropTypes.string,
         name: PropTypes.string
     })),
+    connectedBoard: PropTypes.shape({
+        id: PropTypes.string,
+        name: PropTypes.string
+    }),
     deviceIconURL: PropTypes.string,
     dialogOpen: PropTypes.bool,
     hasSelectedDevice: PropTypes.bool,
     onCloseDialog: PropTypes.func.isRequired,
     onConnect: PropTypes.func.isRequired,
     onConnectBoard: PropTypes.func.isRequired,
+    onDisconnect: PropTypes.func.isRequired,
     onRun: PropTypes.func.isRequired,
     onScan: PropTypes.func.isRequired,
     onStop: PropTypes.func.isRequired,

@@ -34,3 +34,32 @@ test('listBoards resolves the device and delegates to the link client', t => {
         t.end();
     });
 });
+
+test('connectBoard delegates the target to the link client', t => {
+    const vm = new VirtualMachine();
+    const target = {id: '/dev/ttyACM0', name: 'Arduino Uno'};
+    let received = null;
+    vm.linkClient = {connect: t2 => {
+        received = t2;
+        return Promise.resolve();
+    }};
+
+    vm.connectBoard(target).then(() => {
+        t.equal(received, target, 'passes the target through to the link client');
+        t.end();
+    });
+});
+
+test('disconnectBoard delegates to the link client', t => {
+    const vm = new VirtualMachine();
+    let called = false;
+    vm.linkClient = {disconnect: () => {
+        called = true;
+        return Promise.resolve();
+    }};
+
+    vm.disconnectBoard().then(() => {
+        t.equal(called, true, 'calls disconnect on the link client');
+        t.end();
+    });
+});

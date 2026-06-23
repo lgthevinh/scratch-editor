@@ -160,6 +160,12 @@ class VirtualMachine extends EventEmitter {
         this.runtime.on(Runtime.HAS_CLOUD_DATA_UPDATE, hasCloudData => {
             this.emit(Runtime.HAS_CLOUD_DATA_UPDATE, hasCloudData);
         });
+        this.runtime.on(Runtime.DEVICE_CONNECTED, () =>
+            this.emit(Runtime.DEVICE_CONNECTED)
+        );
+        this.runtime.on(Runtime.DEVICE_DISCONNECTED, () =>
+            this.emit(Runtime.DEVICE_DISCONNECTED)
+        );
 
         this.extensionManager = new ExtensionManager(this.runtime);
 
@@ -1241,6 +1247,23 @@ class VirtualMachine extends EventEmitter {
             return Promise.reject(new Error(`listBoards: no device registered for "${deviceId}"`));
         }
         return this.linkClient.listBoards(device);
+    }
+
+    /**
+     * Open the link to a discovered board via the native helper. Emits `DEVICE_CONNECTED` on success.
+     * @param {object} target - the target to open (from `listBoards()`), `{id, name}`.
+     * @returns {Promise<void>} resolves once connected.
+     */
+    connectBoard (target) {
+        return this.linkClient.connect(target);
+    }
+
+    /**
+     * Close the link to the connected board. Emits `DEVICE_DISCONNECTED`. Safe when not connected.
+     * @returns {Promise<void>} resolves once disconnected.
+     */
+    disconnectBoard () {
+        return this.linkClient.disconnect();
     }
 
     /**
