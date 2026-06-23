@@ -1,5 +1,5 @@
 const test = require('tap').test;
-const WebSerialConnection = require('../../src/firmware/connection/web-serial-connection');
+const WebSerialConnection = require('../../src/link/connection/web-serial-connection');
 const Runtime = require('../../src/engine/runtime');
 
 // A minimal fake of a Web Serial SerialPort that records open/close.

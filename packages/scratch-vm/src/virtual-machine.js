@@ -18,6 +18,7 @@ const formatMessage = require('format-message');
 const generateTargetCode = require('./codegen/generate-code');
 const {DeviceRegistry} = require('./devices');
 const {deviceClasses} = require('./extensions/devices');
+const LinkClient = require('./link/client/link-client');
 
 const Variable = require('./engine/variable');
 const newBlockIds = require('./util/new-block-ids');
@@ -175,6 +176,14 @@ class VirtualMachine extends EventEmitter {
         for (const DeviceClass of deviceClasses) {
             this.deviceRegistry.register(new DeviceClass(this.runtime));
         }
+
+        /**
+         * Device link to the native helper (thingblock-link). Owns one WebSocket session reused across
+         * board discovery and (later) connect/compile/upload/monitor. The socket opens lazily on first
+         * use, so constructing it here is free until a link operation runs.
+         * @type {LinkClient}
+         */
+        this.linkClient = new LinkClient(this.runtime);
 
         this.blockListener = this.blockListener.bind(this);
         this.flyoutBlockListener = this.flyoutBlockListener.bind(this);
@@ -1212,6 +1221,20 @@ class VirtualMachine extends EventEmitter {
                 device.getDeviceInfo()
             );
         });
+    }
+
+    /**
+     * Discover the boards connected to the user's machine that match the selected device, via the
+     * native helper. The helper filters connected ports by the device's `getUploadConfig().pnpid`.
+     * @param {string} deviceId - the selected device's id (from `getDeviceList()`).
+     * @returns {Promise<Array.<object>>} the available targets, each `{id, name}`.
+     */
+    listBoards (deviceId) {
+        const device = this.deviceRegistry.get(deviceId);
+        if (!device) {
+            return Promise.reject(new Error(`listBoards: no device registered for "${deviceId}"`));
+        }
+        return this.linkClient.listBoards(device);
     }
 
     /**
