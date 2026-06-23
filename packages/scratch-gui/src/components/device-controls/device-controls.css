@@ -2,13 +2,41 @@
 @import "../../css/colors.css";
 
 /* Fixed-height row matching the tab strip on the left, so the Generated Code
-   panel below aligns with the canvas top. The button is vertically centered,
-   keeping it clear of the menu bar above. */
+   panel below aligns with the canvas top. The buttons are vertically centered,
+   keeping them clear of the menu bar above. */
 .controls-header {
     display: flex;
     align-items: center;
+    gap: $space;
     flex-shrink: 0;
     height: $stage-menu-height;
+}
+
+.connect-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 2.25rem;
+    border: 1px solid $ui-green-2;
+    border-radius: $space;
+    background-color: $ui-white;
+    color: $ui-green;
+    cursor: pointer;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0 calc($space * 2);
+}
+
+.connect-button:hover {
+    background-color: $ui-secondary;
+}
+
+.connect-button:disabled {
+    cursor: default;
+    opacity: 0.6;
 }
 
 .primary-button {

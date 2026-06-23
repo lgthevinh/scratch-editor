@@ -19,7 +19,7 @@ class PeripheralTile extends React.Component {
     }
     render () {
         return (
-            <Box className={styles.peripheralTile}>
+            <Box className={classNames(styles.peripheralTile, this.props.className)}>
                 <Box className={styles.peripheralTileName}>
                     <img
                         className={styles.peripheralTileImage}
@@ -39,28 +39,30 @@ class PeripheralTile extends React.Component {
                     </Box>
                 </Box>
                 <Box className={styles.peripheralTileWidgets}>
-                    <Box className={styles.signalStrengthMeter}>
-                        <div
-                            className={classNames(styles.signalBar, {
-                                [styles.greenBar]: this.props.rssi > -80
-                            })}
-                        />
-                        <div
-                            className={classNames(styles.signalBar, {
-                                [styles.greenBar]: this.props.rssi > -60
-                            })}
-                        />
-                        <div
-                            className={classNames(styles.signalBar, {
-                                [styles.greenBar]: this.props.rssi > -40
-                            })}
-                        />
-                        <div
-                            className={classNames(styles.signalBar, {
-                                [styles.greenBar]: this.props.rssi > -20
-                            })}
-                        />
-                    </Box>
+                    {this.props.showSignalStrength && (
+                        <Box className={styles.signalStrengthMeter}>
+                            <div
+                                className={classNames(styles.signalBar, {
+                                    [styles.greenBar]: this.props.rssi > -80
+                                })}
+                            />
+                            <div
+                                className={classNames(styles.signalBar, {
+                                    [styles.greenBar]: this.props.rssi > -60
+                                })}
+                            />
+                            <div
+                                className={classNames(styles.signalBar, {
+                                    [styles.greenBar]: this.props.rssi > -40
+                                })}
+                            />
+                            <div
+                                className={classNames(styles.signalBar, {
+                                    [styles.greenBar]: this.props.rssi > -20
+                                })}
+                            />
+                        </Box>
+                    )}
                     <button
                         onClick={this.handleConnecting}
                     >
@@ -77,11 +79,17 @@ class PeripheralTile extends React.Component {
 }
 
 PeripheralTile.propTypes = {
+    className: PropTypes.string,
     connectionSmallIconURL: PropTypes.string,
     name: PropTypes.string,
     onConnecting: PropTypes.func,
     peripheralId: PropTypes.string,
-    rssi: PropTypes.number
+    rssi: PropTypes.number,
+    showSignalStrength: PropTypes.bool
+};
+
+PeripheralTile.defaultProps = {
+    showSignalStrength: true
 };
 
 export default PeripheralTile;

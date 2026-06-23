@@ -15,12 +15,22 @@ import warningIcon from './icons/warning.svg';
 
 import styles from './connection-modal.css';
 
-const ScanningStep = props => {
-    const showUpdate = !!(props.onUpdatePeripheral && !props.scanning);
-    return (<Box className={styles.body}>
-        <Box className={styles.activityArea}>
-            {props.scanning ? (
-                props.peripheralList.length === 0 ? (
+const ScanningStep = ({
+    activityAreaClassName,
+    bottomAreaClassName,
+    className,
+    peripheralList = [],
+    peripheralTileClassName,
+    scanning = true,
+    showSignalStrength = true,
+    showStepDots = true,
+    ...props
+}) => {
+    const showUpdate = !!(props.onUpdatePeripheral && !scanning);
+    return (<Box className={classNames(styles.body, className)}>
+        <Box className={classNames(styles.activityArea, activityAreaClassName)}>
+            {scanning ? (
+                peripheralList.length === 0 ? (
                     <div className={styles.activityAreaInfo}>
                         <div className={styles.centeredRow}>
                             <img
@@ -36,13 +46,15 @@ const ScanningStep = props => {
                     </div>
                 ) : (
                     <div className={styles.peripheralTilePane}>
-                        {props.peripheralList.map(peripheral =>
+                        {peripheralList.map(peripheral =>
                             (<PeripheralTile
+                                className={peripheralTileClassName}
                                 connectionSmallIconURL={props.connectionSmallIconURL}
                                 key={peripheral.peripheralId}
                                 name={peripheral.name}
                                 peripheralId={peripheral.peripheralId}
                                 rssi={peripheral.rssi}
+                                showSignalStrength={showSignalStrength}
                                 onConnecting={props.onConnecting}
                             />)
                         )}
@@ -63,9 +75,9 @@ const ScanningStep = props => {
                 </Box>
             )}
         </Box>
-        <Box className={styles.bottomArea}>
+        <Box className={classNames(styles.bottomArea, bottomAreaClassName)}>
             <Box className={classNames(styles.bottomAreaItem, styles.instructions)}>
-                {(props.scanning || props.peripheralList.length > 0) && (
+                {(scanning || peripheralList.length > 0) && (
                     // Show this message if we're still scanning OR if we've found devices
                     <FormattedMessage
                         defaultMessage="Select your device in the list above."
@@ -84,11 +96,13 @@ const ScanningStep = props => {
                     />
                 )}
             </Box>
-            <Dots
-                className={styles.bottomAreaItem}
-                counter={0}
-                total={3}
-            />
+            {showStepDots && (
+                <Dots
+                    className={styles.bottomAreaItem}
+                    counter={0}
+                    total={3}
+                />
+            )}
             <Box className={classNames(styles.bottomAreaItem, styles.buttonRow)}>
                 <button
                     className={styles.connectionButton}
@@ -126,21 +140,22 @@ const ScanningStep = props => {
 };
 
 ScanningStep.propTypes = {
+    activityAreaClassName: PropTypes.string,
+    bottomAreaClassName: PropTypes.string,
+    className: PropTypes.string,
     connectionSmallIconURL: PropTypes.string,
     onConnecting: PropTypes.func,
     onRefresh: PropTypes.func,
     onUpdatePeripheral: PropTypes.func,
+    peripheralTileClassName: PropTypes.string,
     peripheralList: PropTypes.arrayOf(PropTypes.shape({
         name: PropTypes.string,
         rssi: PropTypes.number,
         peripheralId: PropTypes.string
     })),
-    scanning: PropTypes.bool.isRequired
-};
-
-ScanningStep.defaultProps = {
-    peripheralList: [],
-    scanning: true
+    scanning: PropTypes.bool.isRequired,
+    showSignalStrength: PropTypes.bool,
+    showStepDots: PropTypes.bool
 };
 
 export default ScanningStep;
