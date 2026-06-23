@@ -1,58 +1,36 @@
-# scratch-editor: The Scratch Editor Monorepo
+# thingblock-editor: The ThingBlock Editor Monorepo
 
-If you'd like to use Scratch, please visit the [Scratch website](https://scratch.mit.edu/). You can build your own
-Scratch project by pressing "Create" on that website or by visiting <https://scratch.mit.edu/projects/editor/>.
+ThingBlock Editor is a block-based firmware development IDE for Arduino-compatible hardware. It keeps the
+beginner-friendly Scratch programming model while adding the hardware workflow needed for physical computing: board
+selection, generated Arduino code, native board-link discovery, upload flow foundations, and a serial monitor for
+device input and output.
 
-This is a source code repository for the packages that make up the Scratch editor and a few additional support
-packages. Use this if you'd like to learn about how the Scratch editor works or to contribute to its development.
+ThingBlock is a fork of the open-source `scratch-editor` project. The Scratch-derived package names, workspace
+layout, and architecture are intentionally preserved in many places so the fork remains understandable, compatible with
+upstream Scratch packages, and easier to compare against the original project.
 
 ## What's in this repository?
 
-The `packages` directory in this repository contains:
+The `packages` directory contains:
 
-- `scratch-gui` provides the buttons, menus, and other elements that you interact with when creating and editing a
-  project. It's also the "glue" that brings most of the other modules together at runtime.
-- `scratch-blocks` is the visual block editor built on Blockly. It provides block definitions, fields, rendering,
-  events, and the workspace UI. This is a local fork (`@scratch/scratch-blocks`) maintained within the monorepo.
-- `scratch-media-lib-scripts` builds (or rebuilds) media libraries for the editor.
-- `scratch-paint` provides a way to draw vector (SVG) or bitmap (PNG) images for costumes and backdrops.
-- `scratch-render` draws backdrops, sprites, and clones on the stage.
-- `scratch-storage` helps load project assets like images and sounds. It also provides `ScratchFetch`, a customized
-  wrapper around `fetch`.
-- `scratch-svg-renderer` processes SVG (vector) images for use with Scratch projects.
-- `scratch-vm` is the virtual machine that runs Scratch projects.
+- `scratch-gui` provides the editor UI, including the ThingBlock menu bar, board picker, generated-code panel, and
+  serial monitor.
+- `scratch-vm` is the virtual machine that runs Scratch projects and owns device registration, code generation, and
+  native board-link discovery.
+- `scratch-blocks` is the Blockly-based block editor fork used by the GUI.
+- `scratch-render` draws backdrops, sprites, clones, and stage content.
+- `scratch-storage` loads project assets like images and sounds.
+- `scratch-svg-renderer` processes SVG assets.
+- `scratch-paint` contains the costume/paint editor package.
+- `scratch-media-lib-scripts` builds media library assets.
 - `task-herder` manages queues of tasks with throttling and concurrency limits.
 
-_Please add to this list as more packages are migrated to the monorepo._
+## Project direction
 
-Each package has its own `README.md` file with more information about that package.
+ThingBlock focuses on physical computing education and beginner-friendly firmware development. The goal is to let
+learners build real hardware projects with the same drag-and-drop style that makes Scratch approachable, while giving
+boards, extensions, code generation, upload, and monitor features clear ownership inside the editor and VM.
 
-## Monorepo migration
-
-### What's going on?
-
-We're migrating the Scratch editor packages into this monorepo. This will allow us to manage all the packages that
-make up the Scratch editor in one place, making  it easier to manage dependencies and make changes that affect
-multiple packages.
-
-### Why are there only a few packages in this repo?
-
-We're migrating packages in stages. The current plan, which is subject to change, has us migrating repositories in
-four batches. We plan to complete the migration within 2025.
-
-### What will happen to the existing repositories?
-
-The existing repositories will be archived and made read-only. Those repositories contain valuable work and
-information, including but not limited to issues and pull requests. We plan to keep that information available for
-reference, and to selectively migrate it to this new repository.
-
-## Thank you
-
-Scratch would not be what it is today without help from the global community of Scratchers and open-source
-contributors. Thank you for your contributions and support. _[Scratch on!](https://scratch.mit.edu/projects/65347738/fullscreen/)_
-
-## Donate
-
-We provide [Scratch](https://scratch.mit.edu) free of charge, and want to keep it that way! Please consider making a
-[donation](https://www.scratchfoundation.org/donate) to support our continued engineering, design, community, and
-resource development efforts. Donations of any size are appreciated. Thank you!
+The longer-term direction is a reusable hardware extension platform: new Arduino-compatible boards should be addable
+without rewriting the core editor, and device-specific behavior should live behind well-defined board, link, codegen,
+and upload surfaces.
