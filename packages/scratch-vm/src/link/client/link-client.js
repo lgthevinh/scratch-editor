@@ -66,7 +66,9 @@ class LinkClient extends Client {
      */
     async listBoards (device) {
         const {pnpid = []} = device.getUploadConfig();
+        log.info(`LinkClient.listBoards: requesting boards matching pnpid=${JSON.stringify(pnpid)}`);
         const {targets} = await this._request('listBoards', {pnpid});
+        log.info(`LinkClient.listBoards: helper returned ${targets.length} board(s)`);
         return targets.map(target => ({id: target.port, name: target.label}));
     }
 
@@ -77,8 +79,10 @@ class LinkClient extends Client {
      * @returns {Promise<void>} resolves once the helper has the selection.
      */
     async connect (target) {
+        log.info(`LinkClient.connect: selecting port ${target.id} with the helper`);
         await this._request('connect', {port: target.id});
         this._connectedTarget = target;
+        log.info('LinkClient.connect: connected');
         this.runtime.emit(this.runtime.constructor.DEVICE_CONNECTED);
     }
 
@@ -87,7 +91,11 @@ class LinkClient extends Client {
      * @returns {Promise<void>} resolves once cleared.
      */
     async disconnect () {
-        if (!this._connectedTarget) return;
+        if (!this._connectedTarget) {
+            log.info('LinkClient.disconnect: no selected port; nothing to do');
+            return;
+        }
+        log.info('LinkClient.disconnect: clearing the helper-selected port');
         await this._request('disconnect', {});
         this._connectedTarget = null;
         this.runtime.emit(this.runtime.constructor.DEVICE_DISCONNECTED);
@@ -127,13 +135,19 @@ class LinkClient extends Client {
     _ensureOpen () {
         if (this._openPromise) return this._openPromise;
 
+        log.info(`LinkClient: opening WebSocket to the helper at ${this._url}`);
         this._openPromise = new Promise((resolve, reject) => {
             const ws = new this._WebSocket(this._url);
             this._ws = ws;
-            ws.onopen = () => resolve();
+            ws.onopen = () => {
+                log.info('LinkClient: WebSocket open');
+                resolve();
+            };
             ws.onmessage = event => this._handleMessage(event.data);
             ws.onerror = () => {
                 // Surfaces as a rejected open to the first caller; later failures arrive via onclose.
+                log.error(`LinkClient: WebSocket error connecting to ${this._url} — ` +
+                    'is the thingblock-link helper running?');
                 reject(new Error(`LinkClient: WebSocket error connecting to ${this._url}`));
             };
             ws.onclose = () => this._handleClose();
@@ -164,6 +178,8 @@ class LinkClient extends Client {
         case 'error': {
             const error = new Error((payload && payload.message) || 'link request failed');
             error.code = payload && payload.code;
+            log.warn(`LinkClient: helper returned error for request ${id} ` +
+                `(code=${error.code}): ${error.message}`);
             this._settle(id, {reject: error});
             break;
         }
@@ -179,6 +195,7 @@ class LinkClient extends Client {
      * @private
      */
     _handleClose () {
+        log.info(`LinkClient: WebSocket closed; rejecting ${this._pending.size} in-flight request(s)`);
         const err = new Error('LinkClient: connection to the helper closed');
         for (const id of [...this._pending.keys()]) {
             this._settle(id, {reject: err});

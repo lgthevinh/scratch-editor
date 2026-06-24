@@ -1,5 +1,5 @@
 const test = require('tap').test;
-const WebSerialConnection = require('../../src/link/connection/web-serial-connection');
+const CloudClient = require('../../src/link/client/cloud-client');
 const Runtime = require('../../src/engine/runtime');
 
 // A minimal fake of a Web Serial SerialPort that records open/close.
@@ -36,11 +36,10 @@ const uninstallSerial = () => {
 };
 
 test('spec', t => {
-    const rt = new Runtime();
-    const c = new WebSerialConnection(rt);
+    const c = new CloudClient(new Runtime());
 
-    t.type(WebSerialConnection, 'function');
-    t.type(c.list, 'function');
+    t.type(CloudClient, 'function');
+    t.type(c.listBoards, 'function');
     t.type(c.connect, 'function');
     t.type(c.disconnect, 'function');
     t.equal(c.isConnected, false);
@@ -49,10 +48,10 @@ test('spec', t => {
 
 test('isSupported reflects navigator.serial presence', t => {
     uninstallSerial();
-    t.equal(WebSerialConnection.isSupported(), false);
+    t.equal(CloudClient.isSupported(), false);
 
     installSerial(makeFakePort());
-    t.equal(WebSerialConnection.isSupported(), true);
+    t.equal(CloudClient.isSupported(), true);
     uninstallSerial();
     t.end();
 });
@@ -63,17 +62,33 @@ test('filtersFromDevice parses pnpid VID/PID', t => {
             pnpid: ['USB\\VID_2341&PID_0043', 'USB\\VID_2341&PID_0001', 'not-a-pnpid']
         })
     };
-    t.same(WebSerialConnection.filtersFromDevice(device), [
+    t.same(CloudClient.filtersFromDevice(device), [
         {usbVendorId: 0x2341, usbProductId: 0x0043},
         {usbVendorId: 0x2341, usbProductId: 0x0001}
     ]);
-    t.same(WebSerialConnection.filtersFromDevice({getUploadConfig: () => ({})}), []);
+    t.same(CloudClient.filtersFromDevice({getUploadConfig: () => ({})}), []);
     t.end();
 });
 
-test('list is empty (native picker replaces enumeration)', t => {
-    const c = new WebSerialConnection(new Runtime());
-    c.list().then(targets => {
+const stubDevice = (name = 'Arduino Uno') => ({
+    getUploadConfig: () => ({}),
+    getDeviceInfo: () => ({name})
+});
+
+test('listBoards returns one picker entry labelled with the device when Web Serial is supported', t => {
+    installSerial(makeFakePort());
+    const c = new CloudClient(new Runtime());
+    c.listBoards(stubDevice('Arduino Uno')).then(targets => {
+        t.same(targets, [{id: 'web-serial', name: 'Arduino Uno'}]);
+        uninstallSerial();
+        t.end();
+    });
+});
+
+test('listBoards is empty when Web Serial is unavailable', t => {
+    uninstallSerial();
+    const c = new CloudClient(new Runtime());
+    c.listBoards(stubDevice()).then(targets => {
         t.same(targets, []);
         t.end();
     });
@@ -81,7 +96,7 @@ test('list is empty (native picker replaces enumeration)', t => {
 
 test('connect opens the port, exposes transport, and emits DEVICE_CONNECTED', t => {
     const rt = new Runtime();
-    const c = new WebSerialConnection(rt);
+    const c = new CloudClient(rt);
     const port = makeFakePort();
     const calls = installSerial(port);
 
@@ -103,7 +118,7 @@ test('connect opens the port, exposes transport, and emits DEVICE_CONNECTED', t 
 });
 
 test('connect with no target shows all ports (empty filters)', t => {
-    const c = new WebSerialConnection(new Runtime());
+    const c = new CloudClient(new Runtime());
     const calls = installSerial(makeFakePort());
 
     c.connect().then(() => {
@@ -115,7 +130,7 @@ test('connect with no target shows all ports (empty filters)', t => {
 
 test('disconnect closes the port and emits DEVICE_DISCONNECTED', t => {
     const rt = new Runtime();
-    const c = new WebSerialConnection(rt);
+    const c = new CloudClient(rt);
     const port = makeFakePort();
     installSerial(port);
 
@@ -136,7 +151,7 @@ test('disconnect closes the port and emits DEVICE_DISCONNECTED', t => {
 
 test('disconnect is a no-op when not connected', t => {
     const rt = new Runtime();
-    const c = new WebSerialConnection(rt);
+    const c = new CloudClient(rt);
 
     let disconnectedEvents = 0;
     rt.on(Runtime.DEVICE_DISCONNECTED, () => disconnectedEvents++);
@@ -149,7 +164,7 @@ test('disconnect is a no-op when not connected', t => {
 
 test('connect throws when Web Serial is unavailable', t => {
     uninstallSerial();
-    const c = new WebSerialConnection(new Runtime());
+    const c = new CloudClient(new Runtime());
     c.connect().then(
         () => {
             t.fail('expected connect to reject');
@@ -160,4 +175,14 @@ test('connect throws when Web Serial is unavailable', t => {
             t.end();
         }
     );
+});
+
+test('deferred Client methods still throw until their milestone', t => {
+    const c = new CloudClient(new Runtime());
+    t.throws(() => c.compile({}, ''), /must implement compile/);
+    t.throws(() => c.flash({}, {}), /must implement flash/);
+    t.throws(() => c.openMonitor({}), /must implement openMonitor/);
+    t.throws(() => c.writeMonitor(''), /must implement writeMonitor/);
+    t.throws(() => c.closeMonitor(), /must implement closeMonitor/);
+    t.end();
 });

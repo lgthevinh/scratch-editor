@@ -1,0 +1,122 @@
+@import "../../css/colors.css";
+@import "../../css/units.css";
+
+.modal-content {
+    width: 600px;
+    max-width: calc(100vw - 2rem);
+}
+
+.body {
+    display: flex;
+    flex-direction: row;
+    background: $ui-white;
+    min-height: 360px;
+}
+
+.sidebar {
+    flex-shrink: 0;
+    width: 168px;
+    padding: 1rem 0.75rem;
+    background: $ui-secondary;
+    border-inline-end: 1px solid $ui-black-transparent;
+}
+
+.tab {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    cursor: pointer;
+    text-align: start;
+    font: inherit;
+    font-size: 0.875rem;
+    color: $text-primary;
+}
+
+.tab-active {
+    background: $looks-transparent;
+    color: $looks-secondary;
+    font-weight: bold;
+}
+
+.content {
+    flex-grow: 1;
+    padding: 1.5rem 1.75rem;
+}
+
+.content-heading {
+    font-weight: bold;
+    font-size: 1rem;
+    color: $text-primary;
+}
+
+.content-description {
+    margin-top: 0.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.8125rem;
+    color: $text-primary-transparent;
+}
+
+.options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 2px solid $ui-black-transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+.option:hover {
+    border-color: $looks-transparent;
+}
+
+.option-selected,
+.option-selected:hover {
+    border-color: $looks-secondary;
+    background: $looks-transparent;
+}
+
+/* Custom radio dot so the control reads as Scratch's motion blue, not the OS default. */
+.option-radio {
+    appearance: none;
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0.125rem 0 0;
+    border: 2px solid $ui-black-transparent;
+    border-radius: 100%;
+    cursor: pointer;
+}
+
+.option-radio:checked {
+    border-color: $looks-secondary;
+    background:
+        radial-gradient($looks-secondary 0 45%, transparent 50%);
+}
+
+.option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.option-label {
+    font-weight: bold;
+    font-size: 0.9375rem;
+    color: $text-primary;
+}
+
+.option-description {
+    font-size: 0.8125rem;
+    color: $text-primary-transparent;
+}

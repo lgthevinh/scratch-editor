@@ -176,6 +176,15 @@
     margin: 0 0 0 .25rem;
 }
 
+.settings-button {
+    padding: 0 .25rem;
+}
+
+.settings-icon {
+    height: 1.25rem;
+    vertical-align: middle;
+}
+
 .account-nav-menu, .mystuff-button {
     padding: 0 .25rem;
     display: flex;

@@ -21,7 +21,7 @@ test('listBoards resolves the device and delegates to the link client', t => {
 
     vm.deviceRegistry.get = deviceId => (deviceId === 'arduinoUno' ? fakeDevice : null);
     let receivedDevice = null;
-    vm.linkClient = {
+    vm.client = {
         listBoards: device => {
             receivedDevice = device;
             return Promise.resolve(targets);
@@ -39,7 +39,7 @@ test('connectBoard delegates the target to the link client', t => {
     const vm = new VirtualMachine();
     const target = {id: '/dev/ttyACM0', name: 'Arduino Uno'};
     let received = null;
-    vm.linkClient = {connect: t2 => {
+    vm.client = {connect: t2 => {
         received = t2;
         return Promise.resolve();
     }};
@@ -53,7 +53,7 @@ test('connectBoard delegates the target to the link client', t => {
 test('disconnectBoard delegates to the link client', t => {
     const vm = new VirtualMachine();
     let called = false;
-    vm.linkClient = {disconnect: () => {
+    vm.client = {disconnect: () => {
         called = true;
         return Promise.resolve();
     }};
@@ -62,4 +62,32 @@ test('disconnectBoard delegates to the link client', t => {
         t.equal(called, true, 'calls disconnect on the link client');
         t.end();
     });
+});
+
+test('setLinkMode swaps the active client between the helper and cloud backends', t => {
+    const vm = new VirtualMachine();
+    t.equal(vm.client, vm.linkClient, 'defaults to the native helper client');
+
+    vm.setLinkMode('cloud');
+    t.equal(vm.client, vm.cloudClient, 'cloud mode activates the cloud client');
+
+    vm.setLinkMode('link');
+    t.equal(vm.client, vm.linkClient, 'link mode activates the helper client');
+    t.end();
+});
+
+test('setLinkMode disconnects the current client before switching', t => {
+    const vm = new VirtualMachine();
+    let disconnected = false;
+    // _connectedTarget drives LinkClient's isConnected getter, so the switch sees an open link.
+    vm.linkClient._connectedTarget = {id: '/dev/ttyACM0', name: 'Arduino Uno'};
+    vm.linkClient.disconnect = () => {
+        disconnected = true;
+        return Promise.resolve();
+    };
+
+    vm.setLinkMode('cloud');
+    t.equal(disconnected, true, 'disconnects the previously active client');
+    t.equal(vm.client, vm.cloudClient, 'switches to the cloud client');
+    t.end();
 });

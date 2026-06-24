@@ -19,6 +19,7 @@ const generateTargetCode = require('./codegen/generate-code');
 const {DeviceRegistry} = require('./devices');
 const {boards} = require('./extensions/devices');
 const LinkClient = require('./link/client/link-client');
+const CloudClient = require('./link/client/cloud-client');
 
 const Variable = require('./engine/variable');
 const newBlockIds = require('./util/new-block-ids');
@@ -186,12 +187,26 @@ class VirtualMachine extends EventEmitter {
         }
 
         /**
-         * Device link to the native helper (thingblock-link). Owns one WebSocket session reused across
-         * board discovery and (later) connect/compile/upload/monitor. The socket opens lazily on first
-         * use, so constructing it here is free until a link operation runs.
+         * Device link to the native helper (thingblock-link), over a WebSocket. Constructing it is
+         * free — the socket opens lazily on first use.
          * @type {LinkClient}
          */
         this.linkClient = new LinkClient(this.runtime);
+
+        /**
+         * Device link for the server-build (full-web) mode, over Web Serial. The web-mode peer to
+         * `linkClient`; its port opens lazily on first use.
+         * @type {CloudClient}
+         */
+        this.cloudClient = new CloudClient(this.runtime);
+
+        /**
+         * The active device-link {@link Client} that board discovery, connection, and (later)
+         * compile/upload/monitor route through. `setLinkMode` swaps it between `linkClient` and
+         * `cloudClient`; both instances persist so a mode switch keeps each transport's state.
+         * @type {Client}
+         */
+        this.client = this.linkClient;
 
         this.blockListener = this.blockListener.bind(this);
         this.flyoutBlockListener = this.flyoutBlockListener.bind(this);
@@ -1236,8 +1251,24 @@ class VirtualMachine extends EventEmitter {
     }
 
     /**
+     * Select the device-link backend board operations route through: `'cloud'` for the web/Web Serial
+     * client, anything else for the native helper. Disconnects the current client first so switching
+     * never leaves a dangling link.
+     * @param {string} mode - the link mode, `'link'` or `'cloud'`.
+     * @returns {void}
+     */
+    setLinkMode (mode) {
+        const next = mode === 'cloud' ? this.cloudClient : this.linkClient;
+        if (next === this.client) return;
+        if (this.client.isConnected) {
+            this.client.disconnect();
+        }
+        this.client = next;
+    }
+
+    /**
      * Discover the boards connected to the user's machine that match the selected device, via the
-     * native helper. The helper filters connected ports by the device's `getUploadConfig().pnpid`.
+     * active link client. Discovery filters connected ports by the device's `getUploadConfig().pnpid`.
      * @param {string} deviceId - the selected device's id (from `getDeviceList()`).
      * @returns {Promise<Array.<object>>} the available targets, each `{id, name}`.
      */
@@ -1246,16 +1277,17 @@ class VirtualMachine extends EventEmitter {
         if (!device) {
             return Promise.reject(new Error(`listBoards: no device registered for "${deviceId}"`));
         }
-        return this.linkClient.listBoards(device);
+        return this.client.listBoards(device);
     }
 
     /**
-     * Open the link to a discovered board via the native helper. Emits `DEVICE_CONNECTED` on success.
+     * Open the link to a discovered board via the active link client. Emits `DEVICE_CONNECTED` on
+     * success.
      * @param {object} target - the target to open (from `listBoards()`), `{id, name}`.
      * @returns {Promise<void>} resolves once connected.
      */
     connectBoard (target) {
-        return this.linkClient.connect(target);
+        return this.client.connect(target);
     }
 
     /**
@@ -1263,7 +1295,7 @@ class VirtualMachine extends EventEmitter {
      * @returns {Promise<void>} resolves once disconnected.
      */
     disconnectBoard () {
-        return this.linkClient.disconnect();
+        return this.client.disconnect();
     }
 
     /**

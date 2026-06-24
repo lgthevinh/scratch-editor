@@ -38,6 +38,7 @@ import {AccountMenuOptionsPropTypes} from '../../lib/account-menu-options';
 import styles from './gui.css';
 import codeIcon from './icon--code.svg';
 import DebugModal from '../debug-modal/debug-modal.jsx';
+import SettingsModal from '../../containers/settings-modal.jsx';
 import {setPlatform} from '../../reducers/platform.js';
 import {setTheme} from '../../reducers/settings.js';
 import {PLATFORM} from '../../lib/platform.js';
@@ -137,6 +138,7 @@ const GUIComponent = props => {
         onExtensionButtonClick,
         onProjectTelemetryEvent,
         onRequestCloseDebugModal,
+        onRequestCloseSettingsModal,
         onRequestCloseTelemetryModal,
         onSeeCommunity,
         onShare,
@@ -149,6 +151,7 @@ const GUIComponent = props => {
         showNewFeatureCallouts,
         stageSizeMode,
         selectedDeviceId,
+        settingsModalVisible,
         telemetryModalVisible,
         colorMode,
         theme,
@@ -333,6 +336,9 @@ const GUIComponent = props => {
                         isOpen={debugModalVisible}
                         onClose={onCloseDebugModal}
                     />}
+                    {settingsModalVisible ? (
+                        <SettingsModal onRequestClose={onRequestCloseSettingsModal} />
+                    ) : null}
                     {/* TODO - in case of moving MenuRefProvider which seems likely,
                     make sure to move it from tests as well */}
                     {!menuBarHidden && <MenuRefProvider>
@@ -543,6 +549,7 @@ GUIComponent.propTypes = {
     onClickLogin: PropTypes.func,
     onOpenRegistration: PropTypes.func,
     onRequestCloseDebugModal: PropTypes.func,
+    onRequestCloseSettingsModal: PropTypes.func,
     onRequestCloseTelemetryModal: PropTypes.func,
     onSeeCommunity: PropTypes.func,
     onShare: PropTypes.func,
@@ -558,6 +565,7 @@ GUIComponent.propTypes = {
     renderLogin: PropTypes.func,
     setTheme: PropTypes.func.isRequired,
     selectedDeviceId: PropTypes.string,
+    settingsModalVisible: PropTypes.bool,
     showNewFeatureCallouts: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     setPlatform: PropTypes.func,

@@ -25,8 +25,9 @@ class Client {
     /**
      * Discover the targets this client could open, narrowed to the selected device. Implementations
      * filter by the device's `getUploadConfig().pnpid` so the list shows the chosen board's ports.
-     * Returns an empty array when discovery is unavailable (e.g. Web Serial, where the browser's native
-     * picker replaces an enumerated list); the caller then drives `connect()` directly.
+     * Each returned target is selectable in the GUI and passed back to `connect()`. A backend that
+     * cannot enumerate (Web Serial) returns a single stand-in target whose selection opens the native
+     * picker in `connect()`; an empty array means no matching board was found.
      * @param {Device} device - the selected device, used to filter candidates.
      * @returns {Promise<Array.<ConnectionTarget>>} the available targets.
      */

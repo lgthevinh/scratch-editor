@@ -34,6 +34,7 @@ const vmManagerHOC = function (WrappedComponent) {
                 this.props.vm.setCompatibilityMode(true);
                 this.props.vm.initialized = true;
                 this.props.vm.setLocale(this.props.locale, this.props.messages);
+                this.props.vm.setLinkMode(this.props.linkMode);
             }
             if (!this.props.isPlayerOnly && !this.props.isStarted) {
                 this.props.vm.start();
@@ -78,6 +79,7 @@ const vmManagerHOC = function (WrappedComponent) {
             const {
                  
                 fontsLoaded,
+                linkMode,
                 loadingState,
                 locale,
                 messages,
@@ -108,6 +110,7 @@ const vmManagerHOC = function (WrappedComponent) {
         isLoadingWithId: PropTypes.bool,
         isPlayerOnly: PropTypes.bool,
         isStarted: PropTypes.bool,
+        linkMode: PropTypes.string,
         loadingState: PropTypes.oneOf(LoadingStates),
         locale: PropTypes.string,
         messages: PropTypes.objectOf(PropTypes.string),
@@ -125,6 +128,7 @@ const vmManagerHOC = function (WrappedComponent) {
         return {
             fontsLoaded: state.scratchGui.fontsLoaded,
             isLoadingWithId: getIsLoadingWithId(loadingState),
+            linkMode: state.scratchGui.settings.linkMode,
             locale: state.locales.locale,
             messages: state.locales.messages,
             projectData: state.scratchGui.projectState.projectData,

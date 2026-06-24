@@ -20,7 +20,8 @@ import {
 import {
     closeTelemetryModal,
     openExtensionLibrary,
-    closeDebugModal
+    closeDebugModal,
+    closeSettingsModal
 } from '../reducers/modals';
 
 import {setPlatform} from '../reducers/platform';
@@ -202,6 +203,7 @@ const mapStateToProps = (state, ownProps) => {
         platform: ownProps.platform,
         projectId: state.scratchGui.projectState.projectId,
         selectedDeviceId: state.scratchGui.board.selectedDeviceId,
+        settingsModalVisible: state.scratchGui.modals.settingsModal,
         telemetryModalVisible: state.scratchGui.modals.telemetryModal,
         tipsLibraryVisible: state.scratchGui.modals.tipsLibrary,
         vm: state.scratchGui.vm
@@ -214,6 +216,7 @@ const mapDispatchToProps = dispatch => ({
     onUpdateDynamicAssets: dynamicAssets => dispatch(setDynamicAssets(dynamicAssets)),
     setPlatform: platform => dispatch(setPlatform(platform)),
     onRequestCloseDebugModal: () => dispatch(closeDebugModal()),
+    onRequestCloseSettingsModal: () => dispatch(closeSettingsModal()),
     onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal())
 });
 

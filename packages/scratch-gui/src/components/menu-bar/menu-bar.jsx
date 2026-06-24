@@ -29,7 +29,7 @@ import ModeMenu from './mode-menu.jsx';
 import BoardMenu from './board-menu.jsx';
 import AboutMenu from './about-menu.jsx';
 
-import {openTipsLibrary, openDebugModal} from '../../reducers/modals';
+import {openTipsLibrary, openDebugModal, openSettingsModal} from '../../reducers/modals';
 import {setPlayer} from '../../reducers/mode';
 import {
     isTimeTravel220022BC,
@@ -64,6 +64,7 @@ import profileIcon from './icon--profile.png';
 import remixIcon from './icon--remix.svg';
 import dropdownCaret from './dropdown-caret.svg';
 import debugIcon from '../debug-modal/icons/icon--debug.svg';
+import settingsIcon from './icon--settings.svg';
 
 import ThingBlockLogo from './thingblock-logo.jsx';
 
@@ -82,6 +83,11 @@ const ariaMessages = defineMessages({
         id: 'gui.menuBar.debug',
         defaultMessage: 'Debug',
         description: 'accessibility text for the debug button'
+    },
+    settings: {
+        id: 'gui.menuBar.settingsButton',
+        defaultMessage: 'Settings',
+        description: 'accessibility text for the settings button'
     },
     home: {
         id: 'gui.menuBar.home',
@@ -500,6 +506,16 @@ class MenuBar extends React.Component {
                             </React.Fragment>
                         )
                     ) : null}
+                    <button
+                        aria-label={this.props.intl.formatMessage(ariaMessages.settings)}
+                        className={classNames(styles.menuBarItem, styles.hoverable, styles.settingsButton)}
+                        onClick={this.props.onOpenSettingsModal}
+                    >
+                        <img
+                            className={styles.settingsIcon}
+                            src={settingsIcon}
+                        />
+                    </button>
                 </div>
 
                 {this.props.onClickAbout && (
@@ -572,6 +588,7 @@ MenuBar.propTypes = {
     onOpenRegistration: PropTypes.func,
     onOpenTipLibrary: PropTypes.func,
     onOpenDebugModal: PropTypes.func,
+    onOpenSettingsModal: PropTypes.func,
     onProjectTelemetryEvent: PropTypes.func,
     onRequestCloseLogin: PropTypes.func,
     onSeeCommunity: PropTypes.func,
@@ -653,6 +670,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     autoUpdateProject: () => dispatch(autoUpdateProject()),
     onOpenTipLibrary: () => dispatch(openTipsLibrary()),
     onOpenDebugModal: () => dispatch(openDebugModal()),
+    onOpenSettingsModal: () => dispatch(openSettingsModal()),
     onClickNew: needSave => dispatch(requestNewProject(needSave)),
     onClickLogin: ownProps.onClickLogin ?? (() => dispatch(openLoginMenu())),
     onClickSave: () => dispatch(manualUpdateProject()),
