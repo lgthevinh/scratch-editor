@@ -71,6 +71,8 @@ export { FieldColourSlider, FieldNote }
 export { CheckboxBubble } from './checkbox_bubble'
 export { ScratchZoomControls } from './scratch_zoom_controls'
 export { StatusIndicatorLabel, StatusButtonState } from './status_indicator_label'
+export { ArduinoGenerator, arduinoGenerator } from './generators/arduino'
+export { Order as ArduinoOrder } from './generators/arduino/order'
 export * from './xml'
 
 interface ScratchBlocksOptions extends Blockly.BlocklyOptions {
