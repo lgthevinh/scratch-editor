@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { registerBlocks as registerThingbotBlocks } from '../src/extensions/devices/thingbot/extension/blocks'
+import { registerGenerators as registerThingbotGenerators } from '../src/extensions/devices/thingbot/extension/generator'
+import thingbotExtensionManifest from '../src/extensions/devices/thingbot/extension/manifest'
+import thingbotToolbox from '../src/extensions/devices/thingbot/extension/toolbox'
 import thingbotManifest from '../src/extensions/devices/thingbot/manifest'
 import { registerBlocks } from '../src/extensions/peripheral/servo/blocks'
 import { registerGenerators } from '../src/extensions/peripheral/servo/generator'
@@ -50,6 +54,40 @@ describe('servo blocks', () => {
   })
 })
 
+describe('thingbot device extension', () => {
+  it('defines thingbot_digitalwrite on the injected Blockly', () => {
+    const Blocks: Record<string, unknown> = {}
+    registerThingbotBlocks({ Blocks } as unknown as Blockly)
+    expect(Blocks.thingbot_digitalwrite).toBeDefined()
+  })
+
+  it('emits pin setup and digital write code', () => {
+    const gen = makeGenerator()
+    registerThingbotGenerators(gen as unknown as ArduinoGenerator, Order)
+
+    const code = gen.forBlock.thingbot_digitalwrite({
+      values: { PIN: '5' },
+      getFieldValue: () => 'LOW',
+    })
+
+    expect(code).toBe('digitalWrite(5, LOW);\n')
+    expect(gen.setups.get('thingbot_pin_5_output')).toBe('pinMode(5, OUTPUT);')
+  })
+
+  it('falls back to pin 2 and HIGH when inputs are empty', () => {
+    const gen = makeGenerator()
+    registerThingbotGenerators(gen as unknown as ArduinoGenerator, Order)
+
+    const code = gen.forBlock.thingbot_digitalwrite({
+      values: {},
+      getFieldValue: () => undefined,
+    })
+
+    expect(code).toBe('digitalWrite(2, HIGH);\n')
+    expect(gen.setups.get('thingbot_pin_2_output')).toBe('pinMode(2, OUTPUT);')
+  })
+})
+
 describe('manifests', () => {
   it('servo is a peripheral pointing at its served modules', () => {
     expect(servoManifest.kind).toBe('peripheral')
@@ -67,6 +105,38 @@ describe('manifests', () => {
     expect(thingbotManifest.kind).toBe('device')
     expect(thingbotManifest.id).toBe('thingbot')
     expect(thingbotManifest.fqbn).toBe('esp32:esp32:esp32c3')
+    expect(thingbotManifest.extensions).toEqual([
+      { kind: 'deviceExtension', path: './extension/manifest.js' },
+      { kind: 'peripheral', id: 'servo' },
+    ])
     expect(thingbotManifest.compile?.options).toEqual({ CDCOnBoot: 'cdc' })
+  })
+
+  it('thingbot carries the device-card metadata the VM localizes and renders', () => {
+    expect(thingbotManifest.description.id).toBe('device.thingbot.description')
+    expect(thingbotManifest.description.default).toMatch(/ESP32-C3/)
+    expect(thingbotManifest.manufacturer).toBe('thingedu.com')
+    expect(thingbotManifest.requires).toBe('serial')
+  })
+
+  it('thingbot peripheral refs resolve to a loaded peripheral pack', () => {
+    const peripheralIds = new Set([servoManifest.id])
+    const refs = (thingbotManifest.extensions ?? []).filter((ref) => ref.kind === 'peripheral')
+    expect(refs.length).toBeGreaterThan(0)
+    for (const ref of refs) {
+      expect(peripheralIds).toContain(ref.id)
+    }
+  })
+
+  it('thingbot hidden device extension points at its served modules', () => {
+    expect(thingbotExtensionManifest.kind).toBe('deviceExtension')
+    expect(thingbotExtensionManifest.id).toBe('thingbot.device')
+    expect(thingbotExtensionManifest.hidden).toBe(true)
+    expect(thingbotExtensionManifest.blocks).toBe('./blocks.js')
+    expect(thingbotExtensionManifest.generator).toBe('./generator.js')
+  })
+
+  it('thingbot toolbox references the device-extension block type', () => {
+    expect(thingbotToolbox.contents).toContainEqual({ kind: 'block', type: 'thingbot_digitalwrite' })
   })
 })

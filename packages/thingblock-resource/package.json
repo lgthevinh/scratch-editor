@@ -14,7 +14,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && vite build && node scripts/copy-assets.mjs && node scripts/zip-pack.mjs",
+    "build": "tsc --project tsconfig.build.json && vite build && node scripts/copy-assets.mjs && node scripts/emit-index.mjs && node scripts/zip-pack.mjs",
     "clean": "rimraf dist",
     "deploy": "node scripts/deploy.mjs",
     "format": "prettier --write . && eslint --fix",

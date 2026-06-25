@@ -2,7 +2,7 @@
 // each pack's source folder into its served dist folder, mirroring the path layout the Vite build
 // produces (dist/thingblock-resource/extensions/<group>/<pack>/…). Run after `vite build`.
 import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 
 const EXTENSIONS_SRC = join('src', 'extensions')
 const PACK_ROOT_OUT = join('dist', 'thingblock-resource', 'extensions')
@@ -18,13 +18,28 @@ for (const group of PACK_GROUPS) {
     const packOut = join(PACK_ROOT_OUT, group, pack.name)
     mkdirSync(packOut, { recursive: true })
 
-    // Vendored C++ library sources, resolved by the helper from its resource root at compile time.
-    const libsDir = join(packSrc, 'libs')
-    if (existsSync(libsDir)) cpSync(libsDir, join(packOut, 'libs'), { recursive: true })
+    copyRawAssets(packSrc, packSrc, packOut)
+  }
+}
 
-    // Static assets (board icons).
-    for (const entry of readdirSync(packSrc)) {
-      if (entry.endsWith('.svg')) cpSync(join(packSrc, entry), join(packOut, entry))
+// Walk the pack recursively so a nested `extension/` can carry its own icons: copy `libs/` wholesale
+// and `.svg` files at any depth, preserving each file's path relative to the pack root.
+function copyRawAssets(root, dir, out) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const source = join(dir, entry.name)
+    const target = join(out, relative(root, source))
+    if (entry.isDirectory()) {
+      if (entry.name === 'libs') {
+        mkdirSync(dirname(target), { recursive: true })
+        cpSync(source, target, { recursive: true })
+      } else {
+        copyRawAssets(root, source, out)
+      }
+      continue
+    }
+    if (entry.name.endsWith('.svg')) {
+      mkdirSync(dirname(target), { recursive: true })
+      cpSync(source, target)
     }
   }
 }
