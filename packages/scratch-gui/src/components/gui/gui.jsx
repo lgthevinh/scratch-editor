@@ -151,6 +151,7 @@ const GUIComponent = props => {
         showNewFeatureCallouts,
         stageSizeMode,
         selectedDeviceId,
+        generatedCode,
         settingsModalVisible,
         telemetryModalVisible,
         colorMode,
@@ -187,30 +188,11 @@ const GUIComponent = props => {
     }, [theme, hasActiveMembership, props.setTheme]);
 
     const [devicePanelWidth, setDevicePanelWidth] = useState(540);
-    const [generatedCode, setGeneratedCode] = useState('');
     const [serialLogs, setSerialLogs] = useState([]);
     const [monitorPrompt, setMonitorPrompt] = useState(null);
-    const codeLanguage = 'arduino-cpp';
+    // The code view is generated from the Blockly workspace in the Blocks
+    // container and delivered here through redux as `generatedCode`.
     const prismLanguage = 'arduino';
-
-    const updateGeneratedCode = useCallback(() => {
-        // Code generation only applies in board mode; host mode has no code view.
-        if (!selectedDeviceId || typeof vm.generateCode !== 'function') {
-            setGeneratedCode('');
-            return;
-        }
-        setGeneratedCode(vm.generateCode(codeLanguage).code);
-    }, [codeLanguage, selectedDeviceId, vm]);
-
-    useEffect(() => {
-        updateGeneratedCode();
-        vm.on('PROJECT_CHANGED', updateGeneratedCode);
-        vm.on('targetsUpdate', updateGeneratedCode);
-        return () => {
-            vm.removeListener('PROJECT_CHANGED', updateGeneratedCode);
-            vm.removeListener('targetsUpdate', updateGeneratedCode);
-        };
-    }, [updateGeneratedCode, vm]);
 
     useEffect(() => {
         const handlePrint = message => {
@@ -565,6 +547,7 @@ GUIComponent.propTypes = {
     renderLogin: PropTypes.func,
     setTheme: PropTypes.func.isRequired,
     selectedDeviceId: PropTypes.string,
+    generatedCode: PropTypes.string,
     settingsModalVisible: PropTypes.bool,
     showNewFeatureCallouts: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),

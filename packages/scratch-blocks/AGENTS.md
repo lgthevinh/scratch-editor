@@ -61,9 +61,17 @@ src/
 ├── blocks/        Block definitions for each Scratch category
 ├── events/        Custom Blockly event subclasses
 ├── fields/        Custom Blockly field subclasses
+├── generators/    Arduino C++ code generator (Blockly CodeGenerator backend)
 ├── renderer/      Custom renderer (ScratchRenderer) + cat blocks variant
 └── index.ts       Entry point; registers everything with Blockly
 ```
+
+The `generators/arduino` backend turns a workspace into an Arduino sketch via Blockly's
+`CodeGenerator` framework: `arduino.ts` is the engine (`ArduinoGenerator` + the `arduinoGenerator`
+singleton), with one `register*(gen)` module per block category adding `forBlock` functions. Use
+Blockly's own facilities — `getVariableName`/`getProcedureName`/`nameDB_` for identifiers, `Order`
+for precedence — rather than reimplementing them. `scratch-gui` consumes `arduinoGenerator` to render
+the firmware code view.
 
 Key top-level files: `procedures.ts`, `variables.ts`, `data_category.ts`,
 `scratch_continuous_toolbox.ts`, `checkable_continuous_flyout.ts`, `scratch_comment_bubble.ts`.

@@ -31,6 +31,7 @@ import vmReducer, {vmInitialState} from './vm';
 import vmStatusReducer, {vmStatusInitialState} from './vm-status';
 import workspaceMetricsReducer, {workspaceMetricsInitialState} from './workspace-metrics';
 import boardReducer, {boardInitialState} from './board';
+import codeReducer, {codeInitialState} from './code';
 import thingbotTelemetrixReducer, {thingbotTelemetrixInitialState} from './thingbot-telemetrix';
 import throttle from 'redux-throttle';
 
@@ -73,6 +74,7 @@ const buildInitialState = (config: GUIConfig) => ({
     vmStatus: vmStatusInitialState,
     workspaceMetrics: workspaceMetricsInitialState,
     board: boardInitialState,
+    code: codeInitialState,
     thingbotTelemetrix: thingbotTelemetrixInitialState
 });
 
@@ -185,6 +187,7 @@ const guiReducer = combineReducers({
     vmStatus: vmStatusReducer,
     workspaceMetrics: workspaceMetricsReducer,
     board: boardReducer,
+    code: codeReducer,
     thingbotTelemetrix: thingbotTelemetrixReducer
 });
 

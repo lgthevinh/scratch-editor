@@ -36,6 +36,7 @@ import {activateCustomProcedures, deactivateCustomProcedures} from '../reducers/
 import {setConnectionModalExtensionId} from '../reducers/connection-modal';
 import {updateMetrics} from '../reducers/workspace-metrics';
 import {isTimeTravel2020} from '../reducers/time-travel';
+import {setGeneratedCode} from '../reducers/code';
 
 
 const addFunctionListener = (object, property, callback) => {
@@ -80,7 +81,8 @@ class Blocks extends React.Component {
             'onWorkspaceUpdate',
             'onWorkspaceMetricsChange',
             'setBlocks',
-            'setLocale'
+            'setLocale',
+            'updateGeneratedCode'
         ]);
         this.ScratchBlocks.dialog.setPrompt(this.handlePromptStart);
         this.ScratchBlocks.ScratchVariables.setPromptHandler(
@@ -93,6 +95,9 @@ class Blocks extends React.Component {
             prompt: null
         };
         this.onTargetsUpdate = debounce(this.onTargetsUpdate, 100);
+        // Regenerate the Arduino code view off the workspace, coalescing the
+        // burst of events a single edit produces.
+        this.updateGeneratedCodeDebounced = debounce(this.updateGeneratedCode, 200);
         this.toolboxUpdateQueue = [];
     }
     componentDidMount () {
@@ -147,6 +152,10 @@ class Blocks extends React.Component {
             }
         };
         this.workspace.addChangeListener(this.toolboxUpdateChangeListener);
+
+        // Regenerate the firmware code view whenever the workspace changes.
+        this.workspace.addChangeListener(this.updateGeneratedCodeDebounced);
+        this.updateGeneratedCode();
 
         // Register buttons under new callback keys for creating variables,
         // lists, and procedures from extensions.
@@ -211,6 +220,8 @@ class Blocks extends React.Component {
             if (toolboxXML) {
                 this.props.updateToolboxState(toolboxXML);
             }
+            // Selecting a board enables the code view; deselecting clears it.
+            this.updateGeneratedCode();
         }
 
         // Only rerender the toolbox when the blocks are visible and the xml is
@@ -245,6 +256,7 @@ class Blocks extends React.Component {
         }
     }
     componentWillUnmount () {
+        this.updateGeneratedCodeDebounced.cancel();
         this.detachVM();
         // Hide any open field editor and move Blockly focus to the workspace
         // root before disposing. Without this, BlockSvg.dispose() detects the
@@ -402,6 +414,20 @@ class Blocks extends React.Component {
                     scale: this.workspace.scale
                 });
             }, 0);
+        }
+    }
+    updateGeneratedCode () {
+        // Code generation only applies in board mode; host mode has no code view.
+        if (!this.props.selectedDeviceId) {
+            this.props.onSetGeneratedCode('');
+            return;
+        }
+        // A block left mid-edit (e.g. an unsupported host block) makes the
+        // generator throw; keep the last good output rather than blanking the view.
+        try {
+            this.props.onSetGeneratedCode(this.ScratchBlocks.arduinoGenerator.workspaceToCode(this.workspace));
+        } catch (e) {
+            log.warn('Arduino code generation failed', e);
         }
     }
     onScriptGlowOn (data) {
@@ -747,6 +773,7 @@ Blocks.propTypes = {
     onActivateCustomProcedures: PropTypes.func,
     onOpenConnectionModal: PropTypes.func,
     onOpenSoundRecorder: PropTypes.func,
+    onSetGeneratedCode: PropTypes.func,
     onRequestCloseCustomProcedures: PropTypes.func,
     onRequestCloseExtensionLibrary: PropTypes.func,
     options: PropTypes.shape({
@@ -837,6 +864,9 @@ const mapDispatchToProps = dispatch => ({
     },
     updateMetrics: metrics => {
         dispatch(updateMetrics(metrics));
+    },
+    onSetGeneratedCode: code => {
+        dispatch(setGeneratedCode(code));
     }
 });
 

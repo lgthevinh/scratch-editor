@@ -203,6 +203,7 @@ const mapStateToProps = (state, ownProps) => {
         platform: ownProps.platform,
         projectId: state.scratchGui.projectState.projectId,
         selectedDeviceId: state.scratchGui.board.selectedDeviceId,
+        generatedCode: state.scratchGui.code.generatedCode,
         settingsModalVisible: state.scratchGui.modals.settingsModal,
         telemetryModalVisible: state.scratchGui.modals.telemetryModal,
         tipsLibraryVisible: state.scratchGui.modals.tipsLibrary,

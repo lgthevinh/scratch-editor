@@ -1,7 +1,6 @@
 const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
 const formatMessage = require('format-message');
-const codegen = require('./codegen');
 
 const EXTENSION_ID = 'arduino';
 
@@ -19,9 +18,9 @@ const DigitalLevel = {
 /**
  * The standard Arduino API shared by every Arduino-compatible board: GPIO, PWM, and delay. These
  * blocks exist only when a board is selected (board mode); the GUI gates the category by board
- * selection and codegen targets arduino-cpp. The block handler methods are no-ops because the
- * intended path is firmware generation/upload, not host execution. Board-specific extensions layer
- * on top of and may override these.
+ * selection. The block handler methods are no-ops because the intended path is firmware
+ * generation/upload, not host execution. Board-specific extensions layer on top of these. Arduino
+ * C++ code generation lives in scratch-blocks (the Blockly `ArduinoGenerator`), not here.
  */
 class CommonBoard {
     constructor (runtime) {
@@ -133,10 +132,6 @@ class CommonBoard {
         };
     }
 
-    getCodeGenerators () {
-        return codegen.getCodeGenerators();
-    }
-
     // ─── Block handlers (no-op: blocks target firmware, not host execution) ───
 
     pinMode () {}
@@ -155,7 +150,5 @@ class CommonBoard {
 
     delay () {}
 }
-
-CommonBoard.getCodeGenerators = codegen.getCodeGenerators;
 
 module.exports = CommonBoard;
