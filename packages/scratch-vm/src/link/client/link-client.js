@@ -58,6 +58,15 @@ class LinkClient extends Client {
     }
 
     /**
+     * The helper's WebSocket URL. The VM derives the helper's HTTP resource origin from it (swap the
+     * scheme, append the resource path), since the same helper process serves both.
+     * @returns {string} the helper WebSocket URL.
+     */
+    get url () {
+        return this._url;
+    }
+
+    /**
      * gRPC `BoardList` via the helper, narrowed to the device's known USB ids. The helper reconstructs
      * each port's PNP id and keeps those matching `getUploadConfig().pnpid`, returning `{port, label}`
      * targets; this maps them onto the VM-facing `{id, name}` shape.

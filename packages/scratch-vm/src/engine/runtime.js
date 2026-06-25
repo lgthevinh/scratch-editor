@@ -687,6 +687,15 @@ class Runtime extends EventEmitter {
     }
 
     /**
+     * Event name for reporting that helper-served resource packs finished loading, so the device list
+     * may have grown and dependent UI (the board library) should refresh.
+     * @constant {string}
+     */
+    static get RESOURCE_PACKS_LOADED () {
+        return 'RESOURCE_PACKS_LOADED';
+    }
+
+    /**
      * Event name to indicate that the microphone is being used to stream audio.
      * @constant {string}
      */
