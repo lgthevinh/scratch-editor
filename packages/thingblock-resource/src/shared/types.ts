@@ -114,10 +114,26 @@ export interface DeviceManifest extends BaseManifest {
 
 export type PackManifest = PeripheralManifest | DeviceManifest
 
+/** A shadow block pre-filling a value input in the palette (e.g. an editable number field). */
+export interface ShadowSpec {
+  /** Shadow block type, e.g. `math_number`. */
+  type: string
+  /** Field values keyed by field name, e.g. `{ NUM: 0 }`. */
+  fields?: Record<string, string | number>
+}
+
+/** A block entry in a toolbox category, optionally pre-filling value inputs with shadows. */
+export interface ToolboxBlock {
+  kind: 'block'
+  type: string
+  /** Value-input name → shadow block. Keys match the `input_value` names in the block definition. */
+  inputs?: Record<string, ShadowSpec>
+}
+
 /** A Blockly toolbox category referencing a pack's block types. */
 export interface ToolboxCategory {
   kind: 'category'
   name: string
   colour?: string
-  contents: { kind: 'block'; type: string }[]
+  contents: ToolboxBlock[]
 }

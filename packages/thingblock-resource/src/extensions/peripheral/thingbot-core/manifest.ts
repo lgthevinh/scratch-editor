@@ -13,6 +13,7 @@ const manifest: PeripheralManifest = {
   blocks: './blocks.js',
   generator: './generator.js',
   toolbox: './toolbox.js',
+  libs: [{ path: 'libs/Adafruit_PWM_Servo_Driver_Library' }, { path: 'libs/Adafruit_BusIO' }],
 }
 
 export default manifest

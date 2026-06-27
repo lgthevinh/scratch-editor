@@ -19,7 +19,7 @@ const manifest: DeviceManifest = {
   manufacturer: 'ThingEdu',
   requires: 'serial',
   learnMore: 'https://thingedges.com/collections/thing-edu',
-  extensions: ['thingbot-core', 'servo'],
+  extensions: ['thingbot-core', 'ps2'],
   compile: { options: { CDCOnBoot: 'cdc' } },
   upload: {
     pnpid: ['USB\\VID_303A&PID_1001', 'USB\\VID_10C4&PID_EA60', 'USB\\VID_1A86&PID_7523'],

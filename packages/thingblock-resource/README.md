@@ -32,6 +32,7 @@ src/
   shared/types.ts                       the pack contract (manifest + register* signatures)
   extensions/
     peripheral/servo/                   worked peripheral: manifest, blocks, generator, toolbox, libs/
+    peripheral/ps2/                     PS2 controller blocks, codegen, icon, and vendored PS2X library
     peripheral/thingbot-core/           ThingBot's hidden peripheral: its blocks, generator, toolbox
     devices/thingbot/                   worked device: ESP32-C3 manifest + icon
 ```
@@ -42,6 +43,7 @@ The build wraps everything under one served root that preserves that layout:
 dist/thingblock-resource/extensions/
   index.json                          pack enumerator the editor fetches first
   peripheral/servo/{manifest,blocks,generator,toolbox}.js + libs/Servo/…
+  peripheral/ps2/{manifest,blocks,generator,toolbox}.js + icon.png + libs/PS2X_lib/…
   peripheral/thingbot-core/{manifest,blocks,generator,toolbox}.js
   devices/thingbot/manifest.js + icon.svg
 ```

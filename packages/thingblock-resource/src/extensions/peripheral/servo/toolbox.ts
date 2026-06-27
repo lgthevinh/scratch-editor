@@ -8,7 +8,16 @@ const toolbox: ToolboxCategory = {
   kind: 'category',
   name: 'Servo',
   colour: '#CF63CF',
-  contents: [{ kind: 'block', type: 'servo_setangle' }],
+  contents: [
+    {
+      kind: 'block',
+      type: 'servo_setangle',
+      inputs: {
+        PIN: { type: 'math_number', fields: { NUM: 9 } },
+        ANGLE: { type: 'math_number', fields: { NUM: 90 } },
+      },
+    },
+  ],
 }
 
 export default toolbox

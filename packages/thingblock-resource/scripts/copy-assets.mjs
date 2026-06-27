@@ -23,7 +23,7 @@ for (const group of PACK_GROUPS) {
 }
 
 // Walk the pack recursively so a nested `extension/` can carry its own icons: copy `libs/` wholesale
-// and `.svg` files at any depth, preserving each file's path relative to the pack root.
+// and SVG/PNG files at any depth, preserving each file's path relative to the pack root.
 function copyRawAssets(root, dir, out) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const source = join(dir, entry.name)
@@ -37,7 +37,7 @@ function copyRawAssets(root, dir, out) {
       }
       continue
     }
-    if (entry.name.endsWith('.svg')) {
+    if (entry.name.endsWith('.svg') || entry.name.endsWith('.png')) {
       mkdirSync(dirname(target), { recursive: true })
       cpSync(source, target)
     }
