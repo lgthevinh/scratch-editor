@@ -18,6 +18,10 @@ The `packages` directory contains:
 - `scratch-vm` is the virtual machine that runs Scratch projects and owns device registration, code generation, and
   native board-link discovery.
 - `scratch-blocks` is the Blockly-based block editor fork used by the GUI.
+- `thingblock-resource` is the Scratch-plane resource pack: device manifests, peripheral packs, Arduino
+  codegen, toolbox categories, and vendored C++ library sources, built to dynamically-importable ESM. The local
+  `thingblock-link` helper serves the built packs as static files; the editor imports them at runtime and
+  registers each pack's codegen against the shared `arduinoGenerator`.
 - `scratch-render` draws backdrops, sprites, clones, and stage content.
 - `scratch-storage` loads project assets like images and sounds.
 - `scratch-svg-renderer` processes SVG assets.
