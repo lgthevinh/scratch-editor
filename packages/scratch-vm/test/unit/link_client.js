@@ -90,11 +90,12 @@ const roundTrip = async (socket, sentIndex, payload = {}) => {
 /**
  * A stub device exposing the upload config, fqbn, and compile config LinkClient reads.
  * @param {Array.<string>} pnpid - the device's accepted USB PNP ids.
- * @param {{fqbn?: string, options?: object}} [compile] - the fqbn and board-menu option selections.
+ * @param {{fqbn?: string, options?: object, uploadSpeed?: number}} [config] - the fqbn, board-menu
+ *   option selections, and flash upload speed.
  * @returns {{getUploadConfig: function, fqbn: string, getCompileConfig: function}} the stub device.
  */
-const stubDevice = (pnpid, {fqbn = 'arduino:avr:uno', options = {}} = {}) => ({
-    getUploadConfig: () => ({pnpid}),
+const stubDevice = (pnpid, {fqbn = 'arduino:avr:uno', options = {}, uploadSpeed} = {}) => ({
+    getUploadConfig: () => ({pnpid, uploadSpeed}),
     fqbn,
     getCompileConfig: () => ({options})
 });
@@ -343,6 +344,177 @@ test('a compile error rejects the request', t => {
             t.end();
         }
     );
+});
+
+/**
+ * Connect a client to a target so `flash` has a selected port. Drives the `connect` round-trip
+ * (opening the lazily-created socket) and resolves with that socket once the client reports connected.
+ * @param {LinkClient} client - the client to connect.
+ * @param {Array.<FakeWebSocket>} sockets - the client's socket registry.
+ * @param {ConnectionTarget} target - the target to select.
+ * @returns {Promise<FakeWebSocket>} the now-open socket.
+ */
+const connectClient = async (client, sockets, target) => {
+    const promise = client.connect(target);
+    const socket = sockets[0];
+    socket.emitOpen();
+    await flush();
+    socket.emitMessage({id: socket.sent[0].id, type: 'result', payload: {}});
+    await promise;
+    return socket;
+};
+
+test('flash rejects when no port is connected', async t => {
+    const {client} = makeClient();
+    await t.rejects(
+        client.flash(stubDevice([]), {format: 'hex', path: '/tmp/a.hex'}),
+        /no connected port/,
+        'flashing without connect() throws'
+    );
+    t.end();
+});
+
+test('flash sends an upload envelope with the fqbn, port, uploadSpeed, and artifact', async t => {
+    const {client, sockets} = makeClient();
+    const device = stubDevice([], {fqbn: 'arduino:avr:uno', uploadSpeed: 115200});
+    await connectClient(client, sockets, {id: '/dev/ttyACM0', name: 'Uno'});
+
+    const artifact = {format: 'hex', path: '/tmp/a.hex'};
+    const promise = client.flash(device, artifact);
+    await flush();
+    const frame = sockets[0].sent[1];
+    t.equal(frame.type, 'upload');
+    t.same(frame.payload, {
+        fqbn: 'arduino:avr:uno',
+        port: '/dev/ttyACM0',
+        uploadSpeed: 115200,
+        artifact
+    }, 'upload payload carries the composed fqbn, selected port, speed, and artifact');
+
+    sockets[0].emitMessage({id: frame.id, type: 'result', payload: {}});
+    await promise;
+    t.pass('resolves on the terminal result');
+    t.end();
+});
+
+test('flash defaults uploadSpeed to 0 when the device omits it', async t => {
+    const {client, sockets} = makeClient();
+    await connectClient(client, sockets, {id: '/dev/ttyACM0', name: 'Uno'});
+
+    const promise = client.flash(stubDevice([]), {format: 'bin', path: '/p'});
+    await flush();
+    const frame = sockets[0].sent[1];
+    t.equal(frame.payload.uploadSpeed, 0, 'absent uploadSpeed defers to the FQBN (0)');
+
+    sockets[0].emitMessage({id: frame.id, type: 'result', payload: {}});
+    await promise;
+    t.end();
+});
+
+test('flash streams log chunks to onLog, then resolves', async t => {
+    const {client, sockets} = makeClient();
+    await connectClient(client, sockets, {id: '/dev/ttyACM0', name: 'Uno'});
+
+    const logs = [];
+    const promise = client.flash(stubDevice([]), {format: 'hex', path: '/p'}, {
+        onLog: chunk => logs.push(chunk)
+    });
+    await flush();
+    const {id} = sockets[0].sent[1];
+    sockets[0].emitMessage({id, type: 'log', payload: {chunk: 'avrdude: writing flash'}});
+    sockets[0].emitMessage({id, type: 'result', payload: {}});
+
+    await promise;
+    t.same(logs, ['avrdude: writing flash'], 'upload log chunks route to onLog');
+    t.end();
+});
+
+test('a flash error rejects the request', async t => {
+    const {client, sockets} = makeClient();
+    await connectClient(client, sockets, {id: '/dev/ttyACM0', name: 'Uno'});
+
+    const promise = client.flash(stubDevice([]), {format: 'hex', path: '/p'});
+    await flush();
+    sockets[0].emitMessage({
+        id: sockets[0].sent[1].id,
+        type: 'error',
+        payload: {code: 'daemon', message: 'upload failed'}
+    });
+
+    await promise.then(
+        () => t.fail('should not resolve'),
+        err => {
+            t.equal(err.code, 'daemon');
+            t.match(err.message, /upload failed/);
+        }
+    );
+    t.end();
+});
+
+test('cancel aborts an in-flight compile, rejecting it with code cancelled', async t => {
+    const {client, sockets} = makeClient();
+    const promise = client.compile(stubDevice([]), 'src');
+    sockets[0].emitOpen();
+    await flush();
+    const {id} = sockets[0].sent[0];
+
+    client.cancel();
+    const cancelFrame = sockets[0].sent[1];
+    t.equal(cancelFrame.type, 'cancel', 'sends a cancel frame');
+    t.equal(cancelFrame.id, id, 'cancel is stamped with the in-flight request id');
+    t.same(cancelFrame.payload, {}, 'cancel carries an empty payload');
+
+    // The helper drops the request's stream and replies error{cancelled} on the original id.
+    sockets[0].emitMessage({id, type: 'error', payload: {code: 'cancelled', message: 'cancelled'}});
+    await promise.then(
+        () => t.fail('should not resolve'),
+        err => t.equal(err.code, 'cancelled', 'the compile promise rejects with the cancelled code')
+    );
+    t.end();
+});
+
+test('cancel aborts an in-flight upload too', async t => {
+    const {client, sockets} = makeClient();
+    await connectClient(client, sockets, {id: '/dev/ttyACM0', name: 'Uno'});
+    const promise = client.flash(stubDevice([]), {format: 'hex', path: '/p'});
+    await flush();
+    const {id} = sockets[0].sent[1];
+
+    client.cancel();
+    const cancelFrame = sockets[0].sent[2];
+    t.equal(cancelFrame.type, 'cancel');
+    t.equal(cancelFrame.id, id, 'cancel targets the in-flight upload');
+
+    sockets[0].emitMessage({id, type: 'error', payload: {code: 'cancelled', message: 'cancelled'}});
+    await promise.then(
+        () => t.fail('should not resolve'),
+        err => t.equal(err.code, 'cancelled')
+    );
+    t.end();
+});
+
+test('cancel with nothing in flight is a no-op', t => {
+    const {client, sockets} = makeClient();
+    client.cancel();
+    t.equal(sockets.length, 0, 'opens no socket and sends nothing');
+    t.end();
+});
+
+test('cancel after a request settles is a no-op', async t => {
+    const {client, sockets} = makeClient();
+    const promise = client.compile(stubDevice([]), 'src');
+    sockets[0].emitOpen();
+    await flush();
+    sockets[0].emitMessage({
+        id: sockets[0].sent[0].id,
+        type: 'result',
+        payload: {artifact: {format: 'bin', path: '/p'}}
+    });
+    await promise;
+
+    client.cancel();
+    t.equal(sockets[0].sent.length, 1, 'no cancel frame is sent for an already-settled request');
+    t.end();
 });
 
 test('concurrent requests share one lazily-opened socket', t => {

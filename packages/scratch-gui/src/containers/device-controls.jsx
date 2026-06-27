@@ -18,11 +18,19 @@ class DeviceControls extends React.Component {
         this.handleDisconnect = this.handleDisconnect.bind(this);
         this.handleCloseDialog = this.handleCloseDialog.bind(this);
         this.handleDeviceDisconnected = this.handleDeviceDisconnected.bind(this);
+        this.handleCancelUpload = this.handleCancelUpload.bind(this);
+        this.handleCloseUpload = this.handleCloseUpload.bind(this);
         this.state = {
             dialogOpen: false,
             scanning: false,
             // null until a scan runs; an array (possibly empty) once it has.
-            boards: null
+            boards: null,
+            // null when the upload modal is closed; otherwise one of
+            // 'compiling' | 'uploading' | 'done' | 'cancelled' | 'error'.
+            uploadStatus: null,
+            uploadProgress: null,
+            uploadLogs: [],
+            uploadError: null
         };
     }
 
@@ -49,8 +57,65 @@ class DeviceControls extends React.Component {
     }
 
     handleUpload () {
-        // Firmware upload is not implemented yet; run the project until that pipeline exists.
-        this.handleRun();
+        // Uploading flashes the connected board; without one, send the user through the same scan
+        // dialog the Connect button opens, then they press Upload again.
+        if (!this.props.connectedBoard) {
+            this.handleConnect();
+            return;
+        }
+        const {selectedDeviceId, generatedCode} = this.props;
+        if (!generatedCode.trim()) {
+            console.warn('upload: no generated code to build'); // eslint-disable-line no-console
+            return;
+        }
+
+        this.setState({
+            uploadStatus: 'compiling',
+            uploadProgress: null,
+            uploadLogs: [],
+            uploadError: null
+        });
+        const appendLog = chunk => {
+            if (this._unmounted) return;
+            this.setState(state => ({uploadLogs: [...state.uploadLogs, chunk]}));
+        };
+
+        this.props.vm.compile(selectedDeviceId, generatedCode, {
+            onLog: appendLog,
+            onProgress: progress => {
+                if (this._unmounted) return;
+                this.setState({uploadProgress: progress});
+            }
+        })
+            .then(artifact => {
+                if (this._unmounted) return;
+                this.setState({uploadStatus: 'uploading', uploadProgress: null});
+                return this.props.vm.upload(selectedDeviceId, artifact, {onLog: appendLog});
+            })
+            .then(() => {
+                if (this._unmounted) return;
+                this.setState({uploadStatus: 'done'});
+            })
+            .catch(error => {
+                if (this._unmounted) return;
+                // A user cancel rejects the in-flight compile/upload with the helper's 'cancelled' code;
+                // show it as cancelled rather than a failure.
+                if (error && error.code === 'cancelled') {
+                    this.setState({uploadStatus: 'cancelled'});
+                    return;
+                }
+                this.setState({uploadStatus: 'error', uploadError: error.message});
+            });
+    }
+
+    handleCancelUpload () {
+        // Aborts the in-flight compile or upload; the rejected promise lands in handleUpload's catch
+        // and flips the modal to 'cancelled'. Leaves the modal open showing that outcome.
+        this.props.vm.cancelUpload();
+    }
+
+    handleCloseUpload () {
+        this.setState({uploadStatus: null});
     }
 
     // Open the board dialog and immediately scan.
@@ -116,6 +181,9 @@ class DeviceControls extends React.Component {
             this.props.vm.getDeviceList().find(device => device.deviceId === selectedDeviceId) :
             null;
 
+        const uploading = this.state.uploadStatus === 'compiling' ||
+            this.state.uploadStatus === 'uploading';
+
         return (
             <DeviceControlsComponent
                 connectedBoard={connectedBoard}
@@ -125,9 +193,16 @@ class DeviceControls extends React.Component {
                 scanning={this.state.scanning}
                 boards={this.state.boards}
                 deviceIconURL={selectedDevice && selectedDevice.iconURL}
+                uploading={uploading}
+                uploadStatus={this.state.uploadStatus}
+                uploadProgress={this.state.uploadProgress}
+                uploadLogs={this.state.uploadLogs}
+                uploadError={this.state.uploadError}
                 onRun={this.handleRun}
                 onStop={this.handleStop}
                 onUpload={this.handleUpload}
+                onCancelUpload={this.handleCancelUpload}
+                onCloseUpload={this.handleCloseUpload}
                 onConnect={this.handleConnect}
                 onScan={this.handleScan}
                 onConnectBoard={this.handleConnectBoard}
@@ -143,6 +218,7 @@ DeviceControls.propTypes = {
         id: PropTypes.string,
         name: PropTypes.string
     }),
+    generatedCode: PropTypes.string.isRequired,
     hasSelectedDevice: PropTypes.bool.isRequired,
     isStarted: PropTypes.bool.isRequired,
     projectRunning: PropTypes.bool.isRequired,
@@ -153,6 +229,7 @@ DeviceControls.propTypes = {
 
 const mapStateToProps = state => ({
     connectedBoard: state.scratchGui.board.connectedBoard,
+    generatedCode: state.scratchGui.code.generatedCode,
     hasSelectedDevice: state.scratchGui.board.selectedDeviceId !== null,
     isStarted: state.scratchGui.vmStatus.running,
     projectRunning: state.scratchGui.vmStatus.running,

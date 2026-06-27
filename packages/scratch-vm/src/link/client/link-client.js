@@ -48,6 +48,8 @@ class LinkClient extends Client {
         this._nextId = 1;
         /** @type {Map<string, {resolve: Function, reject: Function}>} in-flight requests by id. */
         this._pending = new Map();
+        /** @type {Set<string>} ids of in-flight cancellable requests (compile/upload). */
+        this._cancellable = new Set();
         /** @type {?ConnectionTarget} the open target; null when disconnected. */
         this._connectedTarget = null;
     }
@@ -136,10 +138,39 @@ class LinkClient extends Client {
         const {artifact} = await this._request(
             'compile',
             {fqbn, options: {}, source, libs},
-            withDefaults(callbacks)
+            withDefaults(callbacks),
+            true
         );
         log.info(`LinkClient.compile: artifact ready (format=${artifact.format})`);
         return artifact;
+    }
+
+    /**
+     * Flash a compiled artifact to the connected port via the helper's `upload`, streaming the upload
+     * tool's output to `callbacks` until the helper replies. The artifact stays on the helper's disk —
+     * its `path` (not bytes) is handed back to the helper, which points arduino-cli's `import_file` at
+     * it. arduino-cli's upload tool prints its progress as text into the log stream, so an upload emits
+     * `log` chunks (routed to `onLog`) and no structured `progress`.
+     * @param {Device} device - the selected device (supplies fqbn, compile options, and upload config).
+     * @param {Artifact} artifact - the binary produced by `compile()` (`{format, path}`).
+     * @param {import('./callbacks').CompileCallbacks} [callbacks] - optional `{onLog, onProgress}`.
+     * @returns {Promise<void>} resolves once the flash completes.
+     */
+    async flash (device, artifact, callbacks) {
+        if (!this.isConnected) {
+            throw new Error('LinkClient.flash: no connected port; call connect() first');
+        }
+        const fqbn = this._composeFqbn(device);
+        const {uploadSpeed = 0} = device.getUploadConfig();
+        const port = this._connectedTarget.id;
+        log.info(`LinkClient.flash: uploading ${artifact.format} artifact to ${port} for ${fqbn}`);
+        await this._request(
+            'upload',
+            {fqbn, port, uploadSpeed, artifact},
+            withDefaults(callbacks),
+            true
+        );
+        log.info('LinkClient.flash: upload complete');
     }
 
     /**
@@ -152,10 +183,10 @@ class LinkClient extends Client {
      */
     _composeFqbn (device) {
         const {options = {}} = device.getCompileConfig();
-        const keys = Object.keys(options);
-        if (keys.length === 0) return device.fqbn;
-        const menu = keys.map(key => `${key}=${options[key]}`).join(',');
-        return `${device.fqbn}:${menu}`;
+        const menu = Object.entries(options)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(',');
+        return menu ? `${device.fqbn}:${menu}` : device.fqbn;
     }
 
     /**
@@ -166,18 +197,37 @@ class LinkClient extends Client {
      * @param {object} payload - the request payload.
      * @param {{onLog: function, onProgress: function}} [callbacks] - streaming callbacks for this
      *   request (already defaulted via {@link withDefaults}); omitted for non-streaming requests.
+     * @param {boolean} [cancellable] - whether {@link cancel} may abort this request mid-flight
+     *   (the long-running compile/upload); recorded so `cancel` can target its id.
      * @returns {Promise<object>} the `result` payload.
      * @private
      */
-    _request (type, payload, callbacks) {
+    _request (type, payload, callbacks, cancellable = false) {
         const id = String(this._nextId++);
         const promise = new Promise((resolve, reject) => {
             this._pending.set(id, {resolve, reject, callbacks});
         });
+        if (cancellable) this._cancellable.add(id);
         this._ensureOpen()
             .then(() => this._ws.send(JSON.stringify({id, type, payload})))
             .catch(err => this._settle(id, {reject: err}));
         return promise;
+    }
+
+    /**
+     * Abort the in-flight cancellable request(s) — the running compile or upload. Sends a `cancel`
+     * envelope stamped with the target request's id (per the protocol, `cancel` carries the id of the
+     * request to drop, not a fresh one); the helper drops that request's stream and replies on it with
+     * `error{cancelled}`, which rejects the original `compile`/`flash` promise. A no-op when nothing
+     * cancellable is in flight.
+     * @returns {void}
+     */
+    cancel () {
+        if (this._cancellable.size === 0) return;
+        for (const id of this._cancellable) {
+            log.info(`LinkClient.cancel: requesting cancel of in-flight request ${id}`);
+            this._ws.send(JSON.stringify({id, type: 'cancel', payload: {}}));
+        }
     }
 
     /**
@@ -281,6 +331,7 @@ class LinkClient extends Client {
         const pending = this._pending.get(id);
         if (!pending) return;
         this._pending.delete(id);
+        this._cancellable.delete(id);
         if ('reject' in outcome) {
             pending.reject(outcome.reject);
         } else {

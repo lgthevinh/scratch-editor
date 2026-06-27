@@ -1,0 +1,242 @@
+@import "../../css/units.css";
+@import "../../css/colors.css";
+
+.modal-content {
+    width: 30rem;
+    max-width: 90vw;
+    /* The shared modal shell paints no body background; only the header has its own color. */
+    background-color: $ui-white;
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: calc($space * 2.5);
+    padding: calc($space * 3);
+}
+
+/* ---- Hero status ---- */
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: calc($space * 1.5);
+}
+
+.status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+}
+
+.status-icon svg {
+    width: 1.375rem;
+    height: 1.375rem;
+}
+
+.glyph {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.status-icon-running {
+    background-color: $ui-secondary;
+    color: $motion-primary;
+}
+
+.status-icon-done {
+    background-color: rgba(13, 165, 122, 0.15);
+    color: $ui-green;
+}
+
+.status-icon-error {
+    background-color: $error-transparent;
+    color: $error-primary;
+}
+
+.status-icon-cancelled {
+    background-color: $ui-secondary;
+    color: $text-primary-transparent;
+}
+
+.status-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+}
+
+.spinner {
+    width: 1.375rem;
+    height: 1.375rem;
+    border: 3px solid $ui-secondary;
+    border-top-color: $motion-primary;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* ---- Progress ---- */
+
+.progress-track {
+    position: relative;
+    height: 1.25rem;
+    border-radius: $space;
+    background-color: $ui-secondary;
+    overflow: hidden;
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    min-width: 2.25rem;
+    padding-right: $space;
+    border-radius: $space;
+    background-color: $motion-primary;
+    color: $ui-white;
+    transition: width 0.2s ease;
+}
+
+.progress-value {
+    font-size: 0.625rem;
+    font-weight: 700;
+}
+
+.progress-indeterminate {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 35%;
+    height: 100%;
+    border-radius: $space;
+    background-color: $motion-primary;
+    animation: slide 1.2s ease-in-out infinite;
+}
+
+/* ---- Error + log details ---- */
+
+.error-detail {
+    padding: calc($space * 1.5);
+    border-radius: $space;
+    background-color: $error-transparent;
+    color: $error-primary;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    gap: $space;
+}
+
+.details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: calc($space / 2);
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: $text-primary-transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.details-toggle:hover {
+    color: $text-primary;
+}
+
+.chevron {
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+.chevron-open {
+    transform: rotate(90deg);
+}
+
+.log {
+    height: 12rem;
+    margin: 0;
+    padding: calc($space * 1.5);
+    overflow-y: auto;
+    border-radius: $space;
+    background-color: #15171f;
+    color: #c8cddb;
+    font-family: monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ---- Footer ---- */
+
+.footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.action-button {
+    height: 2.5rem;
+    border: 1px solid $motion-primary;
+    border-radius: $space;
+    background-color: $motion-primary;
+    color: $ui-white;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0 calc($space * 3);
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.action-button:hover {
+    opacity: 0.9;
+}
+
+.action-button:active {
+    transform: translateY(1px);
+}
+
+.action-button-danger {
+    border-color: $error-primary;
+    background-color: $ui-white;
+    color: $error-primary;
+}
+
+.action-button-danger:hover {
+    opacity: 1;
+    background-color: $error-transparent;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slide {
+    0% { left: -35%; }
+    100% { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner,
+    .progress-indeterminate,
+    .chevron,
+    .progress-bar,
+    .action-button {
+        animation: none;
+        transition: none;
+    }
+}

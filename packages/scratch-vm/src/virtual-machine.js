@@ -1711,6 +1711,32 @@ class VirtualMachine extends EventEmitter {
     }
 
     /**
+     * Flash a compiled artifact to the connected board for the selected device via the active link
+     * client, streaming the upload tool's output to the optional callbacks. Requires a connected board.
+     * @param {string} deviceId - the selected device's id (from `getDeviceList()`).
+     * @param {object} artifact - the artifact from `compile()` (`{format, path}`).
+     * @param {import('./link/client/callbacks').CompileCallbacks} [callbacks] - optional
+     *   `{onLog, onProgress}` streaming callbacks.
+     * @returns {Promise<void>} resolves once the flash completes.
+     */
+    upload (deviceId, artifact, callbacks) {
+        const device = this.deviceRegistry.get(deviceId);
+        if (!device) {
+            return Promise.reject(new Error(`upload: no device registered for "${deviceId}"`));
+        }
+        return this.client.flash(device, artifact, callbacks);
+    }
+
+    /**
+     * Abort the in-flight compile or upload on the active link client, if any. The running
+     * `compile`/`upload` promise rejects with a cancellation error. A no-op when nothing is running.
+     * @returns {void}
+     */
+    cancelUpload () {
+        this.client.cancel();
+    }
+
+    /**
      * Close the link to the connected board. Emits `DEVICE_DISCONNECTED`. Safe when not connected.
      * @returns {Promise<void>} resolves once disconnected.
      */

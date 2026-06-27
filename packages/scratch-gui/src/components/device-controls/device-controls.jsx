@@ -6,6 +6,7 @@ import {defineMessages, useIntl} from 'react-intl';
 import greenFlagIcon from '../green-flag/icon--green-flag.svg';
 import stopAllIcon from '../stop-all/icon--stop-all.svg';
 import BoardListDialog from './board-list-dialog.jsx';
+import UploadModal from './upload-modal.jsx';
 
 import styles from './device-controls.css';
 
@@ -45,9 +46,16 @@ const DeviceControls = ({
     scanning = false,
     boards = null,
     deviceIconURL,
+    uploading = false,
+    uploadStatus = null,
+    uploadProgress = null,
+    uploadLogs = [],
+    uploadError = null,
     onRun,
     onStop,
     onUpload,
+    onCancelUpload,
+    onCloseUpload,
     onConnect,
     onScan,
     onConnectBoard,
@@ -66,6 +74,7 @@ const DeviceControls = ({
                 <button
                     className={styles.connectButton}
                     onClick={onDisconnect}
+                    disabled={uploading}
                     aria-label={intl.formatMessage(messages.disconnect)}
                     title={connectedBoard.name}
                 >
@@ -75,6 +84,7 @@ const DeviceControls = ({
                 <button
                     className={styles.connectButton}
                     onClick={onConnect}
+                    disabled={uploading}
                     aria-label={intl.formatMessage(messages.connect)}
                 >
                     {intl.formatMessage(messages.connect)}
@@ -86,6 +96,7 @@ const DeviceControls = ({
                     [styles.stopButton]: isStopButton
                 })}
                 onClick={onClick}
+                disabled={uploading}
                 aria-label={intl.formatMessage(label)}
             >
                 <img
@@ -107,6 +118,16 @@ const DeviceControls = ({
                     onCloseDialog={onCloseDialog}
                 />
             )}
+            {uploadStatus && (
+                <UploadModal
+                    status={uploadStatus}
+                    progress={uploadProgress}
+                    logs={uploadLogs}
+                    error={uploadError}
+                    onCancel={onCancelUpload}
+                    onClose={onCloseUpload}
+                />
+            )}
         </div>
     );
 };
@@ -123,7 +144,9 @@ DeviceControls.propTypes = {
     deviceIconURL: PropTypes.string,
     dialogOpen: PropTypes.bool,
     hasSelectedDevice: PropTypes.bool,
+    onCancelUpload: PropTypes.func.isRequired,
     onCloseDialog: PropTypes.func.isRequired,
+    onCloseUpload: PropTypes.func.isRequired,
     onConnect: PropTypes.func.isRequired,
     onConnectBoard: PropTypes.func.isRequired,
     onDisconnect: PropTypes.func.isRequired,
@@ -132,7 +155,15 @@ DeviceControls.propTypes = {
     onStop: PropTypes.func.isRequired,
     onUpload: PropTypes.func.isRequired,
     projectRunning: PropTypes.bool.isRequired,
-    scanning: PropTypes.bool
+    scanning: PropTypes.bool,
+    uploadError: PropTypes.string,
+    uploadLogs: PropTypes.arrayOf(PropTypes.string),
+    uploadProgress: PropTypes.shape({
+        phase: PropTypes.string,
+        percent: PropTypes.number
+    }),
+    uploadStatus: PropTypes.oneOf(['compiling', 'uploading', 'done', 'cancelled', 'error']),
+    uploading: PropTypes.bool
 };
 
 export default DeviceControls;

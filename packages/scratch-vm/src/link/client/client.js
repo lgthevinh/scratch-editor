@@ -87,14 +87,24 @@ class Client {
     }
 
     /**
-     * Flash a compiled artifact to the connected device, streaming progress as it goes.
+     * Flash a compiled artifact to the connected device, streaming the upload tool's output as it goes.
      * @param {Device} device - the selected device (supplies upload config).
      * @param {Artifact} artifact - the binary produced by `compile()`.
-     * @param {{onProgress: function}} [callbacks] - optional progress callback.
+     * @param {import('./callbacks').CompileCallbacks} [callbacks] - optional `{onLog, onProgress}`
+     *   streaming callbacks.
      * @returns {Promise<void>} resolves once flashed.
      */
     flash (device, artifact, callbacks) {
         throw new Error(`${this.constructor.name} must implement flash()`);
+    }
+
+    /**
+     * Abort the in-flight long-running operation (compile or flash), if any. Best-effort: the running
+     * `compile`/`flash` promise rejects with a cancellation error. A no-op when nothing is running.
+     * @returns {void}
+     */
+    cancel () {
+        throw new Error(`${this.constructor.name} must implement cancel()`);
     }
 
     /**

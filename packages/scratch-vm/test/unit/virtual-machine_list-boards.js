@@ -64,6 +64,50 @@ test('disconnectBoard delegates to the link client', t => {
     });
 });
 
+test('upload rejects when no device is registered for the id', t => {
+    const vm = new VirtualMachine();
+    vm.upload('does-not-exist', {format: 'hex', path: '/p'}).then(
+        () => t.fail('should reject for an unknown deviceId'),
+        err => {
+            t.match(err.message, /no device registered/);
+            t.end();
+        }
+    );
+});
+
+test('upload resolves the device and delegates the artifact to the link client', t => {
+    const vm = new VirtualMachine();
+    const fakeDevice = {getUploadConfig: () => ({pnpid: [], uploadSpeed: 115200})};
+    const artifact = {format: 'hex', path: '/tmp/a.hex'};
+    const callbacks = {onLog: () => {}};
+
+    vm.deviceRegistry.get = deviceId => (deviceId === 'arduinoUno' ? fakeDevice : null);
+    let received = null;
+    vm.client = {flash: (device, art, cbs) => {
+        received = {device, art, cbs};
+        return Promise.resolve();
+    }};
+
+    vm.upload('arduinoUno', artifact, callbacks).then(() => {
+        t.equal(received.device, fakeDevice, 'passes the resolved device to the link client');
+        t.equal(received.art, artifact, 'passes the artifact through unchanged');
+        t.equal(received.cbs, callbacks, 'passes the callbacks through');
+        t.end();
+    });
+});
+
+test('cancelUpload delegates to the link client', t => {
+    const vm = new VirtualMachine();
+    let called = false;
+    vm.client = {cancel: () => {
+        called = true;
+    }};
+
+    vm.cancelUpload();
+    t.equal(called, true, 'calls cancel on the active client');
+    t.end();
+});
+
 test('setLinkMode swaps the active client between the helper and cloud backends', t => {
     const vm = new VirtualMachine();
     t.equal(vm.client, vm.linkClient, 'defaults to the native helper client');
