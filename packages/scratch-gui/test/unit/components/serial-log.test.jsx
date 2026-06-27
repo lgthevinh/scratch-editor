@@ -72,6 +72,31 @@ describe('SerialLog', () => {
             expect(screen.getByPlaceholderText('Send message...')).toBeInTheDocument();
         });
 
+        test('shows the baud dropdown with the current value selected', () => {
+            renderSerialLog({baudRate: 9600});
+
+            const select = screen.getByRole('combobox', {name: 'Serial monitor baud rate'});
+            expect(select).toHaveValue('9600');
+            expect(screen.getByRole('option', {name: '115200 baud'})).toBeInTheDocument();
+        });
+
+        test('calls onBaudChange with a number when a new rate is picked', () => {
+            const onBaudChange = jest.fn();
+            renderSerialLog({baudRate: 9600, onBaudChange});
+
+            fireEvent.change(screen.getByRole('combobox', {name: 'Serial monitor baud rate'}), {
+                target: {value: '115200'}
+            });
+
+            expect(onBaudChange).toHaveBeenCalledWith(115200);
+        });
+
+        test('disables the baud dropdown when baudDisabled is set', () => {
+            renderSerialLog({baudRate: 115200, baudDisabled: true});
+
+            expect(screen.getByRole('combobox', {name: 'Serial monitor baud rate'})).toBeDisabled();
+        });
+
         test('clears pre-existing input value when prompt becomes active', () => {
             const {rerender} = render(
                 <IntlProvider locale="en">

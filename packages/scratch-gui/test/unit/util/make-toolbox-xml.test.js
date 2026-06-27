@@ -9,6 +9,7 @@ describe('makeToolboxXML board mode gating', () => {
         expect(xml).toContain('sensing_mousex');
         expect(xml).toContain('sensing_askandwait');
         expect(xml).toContain('sensing_online');
+        expect(xml).toContain('control_print');
     });
 
     test('board mode hides host-only core blocks but keeps the timer blocks', () => {
@@ -18,6 +19,7 @@ describe('makeToolboxXML board mode gating', () => {
         expect(xml).not.toContain('sensing_mousex');
         expect(xml).not.toContain('sensing_askandwait');
         expect(xml).not.toContain('sensing_online');
+        expect(xml).not.toContain('control_print');
         // Timer maps to millis() on the board, so it stays available in both modes.
         expect(xml).toContain('sensing_timer');
     });

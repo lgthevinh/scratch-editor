@@ -45,6 +45,7 @@ FakeWebSocket.instances = [];
 class FakeRuntime {
     constructor () {
         this.emitted = [];
+        this.serialData = [];
     }
     static get DEVICE_CONNECTED () {
         return 'DEVICE_CONNECTED';
@@ -52,8 +53,12 @@ class FakeRuntime {
     static get DEVICE_DISCONNECTED () {
         return 'DEVICE_DISCONNECTED';
     }
-    emit (event) {
+    static get SERIAL_DATA () {
+        return 'SERIAL_DATA';
+    }
+    emit (event, ...args) {
         this.emitted.push(event);
+        if (event === FakeRuntime.SERIAL_DATA) this.serialData.push(args[0]);
     }
 }
 
@@ -448,6 +453,134 @@ test('a flash error rejects the request', async t => {
             t.match(err.message, /upload failed/);
         }
     );
+    t.end();
+});
+
+/**
+ * Connect a client and open a serial monitor on it, driving both round-trips.
+ * @param {LinkClient} client - the client to drive.
+ * @param {Array.<FakeWebSocket>} sockets - the client's socket registry.
+ * @param {number} [baudRate] - the monitor baud rate.
+ * @returns {Promise<object>} the `monitorOpen` request frame (its `id` carries the monitor session).
+ */
+const openMonitorClient = async (client, sockets, baudRate = 115200) => {
+    await connectClient(client, sockets, {id: '/dev/ttyACM0', name: 'Uno'});
+    const promise = client.openMonitor({baudRate});
+    await flush();
+    const openFrame = sockets[0].sent[1];
+    sockets[0].emitMessage({id: openFrame.id, type: 'result', payload: {}});
+    await promise;
+    return openFrame;
+};
+
+test('openMonitor rejects when no port is connected', async t => {
+    const {client, sockets} = makeClient();
+    await t.rejects(
+        client.openMonitor({baudRate: 115200}),
+        /no connected port/,
+        'opening a monitor without connect() rejects'
+    );
+    t.equal(sockets.length, 0, 'opens no socket and sends nothing');
+    t.end();
+});
+
+test('openMonitor sends a monitorOpen envelope with the connected port and baud rate', async t => {
+    const {client, sockets} = makeClient();
+    const frame = await openMonitorClient(client, sockets, 9600);
+
+    t.equal(frame.type, 'monitorOpen');
+    t.same(frame.payload, {port: '/dev/ttyACM0', baudRate: 9600},
+        'monitorOpen carries the connected port and requested baud rate');
+    t.end();
+});
+
+test('monitorData frames after open emit SERIAL_DATA on the runtime', async t => {
+    const {client, sockets, runtime} = makeClient();
+    const {id} = await openMonitorClient(client, sockets);
+
+    sockets[0].emitMessage({id, type: 'monitorData', payload: {data: 'hello'}});
+    sockets[0].emitMessage({id, type: 'monitorData', payload: {data: 'world'}});
+
+    t.same(runtime.serialData, ['hello', 'world'], 'each monitorData frame emits its bytes');
+    t.end();
+});
+
+test('monitorData on a foreign id is ignored', async t => {
+    const {client, sockets, runtime} = makeClient();
+    await openMonitorClient(client, sockets);
+
+    sockets[0].emitMessage({id: 'not-the-monitor', type: 'monitorData', payload: {data: 'x'}});
+
+    t.same(runtime.serialData, [], 'data for an unknown id does not reach the runtime');
+    t.end();
+});
+
+test('writeMonitor sends a monitorWrite envelope on the open monitor id', async t => {
+    const {client, sockets} = makeClient();
+    const {id} = await openMonitorClient(client, sockets);
+
+    client.writeMonitor('ping');
+    const frame = sockets[0].sent[sockets[0].sent.length - 1];
+    t.equal(frame.type, 'monitorWrite');
+    t.equal(frame.id, id, 'the write is stamped with the monitor session id');
+    t.same(frame.payload, {data: 'ping'});
+    t.end();
+});
+
+test('writeMonitor is a no-op when no monitor is open', t => {
+    const {client, sockets} = makeClient();
+    client.writeMonitor('ping');
+    t.equal(sockets.length, 0, 'opens no socket and sends nothing');
+    t.end();
+});
+
+test('closeMonitor sends monitorClose and stops routing later monitorData', async t => {
+    const {client, sockets, runtime} = makeClient();
+    const {id} = await openMonitorClient(client, sockets);
+
+    const closing = client.closeMonitor();
+    await flush();
+    const closeFrame = sockets[0].sent[sockets[0].sent.length - 1];
+    t.equal(closeFrame.type, 'monitorClose');
+    t.same(closeFrame.payload, {});
+    sockets[0].emitMessage({id: closeFrame.id, type: 'result', payload: {}});
+    await closing;
+
+    // The open request's id is dead once closed; a stray data frame on it must not emit.
+    sockets[0].emitMessage({id, type: 'monitorData', payload: {data: 'late'}});
+    t.same(runtime.serialData, [], 'no data routes after the monitor is closed');
+    t.end();
+});
+
+test('closeMonitor is a no-op when no monitor is open', async t => {
+    const {client, sockets} = makeClient();
+    await client.closeMonitor();
+    t.equal(sockets.length, 0, 'opens no socket and sends nothing');
+    t.end();
+});
+
+test('a post-open monitor error tears the monitor down', async t => {
+    const {client, sockets, runtime} = makeClient();
+    const {id} = await openMonitorClient(client, sockets);
+
+    sockets[0].emitMessage({id, type: 'error', payload: {code: 'grpc', message: 'port lost'}});
+    // The monitor is gone; subsequent data on its id is dropped and a later write is a no-op.
+    sockets[0].emitMessage({id, type: 'monitorData', payload: {data: 'after'}});
+    client.writeMonitor('x');
+
+    t.same(runtime.serialData, [], 'no data routes once the port errored');
+    t.equal(sockets[0].sent.filter(f => f.type === 'monitorWrite').length, 0, 'no write is sent');
+    t.end();
+});
+
+test('a socket close clears the open monitor', async t => {
+    const {client, sockets, runtime} = makeClient();
+    const {id} = await openMonitorClient(client, sockets);
+
+    sockets[0].emitClose();
+    sockets[0].emitMessage({id, type: 'monitorData', payload: {data: 'after'}});
+
+    t.same(runtime.serialData, [], 'a dropped socket leaves no monitor routing');
     t.end();
 });
 

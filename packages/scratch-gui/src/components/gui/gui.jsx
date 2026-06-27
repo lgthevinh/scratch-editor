@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
-import React, {useEffect, useCallback, useState} from 'react';
+import React, {useEffect, useCallback, useRef, useState} from 'react';
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import {connect} from 'react-redux';
 import MediaQuery from 'react-responsive';
@@ -152,6 +152,7 @@ const GUIComponent = props => {
         onUpdateProjectThumbnail,
         showNewFeatureCallouts,
         stageSizeMode,
+        connectedBoard,
         selectedDeviceId,
         generatedCode,
         settingsModalVisible,
@@ -192,6 +193,10 @@ const GUIComponent = props => {
     const [devicePanelWidth, setDevicePanelWidth] = useState(540);
     const [serialLogs, setSerialLogs] = useState([]);
     const [monitorPrompt, setMonitorPrompt] = useState(null);
+    // Default matches the VM's DEFAULT_MONITOR_BAUD; the dropdown drives both via vm.setMonitorBaud.
+    const [baudRate, setBaudRate] = useState(115200);
+    // Holds the partial trailing line between serial chunks; serial frames are not line-aligned.
+    const serialBuffer = useRef('');
     // The code view is generated from the Blockly workspace in the Blocks
     // container and delivered here through redux as `generatedCode`.
     const prismLanguage = 'arduino';
@@ -203,6 +208,26 @@ const GUIComponent = props => {
         vm.runtime.on('PRINT_TO_MONITOR', handlePrint);
         return () => {
             vm.runtime.off('PRINT_TO_MONITOR', handlePrint);
+        };
+    }, [vm]);
+
+    useEffect(() => {
+        // Inbound board serial arrives in arbitrary chunks; buffer the trailing partial line and emit
+        // only complete (newline-terminated) lines so the monitor reads line-by-line.
+        const handleSerial = chunk => {
+            const text = serialBuffer.current + String(chunk);
+            const parts = text.split('\n');
+            serialBuffer.current = parts.pop();
+            if (parts.length) {
+                setSerialLogs(prev => [
+                    ...prev,
+                    ...parts.map(line => ({message: line.replace(/\r$/, '')}))
+                ]);
+            }
+        };
+        vm.runtime.on('SERIAL_DATA', handleSerial);
+        return () => {
+            vm.runtime.off('SERIAL_DATA', handleSerial);
         };
     }, [vm]);
 
@@ -223,8 +248,19 @@ const GUIComponent = props => {
     }, []);
 
     const handleMonitorSend = useCallback(value => {
+        if (connectedBoard) {
+            // Real board: write to its serial port, line-terminated as Arduino sketches expect. The
+            // device's reply (if any) comes back via SERIAL_DATA, so there is no local echo.
+            vm.writeMonitor(`${value}\n`);
+            return;
+        }
         vm.runtime.emit('ANSWER', value);
         setMonitorPrompt(null);
+    }, [vm, connectedBoard]);
+
+    const handleBaudChange = useCallback(rate => {
+        setBaudRate(rate);
+        vm.setMonitorBaud(rate);
     }, [vm]);
 
     const handleResizeMouseDown = useCallback(e => {
@@ -477,6 +513,9 @@ const GUIComponent = props => {
                             <SerialLog
                                 logs={serialLogs}
                                 fill={!selectedDeviceId}
+                                baudRate={baudRate}
+                                baudDisabled={!connectedBoard}
+                                onBaudChange={handleBaudChange}
                                 onClear={handleClearMonitor}
                                 onSend={handleMonitorSend}
                                 prompt={monitorPrompt}
@@ -502,6 +541,10 @@ GUIComponent.propTypes = {
     blocksId: PropTypes.string,
     canChangeLanguage: PropTypes.bool,
     canChangeColorMode: PropTypes.bool,
+    connectedBoard: PropTypes.shape({
+        id: PropTypes.string,
+        name: PropTypes.string
+    }),
     canChangeTheme: PropTypes.bool,
     canCreateCopy: PropTypes.bool,
     canCreateNew: PropTypes.bool,

@@ -8,6 +8,12 @@ const MIN_HEIGHT = 48;
 const MAX_HEIGHT = 500;
 const DEFAULT_HEIGHT = 280;
 
+// Standard Arduino serial baud rates, slowest to fastest.
+const BAUD_RATES = [
+    300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 74880,
+    115200, 230400, 250000, 500000, 1000000, 2000000
+];
+
 const messages = defineMessages({
     clearMonitor: {
         id: 'gui.serialLog.clearMonitor',
@@ -18,6 +24,16 @@ const messages = defineMessages({
         id: 'gui.serialLog.monitor',
         defaultMessage: 'Monitor',
         description: 'Title for the serial monitor panel'
+    },
+    baudRate: {
+        id: 'gui.serialLog.baudRate',
+        defaultMessage: 'Serial monitor baud rate',
+        description: 'Accessible label for the dropdown that selects the serial monitor baud rate'
+    },
+    baudOption: {
+        id: 'gui.serialLog.baudOption',
+        defaultMessage: '{rate} baud',
+        description: 'Label for a baud-rate option in the serial monitor, e.g. "115200 baud"'
     },
     send: {
         id: 'gui.serialLog.send',
@@ -36,7 +52,16 @@ const messages = defineMessages({
     }
 });
 
-const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
+const SerialLog = ({
+    logs = [],
+    fill = false,
+    baudRate = 115200,
+    baudDisabled = false,
+    onBaudChange,
+    onClear,
+    onSend,
+    prompt
+}) => {
     const intl = useIntl();
     const hasPrompt = prompt !== null && typeof prompt !== 'undefined';
     const [height, setHeight] = useState(DEFAULT_HEIGHT);
@@ -84,6 +109,10 @@ const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
         if (e.key === 'Enter') handleSend();
     }, [handleSend]);
 
+    const handleBaudChange = useCallback(e => {
+        if (onBaudChange) onBaudChange(Number(e.target.value));
+    }, [onBaudChange]);
+
     return (
         <div
             className={classNames(styles.serialLog, {[styles.fill]: fill})}
@@ -97,6 +126,22 @@ const SerialLog = ({logs = [], fill = false, onClear, onSend, prompt}) => {
                 <div className={styles.header}>
                     <span><FormattedMessage {...messages.monitor} /></span>
                     <div className={styles.headerActions}>
+                        <select
+                            className={styles.baudSelect}
+                            value={baudRate}
+                            disabled={baudDisabled}
+                            onChange={handleBaudChange}
+                            aria-label={intl.formatMessage(messages.baudRate)}
+                        >
+                            {BAUD_RATES.map(rate => (
+                                <option
+                                    key={rate}
+                                    value={rate}
+                                >
+                                    {intl.formatMessage(messages.baudOption, {rate})}
+                                </option>
+                            ))}
+                        </select>
                         <button
                             className={styles.clearButton}
                             disabled={!onClear || logs.length === 0}
@@ -165,6 +210,9 @@ SerialLog.propTypes = {
         message: PropTypes.string
     })),
     fill: PropTypes.bool,
+    baudRate: PropTypes.number,
+    baudDisabled: PropTypes.bool,
+    onBaudChange: PropTypes.func,
     onClear: PropTypes.func,
     onSend: PropTypes.func,
     prompt: PropTypes.string

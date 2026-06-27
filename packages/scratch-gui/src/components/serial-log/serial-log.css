@@ -78,6 +78,28 @@
     margin-left: auto;
 }
 
+.baud-select {
+    font-family: inherit;
+    font-size: 0.6875rem;
+    color: $text-primary;
+    background-color: $ui-white;
+    border: 1px solid $ui-black-transparent;
+    border-radius: calc($space / 2);
+    padding: calc($space / 4) calc($space / 2);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.baud-select:focus {
+    border-color: $motion-primary;
+}
+
+.baud-select:disabled {
+    color: $text-primary-transparent;
+    cursor: default;
+}
+
 .clear-button {
     background: none;
     border: none;

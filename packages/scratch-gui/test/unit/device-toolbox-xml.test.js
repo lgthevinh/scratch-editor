@@ -42,6 +42,26 @@ describe('packCategoryToToolboxXML', () => {
         expect(xml).toContain('colour="#0FBD8C"');
     });
 
+    test('fills value inputs with shadow blocks when a block declares them', () => {
+        const {xml} = packCategoryToToolboxXML({
+            kind: 'category',
+            name: 'ThingBot',
+            contents: [
+                {
+                    kind: 'block',
+                    type: 'thingBotC3_setMotor',
+                    inputs: {SPEED: {type: 'math_number', fields: {NUM: 0}}}
+                }
+            ]
+        }, 'device');
+
+        expect(xml).toContain(
+            '<block type="thingBotC3_setMotor">' +
+            '<value name="SPEED"><shadow type="math_number"><field name="NUM">0</field></shadow></value>' +
+            '</block>'
+        );
+    });
+
     test('ignores non-block contents', () => {
         const {xml} = packCategoryToToolboxXML({
             kind: 'category',

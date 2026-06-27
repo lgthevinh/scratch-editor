@@ -30,6 +30,12 @@ require('canvas-toBlob');
 
 const RESERVED_NAMES = ['_mouse_', '_stage_', '_edge_', '_myself_', '_random_'];
 
+/**
+ * Default serial-monitor baud rate, used until the GUI changes it via {@link VirtualMachine#setMonitorBaud}.
+ * @type {number}
+ */
+const DEFAULT_MONITOR_BAUD = 115200;
+
 const CORE_EXTENSIONS = [
     // 'motion',
     // 'looks',
@@ -273,6 +279,14 @@ class VirtualMachine extends EventEmitter {
          * @type {Client}
          */
         this.client = this.linkClient;
+
+        /**
+         * Baud rate the serial monitor is (re)opened at. The active client auto-opens a monitor on
+         * connect and reopens around upload, so it needs a remembered rate; the GUI changes it via
+         * {@link setMonitorBaud}.
+         * @type {number}
+         */
+        this._monitorBaud = DEFAULT_MONITOR_BAUD;
 
         this.blockListener = this.blockListener.bind(this);
         this.flyoutBlockListener = this.flyoutBlockListener.bind(this);
@@ -1689,7 +1703,12 @@ class VirtualMachine extends EventEmitter {
      * @returns {Promise<void>} resolves once connected.
      */
     connectBoard (target) {
-        return this.client.connect(target);
+        return this.client.connect(target).then(() => {
+            // Auto-open the serial monitor so the board's output streams as soon as it is connected.
+            // Best-effort: a monitor that fails to open must not fail the connection itself.
+            this.client.openMonitor({baudRate: this._monitorBaud})
+                .catch(err => log.warn(`connectBoard: serial monitor did not open: ${err.message}`));
+        });
     }
 
     /**
@@ -1719,12 +1738,22 @@ class VirtualMachine extends EventEmitter {
      *   `{onLog, onProgress}` streaming callbacks.
      * @returns {Promise<void>} resolves once the flash completes.
      */
-    upload (deviceId, artifact, callbacks) {
+    async upload (deviceId, artifact, callbacks) {
         const device = this.deviceRegistry.get(deviceId);
         if (!device) {
-            return Promise.reject(new Error(`upload: no device registered for "${deviceId}"`));
+            throw new Error(`upload: no device registered for "${deviceId}"`);
         }
-        return this.client.flash(device, artifact, callbacks);
+        // The board's one serial port can't be monitored while the upload tool drives it, so free it
+        // for the flash and restore the monitor after. `closeMonitor` is a no-op when none is open.
+        await this.client.closeMonitor();
+        try {
+            await this.client.flash(device, artifact, callbacks);
+        } finally {
+            if (this.client.isConnected) {
+                this.client.openMonitor({baudRate: this._monitorBaud})
+                    .catch(err => log.warn(`upload: serial monitor did not reopen: ${err.message}`));
+            }
+        }
     }
 
     /**
@@ -1734,6 +1763,50 @@ class VirtualMachine extends EventEmitter {
      */
     cancelUpload () {
         this.client.cancel();
+    }
+
+    /**
+     * Open the serial monitor on the connected board via the active link client. Inbound serial bytes
+     * are emitted on the runtime as `SERIAL_DATA`. Requires a connected board.
+     * @param {{baudRate: number}} options - the monitor baud rate.
+     * @returns {Promise<void>} resolves once the monitor is open.
+     */
+    openMonitor (options) {
+        return this.client.openMonitor(options);
+    }
+
+    /**
+     * Write bytes to the open serial monitor via the active link client. A no-op when no monitor is
+     * open.
+     * @param {string} data - the bytes to send.
+     * @returns {void}
+     */
+    writeMonitor (data) {
+        this.client.writeMonitor(data);
+    }
+
+    /**
+     * Close the serial monitor via the active link client, leaving the board connected.
+     * @returns {Promise<void>} resolves once the monitor is closed.
+     */
+    closeMonitor () {
+        return this.client.closeMonitor();
+    }
+
+    /**
+     * Set the baud rate the serial monitor (re)opens at. When a board is connected the open monitor is
+     * reopened at the new rate; otherwise the rate is just remembered for the next auto-open. The rate
+     * is also reused when the monitor reopens after an upload.
+     * @param {number} rate - the baud rate.
+     * @returns {void}
+     */
+    setMonitorBaud (rate) {
+        this._monitorBaud = rate;
+        if (this.client.isConnected) {
+            this.client.closeMonitor()
+                .then(() => this.client.openMonitor({baudRate: rate}))
+                .catch(err => log.warn(`setMonitorBaud: serial monitor did not reopen: ${err.message}`));
+        }
     }
 
     /**

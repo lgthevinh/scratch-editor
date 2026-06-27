@@ -39,10 +39,14 @@ test('connectBoard delegates the target to the link client', t => {
     const vm = new VirtualMachine();
     const target = {id: '/dev/ttyACM0', name: 'Arduino Uno'};
     let received = null;
-    vm.client = {connect: t2 => {
-        received = t2;
-        return Promise.resolve();
-    }};
+    vm.client = {
+        connect: t2 => {
+            received = t2;
+            return Promise.resolve();
+        },
+        // connectBoard auto-opens the monitor after connecting; stub it so the chain resolves.
+        openMonitor: () => Promise.resolve()
+    };
 
     vm.connectBoard(target).then(() => {
         t.equal(received, target, 'passes the target through to the link client');
@@ -83,10 +87,15 @@ test('upload resolves the device and delegates the artifact to the link client',
 
     vm.deviceRegistry.get = deviceId => (deviceId === 'arduinoUno' ? fakeDevice : null);
     let received = null;
-    vm.client = {flash: (device, art, cbs) => {
-        received = {device, art, cbs};
-        return Promise.resolve();
-    }};
+    vm.client = {
+        flash: (device, art, cbs) => {
+            received = {device, art, cbs};
+            return Promise.resolve();
+        },
+        // upload frees the port around the flash; not connected here, so it never reopens.
+        closeMonitor: () => Promise.resolve(),
+        isConnected: false
+    };
 
     vm.upload('arduinoUno', artifact, callbacks).then(() => {
         t.equal(received.device, fakeDevice, 'passes the resolved device to the link client');

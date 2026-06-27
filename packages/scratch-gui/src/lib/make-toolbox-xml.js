@@ -40,8 +40,9 @@ const events = function (isInitialSetup, isStage, targetId, colors, boardMode) {
     `;
 };
 
-const control = function (isInitialSetup, isStage, targetId, colors) {
+const control = function (isInitialSetup, isStage, targetId, colors, boardMode) {
     // Note: the category's secondaryColour matches up with the blocks' tertiary color, both used for border color.
+    // In board mode, the host-only print block is hidden; it has no board equivalent.
     return `
     <category
         name="${ScratchBlocks.ScratchMsgs.translate(
@@ -74,6 +75,7 @@ const control = function (isInitialSetup, isStage, targetId, colors) {
         <block id="repeat_until" type="control_repeat_until"/>
         ${blockSeparator}
         <block type="control_stop"/>
+        ${boardMode ? '' : `
         ${blockSeparator}
         <block type="control_print">
             <value name="STRING">
@@ -82,6 +84,7 @@ const control = function (isInitialSetup, isStage, targetId, colors) {
                 </shadow>
             </value>
         </block>
+        `}
         ${categorySeparator}
     </category>
     `;
@@ -414,7 +417,8 @@ const makeToolboxXML = function (isInitialSetup, isStage = true, targetId, categ
         // return `undefined`
     };
     const eventsXML = moveCategory('event') || events(isInitialSetup, isStage, targetId, colors.event, boardMode);
-    const controlXML = moveCategory('control') || control(isInitialSetup, isStage, targetId, colors.control);
+    const controlXML = moveCategory('control') ||
+        control(isInitialSetup, isStage, targetId, colors.control, boardMode);
     const sensingXML = moveCategory('sensing') ||
         sensing(isInitialSetup, isStage, targetId, colors.sensing, boardMode);
     const operatorsXML = moveCategory('operators') || operators(isInitialSetup, isStage, targetId, colors.operators);

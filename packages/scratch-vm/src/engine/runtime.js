@@ -687,6 +687,15 @@ class Runtime extends EventEmitter {
     }
 
     /**
+     * Event name for a chunk of inbound serial bytes from the connected device's monitor. Distinct
+     * from MONITORS_UPDATE (the variable-watcher monitors); this carries raw serial-monitor text.
+     * @constant {string}
+     */
+    static get SERIAL_DATA () {
+        return 'SERIAL_DATA';
+    }
+
+    /**
      * Event name for reporting that helper-served resource packs finished loading, so the device list
      * may have grown and dependent UI (the board library) should refresh.
      * @constant {string}

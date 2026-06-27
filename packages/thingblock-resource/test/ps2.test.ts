@@ -22,7 +22,7 @@ const makeBlock = (fields: Record<string, string | number> = {}) => ({
 
 interface JsonArgument {
   name?: string
-  value?: unknown
+  text?: unknown
   options?: string[][]
 }
 
@@ -57,7 +57,8 @@ describe('PS2 blocks', () => {
 
     const args = configFor(Blocks.ps2_init).args0 ?? []
     expect(args.map(({ name }) => name)).toEqual(['DIN', 'DOUT', 'CS', 'CLK'])
-    expect(args.map(({ value }) => value)).toEqual([2, 3, 4, 5])
+    // `field_number` (a FieldTextInput subclass) reads its default from `text`, so the pin numbers live there.
+    expect(args.map(({ text }) => text)).toEqual(['2', '3', '4', '5'])
   })
 
   it('preserves the button and joystick constants', () => {

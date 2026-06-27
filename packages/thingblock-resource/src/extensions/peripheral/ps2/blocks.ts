@@ -5,10 +5,12 @@ import type { RegisterBlocks } from '../../../shared/types'
 const COLOUR = '#FF3399'
 const SECONDARY_COLOUR = '#C71585'
 
+// The editor registers `field_number` as a FieldTextInput subclass, which reads its initial value
+// from the `text` key (not `value`), so the default pin number is supplied there.
 const pinField = (name: string, value: number) => ({
   type: 'field_number' as const,
   name,
-  value,
+  text: String(value),
   min: 0,
   precision: 1,
 })

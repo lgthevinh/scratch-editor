@@ -15,10 +15,9 @@ const DEFAULT_URL = 'ws://localhost:3030/';
  * — `{id, type, payload}` — and never sees an arduino-cli message type.
  *
  * One socket carries every operation. A request's `id` correlates it with its streamed responses
- * (`log` / `progress`) and its single terminal reply (`result` or `error`). Of the {@link Client}
- * contract, `listBoards`, `connect`, `disconnect`, and `compile` are wired today; the helper answers
- * the rest with `error{unimplemented}` until their milestone lands, so those methods inherit the base
- * throw.
+ * (`log` / `progress` / `monitorData`) and its single terminal reply (`result` or `error`). Of the
+ * {@link Client} contract, `listBoards`, `connect`, `disconnect`, `compile`, `flash`, and the serial
+ * monitor (`openMonitor` / `writeMonitor` / `closeMonitor`) are wired here.
  *
  * `connect` is helper-side session state — the helper records the selected port on its own socket,
  * with no daemon round-trip — so a dropped socket means the helper has forgotten the port. The close
@@ -52,6 +51,13 @@ class LinkClient extends Client {
         this._cancellable = new Set();
         /** @type {?ConnectionTarget} the open target; null when disconnected. */
         this._connectedTarget = null;
+        /**
+         * The open monitor session, or null when none. `monitorOpen` is the one request whose id keeps
+         * receiving frames (`monitorData`, a late `error`) after its terminal `result`, so the routing
+         * lives here rather than on the request's `_pending` entry, which `_settle` deletes on `result`.
+         * @type {?{id: string, opened: boolean}}
+         */
+        this._monitor = null;
     }
 
     /**
@@ -110,6 +116,8 @@ class LinkClient extends Client {
         }
         log.info('LinkClient.disconnect: clearing the helper-selected port');
         await this._request('disconnect', {});
+        // The helper closes any open monitor as part of disconnect; drop our routing to match.
+        this._monitor = null;
         this._connectedTarget = null;
         this.runtime.emit(this.runtime.constructor.DEVICE_DISCONNECTED);
     }
@@ -174,6 +182,55 @@ class LinkClient extends Client {
     }
 
     /**
+     * Open the serial monitor on the connected port via the helper's `monitorOpen`, resolving once the
+     * port is open. The monitor borrows the connected transport (like `flash`), so the port comes from
+     * the current selection rather than `options`. After the open resolves, inbound serial bytes arrive
+     * as `monitorData` frames on this request's id and are emitted on the runtime as `SERIAL_DATA`; the
+     * routing lives in {@link _monitor} because those frames keep arriving past the terminal `result`.
+     * @param {{baudRate: number}} options - the monitor baud rate.
+     * @returns {Promise<void>} resolves once the monitor is open.
+     */
+    async openMonitor (options) {
+        if (!this.isConnected) {
+            throw new Error('LinkClient.openMonitor: no connected port; call connect() first');
+        }
+        const port = this._connectedTarget.id;
+        const {baudRate} = options;
+        // Pre-allocate the id so `_monitor` can route this request's post-`result` frames.
+        const id = String(this._nextId++);
+        this._monitor = {id, opened: false};
+        log.info(`LinkClient.openMonitor: opening serial monitor on ${port} at ${baudRate} baud`);
+        await this._request('monitorOpen', {port, baudRate}, undefined, false, id);
+    }
+
+    /**
+     * Write bytes to the open serial monitor via the helper's `monitorWrite`. Fire-and-forget: the
+     * helper routes by session and sends no reply, so this returns nothing. A no-op when no monitor is
+     * open.
+     * @param {string} data - the bytes to send.
+     * @returns {void}
+     */
+    writeMonitor (data) {
+        if (!this._monitor) {
+            log.warn('LinkClient.writeMonitor: no open monitor; dropping write');
+            return;
+        }
+        this._ws.send(JSON.stringify({id: this._monitor.id, type: 'monitorWrite', payload: {data}}));
+    }
+
+    /**
+     * Close the serial monitor via the helper's `monitorClose`, leaving the link connected. Resolves
+     * on the helper's terminal `result`. A no-op when no monitor is open.
+     * @returns {Promise<void>} resolves once the monitor is closed.
+     */
+    async closeMonitor () {
+        if (!this._monitor) return;
+        log.info('LinkClient.closeMonitor: closing the serial monitor');
+        await this._request('monitorClose', {});
+        this._monitor = null;
+    }
+
+    /**
      * Build the arduino-cli FQBN, folding the device's board-menu option selections
      * (`getCompileConfig().options`, e.g. `PartitionScheme`) onto the base fqbn as `:k1=v1,k2=v2`.
      * arduino-cli takes these as part of the FQBN, not as separate compile options.
@@ -199,11 +256,12 @@ class LinkClient extends Client {
      *   request (already defaulted via {@link withDefaults}); omitted for non-streaming requests.
      * @param {boolean} [cancellable] - whether {@link cancel} may abort this request mid-flight
      *   (the long-running compile/upload); recorded so `cancel` can target its id.
+     * @param {string} [id] - a pre-allocated correlation id; defaults to a fresh one. `openMonitor`
+     *   passes its own so it can register the monitor routing before the request settles.
      * @returns {Promise<object>} the `result` payload.
      * @private
      */
-    _request (type, payload, callbacks, cancellable = false) {
-        const id = String(this._nextId++);
+    _request (type, payload, callbacks, cancellable = false, id = String(this._nextId++)) {
         const promise = new Promise((resolve, reject) => {
             this._pending.set(id, {resolve, reject, callbacks});
         });
@@ -260,8 +318,9 @@ class LinkClient extends Client {
 
     /**
      * Route an inbound frame to its pending request. Terminal `result`/`error` settle the request;
-     * streaming `log`/`progress` frames go to the request's callbacks without settling. `event` and
-     * `monitorData` frames are ignored until the serial-monitor milestone wires them.
+     * streaming `log`/`progress` frames go to the request's callbacks without settling. `monitorData`
+     * frames (which arrive on the open monitor's id past its terminal `result`) emit `SERIAL_DATA` on
+     * the runtime; a late `error` on that id tears the monitor down. `event` frames are ignored.
      * @param {string} raw - the JSON text frame.
      * @private
      */
@@ -286,7 +345,14 @@ class LinkClient extends Client {
             break;
         }
         case 'result':
+            // The monitor's open `result` confirms the port; later frames on this id are serial data.
+            if (this._monitor && this._monitor.id === id) this._monitor.opened = true;
             this._settle(id, {resolve: payload});
+            break;
+        case 'monitorData':
+            if (this._monitor && this._monitor.id === id) {
+                this.runtime.emit(this.runtime.constructor.SERIAL_DATA, payload.data);
+            }
             break;
         case 'error': {
             const error = new Error((payload && payload.message) || 'link request failed');
@@ -294,6 +360,14 @@ class LinkClient extends Client {
             log.warn(`LinkClient: helper returned error for request ${id} ` +
                 `(code=${error.code}): ${error.message}`);
             this._settle(id, {reject: error});
+            // A post-open error means the serial port died; tear the monitor down. (Before open, the
+            // rejected `openMonitor` promise already surfaces it — we just drop the stale routing.)
+            if (this._monitor && this._monitor.id === id) {
+                if (this._monitor.opened) {
+                    log.warn(`LinkClient: serial monitor error, closing monitor: ${error.message}`);
+                }
+                this._monitor = null;
+            }
             break;
         }
         default:
@@ -315,6 +389,7 @@ class LinkClient extends Client {
         }
         this._ws = null;
         this._openPromise = null;
+        this._monitor = null;
         if (this._connectedTarget) {
             this._connectedTarget = null;
             this.runtime.emit(this.runtime.constructor.DEVICE_DISCONNECTED);
