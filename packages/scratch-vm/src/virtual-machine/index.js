@@ -274,6 +274,30 @@ class VirtualMachine extends EventEmitter {
         this._devices.peripheralRegistry = value;
     }
 
+    // Board/link internal state, surfaced on the VM so existing consumers and tests reach it as
+    // before. The state itself lives on the {@link DeviceManager}/{@link LinkController} subsystems.
+
+    get _selectedDeviceId () {
+        return this._devices._selectedDeviceId;
+    }
+
+    get _pendingBoard () {
+        return this._devices._pendingBoard;
+    }
+
+    get _monitorBaud () {
+        return this._link._monitorBaud;
+    }
+
+    // The pack-module import seam tests override to supply in-memory modules; the setter writes
+    // through so DeviceManager's own `_importPackModule` calls pick up the override.
+    get _importPackModule () {
+        return this._devices._importPackModule;
+    }
+    set _importPackModule (importer) {
+        this._devices._importPackModule = importer;
+    }
+
     // Board-mode device & resource-pack surface. See {@link DeviceManager}.
 
     getDeviceList () {
