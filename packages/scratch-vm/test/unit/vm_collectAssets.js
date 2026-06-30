@@ -11,14 +11,12 @@ test('collectAssets', t => {
     vm.runtime.targets = [target];
     const [
         soundAsset1,
-        soundAsset2,
-        costumeAsset1
-    ] = [{assetId: 1}, {assetId: 2}, {assetId: 3}];
+        soundAsset2
+    ] = [{assetId: 1}, {assetId: 2}];
     sprite.sounds = [{id: 1, asset: soundAsset1}, {id: 2, asset: soundAsset2}];
-    sprite.costumes = [{id: 1, asset: costumeAsset1}];
     const assets = vm.assets;
     t.type(assets.length, 'number');
-    t.equal(assets.length, 3);
-    t.same(assets, [soundAsset1, soundAsset2, costumeAsset1]);
+    t.equal(assets.length, 2);
+    t.same(assets, [soundAsset1, soundAsset2]);
     t.end();
 });

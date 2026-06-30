@@ -1,7 +1,7 @@
 const JSZip = require('jszip');
 const log = require('../../util/log');
 const StringUtil = require('../../util/string-util');
-const {serializeSounds, serializeCostumes} = require('../../serialization/serialize-assets');
+const {serializeSounds} = require('../../serialization/serialize-assets');
 
 module.exports = class ProjectIoMixin {
     /**
@@ -91,7 +91,6 @@ module.exports = class ProjectIoMixin {
      */
     saveProjectSb3 () {
         const soundDescs = serializeSounds(this.runtime);
-        const costumeDescs = serializeCostumes(this.runtime);
         const projectJson = this.toJSON();
 
         // TODO want to eventually move zip creation out of here, and perhaps
@@ -100,7 +99,7 @@ module.exports = class ProjectIoMixin {
 
         // Put everything in a zip file
         zip.file('project.json', projectJson);
-        this._addFileDescsToZip(soundDescs.concat(costumeDescs), zip);
+        this._addFileDescsToZip(soundDescs, zip);
 
         return zip.generateAsync({
             type: 'blob',
@@ -113,13 +112,11 @@ module.exports = class ProjectIoMixin {
     }
 
     /*
-     * @type {Array<object>} Array of all costumes and sounds currently in the runtime
+     * @type {Array<object>} Array of all sounds currently in the runtime
      */
     get assets () {
         return this.runtime.targets.reduce((acc, target) => (
-            acc
-                .concat(target.sprite.sounds.map(sound => sound.asset))
-                .concat(target.sprite.costumes.map(costume => costume.asset))
+            acc.concat(target.sprite.sounds.map(sound => sound.asset))
         ), []);
     }
 
@@ -144,12 +141,11 @@ module.exports = class ProjectIoMixin {
      */
     exportSprite (targetId, optZipType) {
         const soundDescs = serializeSounds(this.runtime, targetId);
-        const costumeDescs = serializeCostumes(this.runtime, targetId);
         const spriteJson = this.toJSON(targetId);
 
         const zip = new JSZip();
         zip.file('sprite.json', spriteJson);
-        this._addFileDescsToZip(soundDescs.concat(costumeDescs), zip);
+        this._addFileDescsToZip(soundDescs, zip);
 
         return zip.generateAsync({
             type: typeof optZipType === 'string' ? optZipType : 'blob',
@@ -249,15 +245,8 @@ module.exports = class ProjectIoMixin {
         return Promise.all(extensionPromises).then(() => {
             targets.forEach(target => {
                 this.runtime.addTarget(target);
-                (/** @type RenderedTarget */ target).updateAllDrawableProperties();
                 // Ensure unique sprite name
                 if (target.isSprite()) this.renameSprite(target.id, target.getName());
-            });
-            // Sort the executable targets by layerOrder.
-            // Remove layerOrder property after use.
-            this.runtime.executableTargets.sort((a, b) => a.layerOrder - b.layerOrder);
-            targets.forEach(target => {
-                delete target.layerOrder;
             });
 
             // Select the first target for editing, e.g., the first sprite.

@@ -10,16 +10,13 @@ const Sprite = require('../sprites/sprite');
 const Variable = require('../engine/variable');
 const Comment = require('../engine/comment');
 const MonitorRecord = require('../engine/monitor-record');
-const StageLayering = require('../engine/stage-layering');
 const log = require('../util/log');
 const uid = require('../util/uid');
-const MathUtil = require('../util/math-util');
 const StringUtil = require('../util/string-util');
 const VariableUtil = require('../util/variable-util');
 
-const {loadCostume} = require('../import/load-costume.js');
 const {loadSound} = require('../import/load-sound.js');
-const {deserializeCostume, deserializeSound} = require('./deserialize-assets.js');
+const {deserializeSound} = require('./deserialize-assets.js');
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -417,35 +414,6 @@ const serializeBlocks = function (blocks) {
 };
 
 /**
- * Serialize the given costume.
- * @param {object} costume The costume to be serialized.
- * @returns {object} A serialized representation of the costume.
- */
-const serializeCostume = function (costume) {
-    const obj = Object.create(null);
-    obj.name = costume.name;
-
-    const costumeToSerialize = costume.broken || costume;
-
-    obj.bitmapResolution = costumeToSerialize.bitmapResolution;
-    obj.dataFormat = costumeToSerialize.dataFormat.toLowerCase();
-
-    obj.assetId = costumeToSerialize.assetId;
-
-    // serialize this property with the name 'md5ext' because that's
-    // what it's actually referring to. TODO runtime objects need to be
-    // updated to actually refer to this as 'md5ext' instead of 'md5'
-    // but that change should be made carefully since it is very
-    // pervasive
-    obj.md5ext = costumeToSerialize.md5;
-
-    obj.rotationCenterX = costumeToSerialize.rotationCenterX;
-    obj.rotationCenterY = costumeToSerialize.rotationCenterY;
-
-    return obj;
-};
-
-/**
  * Serialize the given sound.
  * @param {object} sound The sound to be serialized.
  * @returns {object} A serialized representation of the sound.
@@ -527,6 +495,16 @@ const serializeComments = function (comments) {
     return obj;
 };
 
+// scratch-parser (run when loading a project) requires every target to carry at least one costume.
+// The firmware target model has no costumes, so saved projects embed this single inert placeholder to
+// stay valid sb3 and re-validate on load. It references no asset data and is ignored during deserialize.
+const PLACEHOLDER_COSTUME = {
+    name: 'costume1',
+    assetId: 'cd21514d0531fdffb22204e0ec5ed84a',
+    md5ext: 'cd21514d0531fdffb22204e0ec5ed84a.svg',
+    dataFormat: 'svg'
+};
+
 /**
  * Serialize the given target. Only serialize properties that are necessary
  * for saving and loading this target.
@@ -547,38 +525,16 @@ const serializeTarget = function (target, extensions) {
     [obj.blocks, targetExtensions] = serializeBlocks(target.blocks);
     obj.comments = serializeComments(target.comments);
 
-    // TODO remove this check/patch when (#1901) is fixed
-    if (target.currentCostume < 0 || target.currentCostume >= target.costumes.length) {
-        log.warn(`currentCostume property for target ${target.name} is out of range`);
-        target.currentCostume = MathUtil.clamp(target.currentCostume, 0, target.costumes.length - 1);
-    }
-
-    obj.currentCostume = target.currentCostume;
-    obj.costumes = target.costumes.map(serializeCostume);
+    obj.costumes = [PLACEHOLDER_COSTUME];
     obj.sounds = target.sounds.map(serializeSound);
     if (Object.prototype.hasOwnProperty.call(target, 'volume')) obj.volume = target.volume;
-    if (Object.prototype.hasOwnProperty.call(target, 'layerOrder')) obj.layerOrder = target.layerOrder;
     if (obj.isStage) { // Only the stage should have these properties
         if (Object.prototype.hasOwnProperty.call(target, 'tempo')) {
             obj.tempo = target.tempo;
         }
-        if (Object.prototype.hasOwnProperty.call(target, 'videoTransparency')) {
-            obj.videoTransparency = target.videoTransparency;
-        }
-        if (Object.prototype.hasOwnProperty.call(target, 'videoState')) {
-            obj.videoState = target.videoState;
-        }
         if (Object.prototype.hasOwnProperty.call(target, 'textToSpeechLanguage')) {
             obj.textToSpeechLanguage = target.textToSpeechLanguage;
         }
-    } else { // The stage does not need the following properties, but sprites should
-        obj.visible = target.visible;
-        obj.x = target.x;
-        obj.y = target.y;
-        obj.size = target.size;
-        obj.direction = target.direction;
-        obj.draggable = target.draggable;
-        obj.rotationStyle = target.rotationStyle;
     }
 
     // Add found extensions to the extensions object
@@ -586,11 +542,6 @@ const serializeTarget = function (target, extensions) {
         extensions.add(extensionId);
     });
     return obj;
-};
-
-const getSimplifiedLayerOrdering = function (targets) {
-    const layerOrders = targets.map(t => t.getLayerOrder());
-    return MathUtil.reducedSortOrdering(layerOrders);
 };
 
 const serializeMonitors = function (monitors) {
@@ -633,17 +584,7 @@ const serialize = function (runtime, targetId) {
         [runtime.getTargetById(targetId)] :
         runtime.targets.filter(target => target.isOriginal);
 
-    const layerOrdering = getSimplifiedLayerOrdering(originalTargetsToSerialize);
-
     const flattenedOriginalTargets = originalTargetsToSerialize.map(t => t.toJSON());
-
-    // If the renderer is attached, and we're serializing a whole project (not a sprite)
-    // add a temporary layerOrder property to each target.
-    if (runtime.renderer && !targetId) {
-        flattenedOriginalTargets.forEach((t, index) => {
-            t.layerOrder = layerOrdering[index];
-        });
-    }
 
     const serializedTargets = flattenedOriginalTargets.map(t => serializeTarget(t, extensions));
 
@@ -1058,8 +999,8 @@ const deserializeBlocks = function (blocks) {
  * @param {!object} object From-JSON "Scratch object:" sprite, stage, watcher.
  * @param {!Runtime} runtime Runtime object to load all structures into.
  * @param {JSZip} zip Sb3 file describing this project (to load assets from)
- * @returns {?{costumePromises:Array.<Promise>,soundPromises:Array.<Promise>,soundBank:SoundBank}}
- * Object of arrays of promises for asset objects used in Sprites. As well as a
+ * @returns {?{soundPromises:Array.<Promise>,soundBank:SoundBank}}
+ * Object of an array of promises for sound asset objects, as well as a
  * SoundBank for the sound assets. null for unsupported objects.
  */
 const parseScratchAssets = function (object, runtime, zip) {
@@ -1070,43 +1011,10 @@ const parseScratchAssets = function (object, runtime, zip) {
     }
 
     const assets = {
-        costumePromises: null,
         soundPromises: null,
         soundBank: runtime.audioEngine && runtime.audioEngine.createBank()
     };
 
-    // Costumes from JSON.
-    assets.costumePromises = (object.costumes || []).map(costumeSource => {
-        // @todo: Make sure all the relevant metadata is being pulled out.
-        const costume = {
-            // costumeSource only has an asset if an image is being uploaded as
-            // a sprite
-            asset: costumeSource.asset,
-            assetId: costumeSource.assetId,
-            skinId: null,
-            name: costumeSource.name,
-            bitmapResolution: costumeSource.bitmapResolution,
-            rotationCenterX: costumeSource.rotationCenterX,
-            rotationCenterY: costumeSource.rotationCenterY
-        };
-        const dataFormat =
-            costumeSource.dataFormat ||
-            (costumeSource.assetType && costumeSource.assetType.runtimeFormat) || // older format
-            'png'; // if all else fails, guess that it might be a PNG
-        const costumeMd5Ext = Object.prototype.hasOwnProperty.call(costumeSource, 'md5ext') ?
-            costumeSource.md5ext : `${costumeSource.assetId}.${dataFormat}`;
-        costume.md5 = costumeMd5Ext;
-        costume.dataFormat = dataFormat;
-        // deserializeCostume should be called on the costume object we're
-        // creating above instead of the source costume object, because this way
-        // we're always loading the 'sb3' representation of the costume
-        // any translation that needs to happen will happen in the process
-        // of building up the costume object into an sb3 format
-        return deserializeCostume(costume, runtime, zip)
-            .then(() => loadCostume(costumeMd5Ext, costume, runtime));
-        // Only attempt to load the costume after the deserialization
-        // process has been completed
-    });
     // Sounds from JSON
     assets.soundPromises = (object.sounds || []).map(soundSource => {
         const sound = {
@@ -1177,24 +1085,16 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
             }
         }
     }
-    // Costumes from JSON.
-    const {costumePromises} = assets;
     // Sounds from JSON
     const {soundBank, soundPromises} = assets;
     // Create the first clone, and load its run-state from JSON.
-    const target = sprite.createClone(object.isStage ? StageLayering.BACKGROUND_LAYER : StageLayering.SPRITE_LAYER);
+    const target = sprite.createClone();
     // Load target properties from JSON.
     if (Object.prototype.hasOwnProperty.call(object, 'tempo')) {
         target.tempo = object.tempo;
     }
     if (Object.prototype.hasOwnProperty.call(object, 'volume')) {
         target.volume = object.volume;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'videoTransparency')) {
-        target.videoTransparency = object.videoTransparency;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'videoState')) {
-        target.videoState = object.videoState;
     }
     if (Object.prototype.hasOwnProperty.call(object, 'textToSpeechLanguage')) {
         target.textToSpeechLanguage = object.textToSpeechLanguage;
@@ -1267,29 +1167,6 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
             target.comments[newComment.id] = newComment;
         }
     }
-    if (Object.prototype.hasOwnProperty.call(object, 'x')) {
-        target.x = object.x;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'y')) {
-        target.y = object.y;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'direction')) {
-        // Sometimes the direction can be outside of the range: LLK/scratch-gui#5806
-        // wrapClamp it (like we do on RenderedTarget.setDirection)
-        target.direction = MathUtil.wrapClamp(object.direction, -179, 180);
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'size')) {
-        target.size = object.size;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'visible')) {
-        target.visible = object.visible;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'currentCostume')) {
-        target.currentCostume = MathUtil.clamp(object.currentCostume, 0, object.costumes.length - 1);
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'rotationStyle')) {
-        target.rotationStyle = object.rotationStyle;
-    }
     if (Object.prototype.hasOwnProperty.call(object, 'isStage')) {
         target.isStage = object.isStage;
     }
@@ -1299,18 +1176,12 @@ const parseScratchObject = function (object, runtime, extensions, zip, assets) {
         // This will be deleted after we are done parsing and ordering the targets list.
         target.targetPaneOrder = object.targetPaneOrder;
     }
-    if (Object.prototype.hasOwnProperty.call(object, 'draggable')) {
-        target.draggable = object.draggable;
-    }
-    Promise.all(costumePromises).then(costumes => {
-        sprite.costumes = costumes;
-    });
     Promise.all(soundPromises).then(sounds => {
         sprite.sounds = sounds;
         // Make sure if soundBank is undefined, sprite.soundBank is then null.
         sprite.soundBank = soundBank || null;
     });
-    return Promise.all(costumePromises.concat(soundPromises)).then(() => target);
+    return Promise.all(soundPromises).then(() => target);
 };
 
 const deserializeMonitor = function (monitorData, runtime, targets, extensions) {

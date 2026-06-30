@@ -32,25 +32,6 @@ test('complex', t => {
 
             vm.setEditingTarget(targets[i].id);
             vm.renameSprite(targets[i].id, 'test');
-            vm.postSpriteInfo({
-                x: 0,
-                y: 10,
-                direction: 90,
-                draggable: true,
-                rotationStyle: 'all around',
-                visible: true
-            });
-            vm.addCostume(
-                'f9a1c175dbe2e5dee472858dd30d16bb.svg',
-                {
-                    name: 'costume1',
-                    baseLayerID: 0,
-                    baseLayerMD5: 'f9a1c175dbe2e5dee472858dd30d16bb.svg',
-                    bitmapResolution: 1,
-                    rotationCenterX: 47,
-                    rotationCenterY: 55
-                }
-            );
         }
     });
 
@@ -74,19 +55,6 @@ test('complex', t => {
 
             // Add sprite
             vm.addSprite(sprite);
-
-            // Add backdrop
-            vm.addBackdrop(
-                '6b3d87ba2a7f89be703163b6c1d4c964.png',
-                {
-                    name: 'baseball-field',
-                    baseLayerID: 26,
-                    baseLayerMD5: '6b3d87ba2a7f89be703163b6c1d4c964.png',
-                    bitmapResolution: 2,
-                    rotationCenterX: 480,
-                    rotationCenterY: 360
-                }
-            );
 
             // After two seconds, get playground data and stop
             setTimeout(() => {

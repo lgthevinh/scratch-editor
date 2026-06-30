@@ -42,19 +42,6 @@ const serializeSounds = function (runtime, optTargetId) {
     return serializeAssets(runtime, 'sounds', optTargetId);
 };
 
-/**
- * Serialize all the costumes in the provided runtime into an array of file
- * descriptors. A file descriptor is an object containing the name of the file
- * to be written and the contents of the file, the serialized costume.
- * @param {Runtime} runtime The runtime with the costumes to be serialized
- * @param {string} optTargetId Optional targetid for serializing costumes of a single target
- * @returns {Array<object>} An array of file descriptors for each costume
- */
-const serializeCostumes = function (runtime, optTargetId) {
-    return serializeAssets(runtime, 'costumes', optTargetId);
-};
-
 module.exports = {
-    serializeSounds,
-    serializeCostumes
+    serializeSounds
 };

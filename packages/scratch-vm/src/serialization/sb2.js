@@ -6,22 +6,18 @@
  */
 
 const Blocks = require('../engine/blocks');
-const RenderedTarget = require('../sprites/rendered-target');
 const Sprite = require('../sprites/sprite');
 const Color = require('../util/color');
 const log = require('../util/log');
 const uid = require('../util/uid');
 const StringUtil = require('../util/string-util');
-const MathUtil = require('../util/math-util');
 const specMap = require('./sb2_specmap');
 const Comment = require('../engine/comment');
 const Variable = require('../engine/variable');
 const MonitorRecord = require('../engine/monitor-record');
-const StageLayering = require('../engine/stage-layering');
 
-const {loadCostume} = require('../import/load-costume.js');
 const {loadSound} = require('../import/load-sound.js');
-const {deserializeCostume, deserializeSound} = require('./deserialize-assets.js');
+const {deserializeSound} = require('./deserialize-assets.js');
 
 // Constants used during deserialization of an SB2 file
 const CORE_EXTENSIONS = [
@@ -394,10 +390,9 @@ const parseMonitorObject = (object, runtime, targets, extensions) => {
  * @param {!Runtime} runtime - Runtime object to load all structures into.
  * @param {boolean} topLevel - Whether this is the top-level object (stage).
  * @param {?object} zip - Optional zipped assets for local file import
- * @returns {?{costumePromises:Array.<Promise>,soundPromises:Array.<Promise>,soundBank:SoundBank,children:object}}
- *   Object of arrays of promises and child objects for asset objects used in
- *   Sprites. As well as a SoundBank for the sound assets. null for unsupported
- *   objects.
+ * @returns {?{soundPromises:Array.<Promise>,soundBank:SoundBank,children:object}}
+ *   Object of an array of sound-asset promises and child objects, as well as a
+ *   SoundBank for the sound assets. null for unsupported objects.
  */
 const parseScratchAssets = function (object, runtime, topLevel, zip) {
     if (!Object.prototype.hasOwnProperty.call(object, 'objName')) {
@@ -406,57 +401,11 @@ const parseScratchAssets = function (object, runtime, topLevel, zip) {
     }
 
     const assets = {
-        costumePromises: [],
         soundPromises: [],
         soundBank: runtime.audioEngine && runtime.audioEngine.createBank(),
         children: []
     };
 
-    // Costumes from JSON.
-    const costumePromises = assets.costumePromises;
-    if (Object.prototype.hasOwnProperty.call(object, 'costumes')) {
-        for (let i = 0; i < object.costumes.length; i++) {
-            const costumeSource = object.costumes[i];
-            const bitmapResolution = costumeSource.bitmapResolution || 1;
-            const costume = {
-                name: costumeSource.costumeName,
-                bitmapResolution: bitmapResolution,
-                rotationCenterX: topLevel ? 240 * bitmapResolution : costumeSource.rotationCenterX,
-                rotationCenterY: topLevel ? 180 * bitmapResolution : costumeSource.rotationCenterY,
-                // TODO we eventually want this next property to be called
-                // md5ext to reflect what it actually contains, however this
-                // will be a very extensive change across many repositories
-                // and should be done carefully and altogether
-                md5: costumeSource.baseLayerMD5,
-                skinId: null
-            };
-            const md5ext = costumeSource.baseLayerMD5;
-            const idParts = StringUtil.splitFirst(md5ext, '.');
-            const md5 = idParts[0];
-            let ext;
-            if (idParts.length === 2 && idParts[1]) {
-                ext = idParts[1];
-            } else {
-                // Default to 'png' if baseLayerMD5 is not formatted correctly
-                ext = 'png';
-                // Fix costume md5 for later
-                costume.md5 = `${costume.md5}.${ext}`;
-            }
-            costume.dataFormat = ext;
-            costume.assetId = md5;
-            if (costumeSource.textLayerMD5) {
-                costume.textLayerMD5 = StringUtil.splitFirst(costumeSource.textLayerMD5, '.')[0];
-            }
-            // If there is no internet connection, or if the asset is not in storage
-            // for some reason, and we are doing a local .sb2 import, (e.g. zip is provided)
-            // the file name of the costume should be the baseLayerID followed by the file ext
-            const assetFileName = `${costumeSource.baseLayerID}.${ext}`;
-            const textLayerFileName = costumeSource.textLayerID ? `${costumeSource.textLayerID}.png` : null;
-            costumePromises.push(deserializeCostume(costume, runtime, zip, assetFileName, textLayerFileName)
-                .then(() => loadCostume(costume.md5, costume, runtime, 2 /* optVersion */))
-            );
-        }
-    }
     // Sounds from JSON
     const {soundBank, soundPromises} = assets;
     if (Object.prototype.hasOwnProperty.call(object, 'sounds')) {
@@ -547,13 +496,11 @@ const parseScratchObject = function (object, runtime, extensions, topLevel, zip,
 
         sprite.name = object.objName;
     }
-    // Costumes from JSON.
-    const costumePromises = assets.costumePromises;
     // Sounds from JSON
     const {soundBank, soundPromises} = assets;
 
     // Create the first clone, and load its run-state from JSON.
-    const target = sprite.createClone(topLevel ? StageLayering.BACKGROUND_LAYER : StageLayering.SPRITE_LAYER);
+    const target = sprite.createClone();
 
     const getVariableId = generateVariableIdGetter(target.id, topLevel);
 
@@ -672,58 +619,8 @@ const parseScratchObject = function (object, runtime, extensions, topLevel, zip,
             target.variables[newVariable.id] = newVariable;
         }
     }
-    if (Object.prototype.hasOwnProperty.call(object, 'scratchX')) {
-        target.x = object.scratchX;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'scratchY')) {
-        target.y = object.scratchY;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'direction')) {
-        // Sometimes the direction can be outside of the range: LLK/scratch-gui#5806
-        // wrapClamp it (like we do on RenderedTarget.setDirection)
-        target.direction = MathUtil.wrapClamp(object.direction, -179, 180);
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'isDraggable')) {
-        target.draggable = object.isDraggable;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'scale')) {
-        // SB2 stores as 1.0 = 100%; we use % in the VM.
-        target.size = object.scale * 100;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'visible')) {
-        target.visible = object.visible;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'currentCostumeIndex')) {
-        // Current costume index can sometimes be a floating
-        // point number, use Math.floor to come up with an appropriate index
-        // and clamp it to the actual number of costumes the object has for good measure.
-        target.currentCostume = MathUtil.clamp(Math.floor(object.currentCostumeIndex), 0, object.costumes.length - 1);
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'rotationStyle')) {
-        if (object.rotationStyle === 'none') {
-            target.rotationStyle = RenderedTarget.ROTATION_STYLE_NONE;
-        } else if (object.rotationStyle === 'leftRight') {
-            target.rotationStyle = RenderedTarget.ROTATION_STYLE_LEFT_RIGHT;
-        } else if (object.rotationStyle === 'normal') {
-            target.rotationStyle = RenderedTarget.ROTATION_STYLE_ALL_AROUND;
-        }
-    }
     if (Object.prototype.hasOwnProperty.call(object, 'tempoBPM')) {
         target.tempo = object.tempoBPM;
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'videoAlpha')) {
-        // SB2 stores alpha as opacity, where 1.0 is opaque.
-        // We convert to a percentage, and invert it so 100% is full transparency.
-        target.videoTransparency = 100 - (100 * object.videoAlpha);
-    }
-    if (Object.prototype.hasOwnProperty.call(object, 'info')) {
-        if (Object.prototype.hasOwnProperty.call(object.info, 'videoOn')) {
-            if (object.info.videoOn) {
-                target.videoState = RenderedTarget.VIDEO_STATE.ON;
-            } else {
-                target.videoState = RenderedTarget.VIDEO_STATE.OFF;
-            }
-        }
     }
     if (Object.prototype.hasOwnProperty.call(object, 'indexInLibrary')) {
         // Temporarily store the 'indexInLibrary' property from the sb2 file
@@ -733,10 +630,6 @@ const parseScratchObject = function (object, runtime, extensions, topLevel, zip,
     }
 
     target.isStage = topLevel;
-
-    Promise.all(costumePromises).then(costumes => {
-        sprite.costumes = costumes;
-    });
 
     Promise.all(soundPromises).then(sounds => {
         sprite.sounds = sounds;
@@ -755,7 +648,7 @@ const parseScratchObject = function (object, runtime, extensions, topLevel, zip,
     }
 
     return Promise.all(
-        costumePromises.concat(soundPromises)
+        soundPromises
     ).then(() =>
         Promise.all(
             childrenPromises

@@ -141,6 +141,11 @@ Prettier (currently `task-herder`), run `npm run format` in addition to lint.
   `assets/icon.svg` and are exposed through `vm.getDeviceList()` as `iconURL`; do not add GUI-side icon maps for
   VM devices.
 - i18n strings in extensions are extracted with `format-message`. Run `npm run i18n:src` after changing them.
+- The target model is firmware-only: targets host blocks, variables, comments, and sounds, but no costumes,
+  rendering, or motion (no x/y/direction/size/visible/rotation/effects/drawable). Serialization
+  (`serialization/sb3.js`/`sb2.js`) persists blocks/variables/sounds plus the firmware `board` field and drops
+  all costume/render/motion fields, so saved projects no longer round-trip through stock Scratch. Sounds and
+  `soundBank` are retained because the `scratch3_music` and `scratch3_text2speech` extensions still consume them.
 
 ## npm workflow
 

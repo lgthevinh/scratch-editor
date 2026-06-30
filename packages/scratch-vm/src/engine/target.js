@@ -79,6 +79,12 @@ class Target extends EventEmitter {
     onGreenFlag () {}
 
     /**
+     * Called when the project receives a "stop all."
+     * @abstract
+     */
+    onStopAll () {}
+
+    /**
      * Return a human-readable name for this target.
      * Target implementations should override this.
      * @abstract

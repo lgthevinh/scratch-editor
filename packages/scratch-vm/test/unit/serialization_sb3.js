@@ -10,10 +10,8 @@ const commentsSB3ProjectPath = path.resolve(__dirname, '../fixtures/comments.sb3
 const commentsSB3NoDupeIds = path.resolve(__dirname, '../fixtures/comments_no_duplicate_id_serialization.sb3');
 const variableReporterSB2ProjectPath = path.resolve(__dirname, '../fixtures/top-level-variable-reporter.sb2');
 const topLevelReportersProjectPath = path.resolve(__dirname, '../fixtures/top-level-reporters.sb3');
-const draggableSB3ProjectPath = path.resolve(__dirname, '../fixtures/draggable.sb3');
 const originSB3ProjectPath = path.resolve(__dirname, '../fixtures/origin.sb3');
 const originAbsentSB3ProjectPath = path.resolve(__dirname, '../fixtures/origin-absent.sb3');
-const FakeRenderer = require('../fixtures/fake-renderer');
 
 test('serialize', t => {
     const vm = new VirtualMachine();
@@ -148,65 +146,6 @@ test('deserialize sb3 project with comments - no duplicate id serialization', t 
 
             t.end();
         });
-});
-
-test('serializing and deserializing sb3 preserves sprite layer order', t => {
-    const vm = new VirtualMachine();
-    vm.attachRenderer(new FakeRenderer());
-    return vm.loadProject(readFileToBuffer(path.resolve(__dirname, '../fixtures/ordering.sb2')))
-        .then(() => {
-            // Target get layer order needs a renderer,
-            // fake the numbers we would get back from the
-            // renderer in order to test that they are serialized
-            // correctly
-            vm.runtime.targets[0].getLayerOrder = () => 0;
-            vm.runtime.targets[1].getLayerOrder = () => 20;
-            vm.runtime.targets[2].getLayerOrder = () => 10;
-            vm.runtime.targets[3].getLayerOrder = () => 30;
-
-            const result = sb3.serialize(vm.runtime);
-
-            t.type(JSON.stringify(result), 'string');
-            t.type(result.targets, 'object');
-            t.equal(Array.isArray(result.targets), true);
-            t.equal(result.targets.length, 4);
-
-            // First check that the sprites are ordered correctly (as they would
-            // appear in the target pane)
-            t.equal(result.targets[0].name, 'Stage');
-            t.equal(result.targets[1].name, 'First');
-            t.equal(result.targets[2].name, 'Second');
-            t.equal(result.targets[3].name, 'Third');
-
-            // Check that they are in the correct layer order (as they would render
-            // back to front on the stage)
-            t.equal(result.targets[0].layerOrder, 0);
-            t.equal(result.targets[1].layerOrder, 2);
-            t.equal(result.targets[2].layerOrder, 1);
-            t.equal(result.targets[3].layerOrder, 3);
-
-            return result;
-        })
-        .then(serializedObject =>
-            sb3.deserialize(
-                JSON.parse(JSON.stringify(serializedObject)), new Runtime(), null, false)
-                .then(({targets}) => {
-                    // First check that the sprites are ordered correctly (as they would
-                    // appear in the target pane)
-                    t.equal(targets[0].sprite.name, 'Stage');
-                    t.equal(targets[1].sprite.name, 'First');
-                    t.equal(targets[2].sprite.name, 'Second');
-                    t.equal(targets[3].sprite.name, 'Third');
-
-                    // Check that they are in the correct layer order (as they would render
-                    // back to front on the stage)
-                    t.equal(targets[0].layerOrder, 0);
-                    t.equal(targets[1].layerOrder, 2);
-                    t.equal(targets[2].layerOrder, 1);
-                    t.equal(targets[3].layerOrder, 3);
-
-                    t.end();
-                }));
 });
 
 test('serializeBlocks', t => {
@@ -415,17 +354,6 @@ test('(#1608) serializeBlocks maintains top level variable reporters', t => {
             t.doesNotThrow(() => {
                 sb3.deserialize(JSON.parse(JSON.stringify(result)), vm.runtime);
             });
-            t.end();
-        });
-});
-
-test('(#1850) sprite draggability state read when loading SB3 file', t => {
-    const vm = new VirtualMachine();
-    vm.loadProject(readFileToBuffer(draggableSB3ProjectPath))
-        .then(() => {
-            const sprite1Obj = vm.runtime.targets.find(target => target.sprite.name === 'Sprite1');
-            // Sprite1 in project should have draggable set to true
-            t.equal(sprite1Obj.draggable, true);
             t.end();
         });
 });

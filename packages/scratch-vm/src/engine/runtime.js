@@ -780,14 +780,6 @@ class Runtime extends EventEmitter {
         return 1000 / 30;
     }
 
-    /**
-     * How many clones can be created at a time.
-     * @constant {number}
-     */
-    static get MAX_CLONES () {
-        return 300;
-    }
-
     // -----------------------------------------------------------------------------
     // -----------------------------------------------------------------------------
 
@@ -2525,48 +2517,11 @@ class Runtime extends EventEmitter {
     }
 
     /**
-     * Get the first original (non-clone-block-created) sprite given a name.
-     * @param {string} spriteName Name of sprite to look for.
-     * @returns {?Target} Target representing a sprite of the given name.
-     */
-    getSpriteTargetByName (spriteName) {
-        for (let i = 0; i < this.targets.length; i++) {
-            const target = this.targets[i];
-            if (target.isStage) {
-                continue;
-            }
-            if (target.sprite && target.sprite.name === spriteName) {
-                return target;
-            }
-        }
-    }
-
-    /**
-     * Get a target by its drawable id.
-     * @param {number} drawableID drawable id of target to find
-     * @returns {?Target} The target, if found
-     */
-    getTargetByDrawableId (drawableID) {
-        for (let i = 0; i < this.targets.length; i++) {
-            const target = this.targets[i];
-            if (target.drawableID === drawableID) return target;
-        }
-    }
-
-    /**
      * Update the clone counter to track how many clones are created.
      * @param {number} changeAmount How many clones have been created/destroyed.
      */
     changeCloneCounter (changeAmount) {
         this._cloneCounter += changeAmount;
-    }
-
-    /**
-     * Return whether there are clones available.
-     * @returns {boolean} True until the number of clones hits Runtime.MAX_CLONES.
-     */
-    clonesAvailable () {
-        return this._cloneCounter < Runtime.MAX_CLONES;
     }
 
     /**

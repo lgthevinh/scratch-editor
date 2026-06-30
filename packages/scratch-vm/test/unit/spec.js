@@ -16,10 +16,7 @@ test('interface', t => {
 
     t.type(vm.loadProject, 'function');
     t.type(vm.addSprite, 'function');
-    t.type(vm.addCostume, 'function');
-    t.type(vm.addBackdrop, 'function');
     t.type(vm.addSound, 'function');
-    t.type(vm.deleteCostume, 'function');
     t.type(vm.deleteSound, 'function');
     t.type(vm.renameSprite, 'function');
     t.type(vm.deleteSprite, 'function');
@@ -31,6 +28,5 @@ test('interface', t => {
 
     t.type(vm.emitTargetsUpdate, 'function');
     t.type(vm.emitWorkspaceUpdate, 'function');
-    t.type(vm.postSpriteInfo, 'function');
     t.end();
 });

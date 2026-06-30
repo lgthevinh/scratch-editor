@@ -61,8 +61,6 @@ test('default cat', t => {
                 t.equal(variable.value, 0);
 
                 t.equal(newTarget.isOriginal, true);
-                t.equal(newTarget.currentCostume, 0);
-                t.equal(newTarget.isOriginal, true);
                 t.equal(newTarget.isStage, false);
                 t.equal(newTarget.sprite.name, 'Apple');
 

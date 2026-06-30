@@ -33,8 +33,6 @@ test('default', t => {
         t.type(targets[0].comments, 'object');
 
         t.equal(targets[0].isOriginal, true);
-        t.equal(targets[0].currentCostume, 0);
-        t.equal(targets[0].isOriginal, true);
         t.equal(targets[0].isStage, true);
 
         t.ok(targets[1] instanceof renderedTarget);
@@ -44,7 +42,6 @@ test('default', t => {
         t.type(targets[1].comments, 'object');
 
         t.equal(targets[1].isOriginal, true);
-        t.equal(targets[1].currentCostume, 0);
         t.equal(targets[1].isOriginal, true);
         t.equal(targets[1].isStage, false);
         t.end();

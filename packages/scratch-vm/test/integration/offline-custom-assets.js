@@ -10,15 +10,10 @@ const test = require('tap').test;
 const AdmZip = require('adm-zip');
 const ScratchStorage = require('@scratch/scratch-storage').ScratchStorage;
 const VirtualMachine = require('../../src/index');
-const {sanitizeByteStream} = require('../../../scratch-svg-renderer/src/sanitize-svg');
 
 const projectUri = path.resolve(__dirname, '../fixtures/offline-custom-assets.sb2');
 const projectZip = AdmZip(projectUri);
 const project = Buffer.from(fs.readFileSync(projectUri));
-// Custom costume from sb2 file (which was downloaded from offline editor)
-// This sound should not be available on our servers
-const costume = projectZip.readFile('1.svg');
-const costumeData = new Uint8Array(costume);
 // Custom sound recording from sb2 file (which was downloaded from offline editor)
 // This sound should not be available on our servers
 const sound = projectZip.readFile('0.wav');
@@ -48,15 +43,6 @@ test('offline-custom-assets', t => {
 
             // Verify initial state
             t.equal(vm.runtime.targets.length, 2);
-            const costumes = vm.runtime.targets[1].getCostumes();
-            t.equal(costumes.length, 1);
-            const customCostume = costumes[0];
-            t.equal(customCostume.name, 'A_Test_Costume');
-
-            const storedCostume = customCostume.asset;
-            t.type(storedCostume, 'object');
-            t.same(storedCostume.data, sanitizeByteStream(costumeData));
-
             const sounds = vm.runtime.targets[1].sprite.sounds;
             t.equal(sounds.length, 1);
             const customSound = sounds[0];

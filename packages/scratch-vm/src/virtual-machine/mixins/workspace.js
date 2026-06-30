@@ -1,7 +1,5 @@
 const Variable = require('../../engine/variable');
 const newBlockIds = require('../../util/new-block-ids');
-const {loadCostume} = require('../../import/load-costume.js');
-const {loadSound} = require('../../import/load-sound.js');
 
 module.exports = class WorkspaceMixin {
     /**
@@ -121,46 +119,6 @@ module.exports = class WorkspaceMixin {
                 // backpack). Reconcile any variable, list, or broadcast references against
                 // what's defined in the project, creating missing definitions on the stage.
                 target.fixUpVariableReferences();
-            }
-        });
-    }
-
-    /**
-     * Called when costumes are dragged from editing target to another target.
-     * Sets the newly added costume as the current costume.
-     * @param {!number} costumeIndex Index of the costume of the editing target to share.
-     * @param {!string} targetId Id of target to add the costume.
-     * @returns {Promise} Promise that resolves when the new costume has been loaded.
-     */
-    shareCostumeToTarget (costumeIndex, targetId) {
-        const originalCostume = this.editingTarget.getCostumes()[costumeIndex];
-        const clone = Object.assign({}, originalCostume);
-        const md5ext = `${clone.assetId}.${clone.dataFormat}`;
-        return loadCostume(md5ext, clone, this.runtime).then(() => {
-            const target = this.runtime.getTargetById(targetId);
-            if (target) {
-                target.addCostume(clone);
-                target.setCostume(
-                    target.getCostumes().length - 1
-                );
-            }
-        });
-    }
-
-    /**
-     * Called when sounds are dragged from editing target to another target.
-     * @param {!number} soundIndex Index of the sound of the editing target to share.
-     * @param {!string} targetId Id of target to add the sound.
-     * @returns {Promise} Promise that resolves when the new sound has been loaded.
-     */
-    shareSoundToTarget (soundIndex, targetId) {
-        const originalSound = this.editingTarget.getSounds()[soundIndex];
-        const clone = Object.assign({}, originalSound);
-        const target = this.runtime.getTargetById(targetId);
-        return loadSound(clone, this.runtime, target.sprite.soundBank).then(() => {
-            if (target) {
-                target.addSound(clone);
-                this.emitTargetsUpdate();
             }
         });
     }

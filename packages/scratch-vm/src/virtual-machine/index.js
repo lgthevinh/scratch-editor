@@ -51,12 +51,6 @@ class VirtualMachine extends EventEmitter {
          */
         this.editingTarget = null;
 
-        /**
-         * The currently dragging target, for redirecting IO data.
-         * @type {Target}
-         */
-        this._dragTarget = null;
-
         // Forward the runtime's events out through the VM.
         wireRuntimeEvents(this);
 
