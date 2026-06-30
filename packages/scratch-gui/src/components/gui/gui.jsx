@@ -192,6 +192,12 @@ const GUIComponent = props => {
 
     const [devicePanelWidth, setDevicePanelWidth] = useState(540);
     const [serialLogs, setSerialLogs] = useState([]);
+    // Cap the monitor scrollback; an unbounded log lags the client once a chatty board floods it.
+    const MAX_MONITOR_LOGS = 500;
+    const appendLogs = (prev, additions) => {
+        const next = prev.concat(additions);
+        return next.length > MAX_MONITOR_LOGS ? next.slice(next.length - MAX_MONITOR_LOGS) : next;
+    };
     const [monitorPrompt, setMonitorPrompt] = useState(null);
     // Default matches the VM's DEFAULT_MONITOR_BAUD; the dropdown drives both via vm.setMonitorBaud.
     const [baudRate, setBaudRate] = useState(115200);
@@ -203,7 +209,7 @@ const GUIComponent = props => {
 
     useEffect(() => {
         const handlePrint = message => {
-            setSerialLogs(prev => [...prev, {message: String(message)}]);
+            setSerialLogs(prev => appendLogs(prev, [{message: String(message)}]));
         };
         vm.runtime.on('PRINT_TO_MONITOR', handlePrint);
         return () => {
@@ -219,10 +225,7 @@ const GUIComponent = props => {
             const parts = text.split('\n');
             serialBuffer.current = parts.pop();
             if (parts.length) {
-                setSerialLogs(prev => [
-                    ...prev,
-                    ...parts.map(line => ({message: line.replace(/\r$/, '')}))
-                ]);
+                setSerialLogs(prev => appendLogs(prev, parts.map(line => ({message: line.replace(/\r$/, '')}))));
             }
         };
         vm.runtime.on('SERIAL_DATA', handleSerial);
