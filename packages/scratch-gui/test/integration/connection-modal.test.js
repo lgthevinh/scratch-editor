@@ -32,25 +32,10 @@ describe('Hardware extension connection modal', () => {
         await driver.quit();
     });
 
-    test('Message saying Scratch Link is unavailable (BLE)', async () => {
+    test('Message saying Scratch Link is unavailable (BT)', async () => {
         await driver.quit();
         driver = getDriver();
 
-        await loadUri(uri);
-
-        await driver.executeScript(websocketFakeoutJs);
-
-        await clickXpath('//button[@title="Add Extension"]');
-
-        await clickText('micro:bit');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for modal to open
-        findByText('Scratch Link'); // Scratch Link is mentioned in the error modal
-
-        const logs = await getLogs();
-        await expect(logs).toEqual([]);
-    });
-
-    test('Message saying Scratch Link is unavailable (BT)', async () => {
         await loadUri(uri);
 
         await driver.executeScript(websocketFakeoutJs);

@@ -27,6 +27,7 @@
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production npm run --workspaces build",
+    "build:libs": "cross-env NODE_ENV=production npm run build --workspace=@scratch/task-herder --workspace=@scratch/scratch-blocks --workspace=@scratch/scratch-storage --workspace=@scratch/scratch-svg-renderer --workspace=@scratch/scratch-render --workspace=@scratch/scratch-vm",
     "clean": "npm run --workspaces clean",
     "prepare": "husky install",
     "refresh-gh-workflow": "ts-node scripts/update-gha-workflows.ts",
