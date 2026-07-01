@@ -1,16 +1,16 @@
 {
-  "name": "scratch-editor",
+  "name": "thingblock-editor",
   "version": "14.1.0",
   "private": "true",
   "description": "Scratch editor mono-repository",
   "keywords": [],
-  "homepage": "https://github.com/scratchfoundation/scratch-editor#readme",
+  "homepage": "https://github.com/lgthevinh/thingblock-editor#readme",
   "bugs": {
-    "url": "https://github.com/scratchfoundation/scratch-editor/issues"
+    "url": "https://github.com/lgthevinh/thingblock-editor/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/scratchfoundation/scratch-editor.git"
+    "url": "git+https://github.com/lgthevinh/thingblock-editor.git"
   },
   "license": "AGPL-3.0-only",
   "author": "Scratch Foundation",
