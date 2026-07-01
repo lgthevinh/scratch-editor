@@ -6,7 +6,7 @@ versioned package and built to **dynamically-importable ESM**. The local helper 
 serves the built packs as static files; the editor `import()`s them at runtime and registers each
 pack's codegen against the editor's shared `arduinoGenerator` singleton.
 
-Design context: `scratch-editor/.agents/docs/25-06_01.blockly-arduino-codegen.md` (the codegen
+Design context: `thingblock-editor/.agents/docs/25-06_01.blockly-arduino-codegen.md` (the codegen
 contract this pack registers against) and `25-06_02.resource-distribution.md` (the distribution model:
 helper serves packs, editor imports them).
 
